@@ -39,9 +39,23 @@ public with sharing class TicketTypeController {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
     }
-    
 
-    
+    /**
+     * @description Get ticket type by Id
+     * @param ticketTypeId - The TicketType__c record Id
+     * @return APIResponse containing TicketType__c in data attribute
+     */
+    @AuraEnabled(cacheable=true)
+    public static APIResponse getTicketTypeById(String ticketTypeId) {
+        try {
+            TicketType__c ticketType = TicketTypeService.getTicketTypeById(ticketTypeId);
+            return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
+        } catch (TicketTypeException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
+        }
+    }
     /**
      * @description Create a new ticket type
      * @param name - The ticket type name

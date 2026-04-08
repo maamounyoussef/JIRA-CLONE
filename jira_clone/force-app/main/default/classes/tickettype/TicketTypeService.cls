@@ -42,6 +42,24 @@ public with sharing class TicketTypeService {
         }
     }
 
+    /**
+     * @description Get ticket type by Id
+     * @param ticketTypeId - The TicketType__c record Id
+     * @return TicketType__c object
+     * @throws TicketTypeException - If ticket type not found or other errors occur
+     */
+    public static TicketType__c getTicketTypeById(String ticketTypeId) {
+        try {
+            validateIdParameter(ticketTypeId, 'Ticket Type Id');
+            
+            return TicketTypeRepository.getTicketTypeById(ticketTypeId);
+        } catch (TicketTypeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new TicketTypeException('Error retrieving ticket type by id: ' + ex.getMessage());
+        }
+    }
+
     
     /**
      * @description Create a new ticket type

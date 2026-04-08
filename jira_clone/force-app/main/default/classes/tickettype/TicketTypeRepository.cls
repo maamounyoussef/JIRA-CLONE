@@ -40,6 +40,27 @@ public with sharing class TicketTypeRepository {
         
         return ticketTypes[0];
     }
+
+    /**
+     * @description Get ticket type by Id
+     * @param ticketTypeId - The TicketType__c record Id
+     * @return TicketType__c record
+     * @throws TicketTypeException - If ticket type not found
+     */
+    public static TicketType__c getTicketTypeById(String ticketTypeId) {
+        List<TicketType__c> ticketTypes = [
+            SELECT Id, Name, Project__c, Workflow__c, Description__c, IconUrl__c, CreatedDate
+            FROM TicketType__c
+            WHERE Id = :ticketTypeId
+            LIMIT 1
+        ];
+        
+        if (ticketTypes.isEmpty()) {
+            throw new TicketTypeException('Ticket Type not found');
+        }
+        
+        return ticketTypes[0];
+    }
     
 
     
