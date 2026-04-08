@@ -36,54 +36,77 @@ public static Workflow__c getWorkflowWithTransitions(String workflowId) {
         throw new WorkflowException('Workflow not found');
     }
 
-    Workflow__c workflow = workflows[0];
+    return workflows[0];
+    // for now commit validation rules
+//     Workflow__c workflow = workflows[0];
 
-    Set<Id> transitionIds = new Set<Id>();
+//     Set<Id> transitionIds = new Set<Id>();
 
-    for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
-        transitionIds.add(transition.Id);
-    }
+//     for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
+//         transitionIds.add(transition.Id);
+//     }
 
-    Map<Id, List<ValidationRule__c>> validationRulesByTransitionId = new Map<Id, List<ValidationRule__c>>();
+//     Map<Id, List<ValidationRule__c>> validationRulesByTransitionId = new Map<Id, List<ValidationRule__c>>();
 
-    if (!transitionIds.isEmpty()) {
-        List<ValidationRule__c> validationRules = [
-            SELECT 
-                Id, 
-                TicketField__c, 
-                Type__c, 
-                RecordStatus__c,
-                WorkflowTransition__c
-            FROM ValidationRule__c
-            WHERE WorkflowTransition__c IN :transitionIds
-            ORDER BY RecordStatus__c DESC, CreatedDate ASC
+//     if (!transitionIds.isEmpty()) {
+//         List<ValidationRule__c> validationRules = [
+//             SELECT 
+//                 Id, 
+//                 TicketField__c, 
+//                 Type__c, 
+//                 RecordStatus__c,
+//                 WorkflowTransition__c
+//             FROM ValidationRule__c
+//             WHERE WorkflowTransition__c IN :transitionIds
+//             ORDER BY RecordStatus__c DESC, CreatedDate ASC
+//         ];
+
+//         for (ValidationRule__c rule : validationRules) {
+//             if (!validationRulesByTransitionId.containsKey(rule.WorkflowTransition__c)) {
+//                 validationRulesByTransitionId.put(rule.WorkflowTransition__c, new List<ValidationRule__c>());
+//             }
+
+//             validationRulesByTransitionId.get(rule.WorkflowTransition__c).add(rule);
+//         }
+//     }
+
+// for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
+//     if (validationRulesByTransitionId.containsKey(transition.Id)) {
+//         transition.put(
+//             'ValidationRules__r',
+//             validationRulesByTransitionId.get(transition.Id)
+//         );
+//     } else {
+//         transition.put(
+//             'ValidationRules__r',
+//             new List<ValidationRule__c>()
+//         );
+//     }
+// }
+
+//     return workflow;
+}
+    
+    /**
+     * @description Get workflow by Id
+     * @param workflowId - The Workflow__c record Id
+     * @return Workflow__c record
+     * @throws WorkflowException - If workflow not found
+     */
+    public static Workflow__c getWorkflow(String workflowId) {
+        List<Workflow__c> workflows = [
+            SELECT Id, Name, Project__c
+            FROM Workflow__c 
+            WHERE Id = :workflowId 
+            LIMIT 1
         ];
-
-        for (ValidationRule__c rule : validationRules) {
-            if (!validationRulesByTransitionId.containsKey(rule.WorkflowTransition__c)) {
-                validationRulesByTransitionId.put(rule.WorkflowTransition__c, new List<ValidationRule__c>());
-            }
-
-            validationRulesByTransitionId.get(rule.WorkflowTransition__c).add(rule);
+        
+        if (workflows.isEmpty()) {
+            throw new WorkflowException('Workflow not found');
         }
+        
+        return workflows[0];
     }
-
-for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
-    if (validationRulesByTransitionId.containsKey(transition.Id)) {
-        transition.put(
-            'ValidationRules__r',
-            validationRulesByTransitionId.get(transition.Id)
-        );
-    } else {
-        transition.put(
-            'ValidationRules__r',
-            new List<ValidationRule__c>()
-        );
-    }
-}
-
-    return workflow;
-}
     
     /**
      * @description Get workflow by Id

@@ -1,0 +1,93 @@
+<template>
+    <div class="slds-var-m-around_medium">
+        <h2 class="slds-text-heading_large slds-var-m-bottom_medium">Create Status</h2>
+
+        <!-- Messages -->
+        <template if:true={successMessage}>
+            <div class="slds-notify slds-notify_alert slds-alert_success slds-var-m-bottom_medium" role="alert">
+                <span class="slds-assistive-text">success</span>
+                <span class="slds-notify__content">
+                    <h2 class="slds-text-heading_small">{successMessage}</h2>
+                </span>
+            </div>
+        </template>
+
+        <template if:true={errorMessage}>
+            <div class="slds-notify slds-notify_alert slds-alert_error slds-var-m-bottom_medium" role="alert">
+                <span class="slds-assistive-text">error</span>
+                <span class="slds-notify__content">
+                    <h2 class="slds-text-heading_small">{errorMessage}</h2>
+                </span>
+            </div>
+        </template>
+
+        <!-- Toggle Button -->
+        <button class="slds-button slds-button_brand slds-m-bottom_medium" onclick={toggleForm}>
+            <template if:true={showForm}>Close Form</template>
+            <template if:false={showForm}>Open Form</template>
+        </button>
+
+        <!-- Form -->
+        <template if:true={showForm}>
+            <div class="slds-box slds-var-m-bottom_medium">
+                <form class="slds-form slds-form_stacked">
+                    <!-- Name Field -->
+                    <div class="slds-form-element">
+                        <label class="slds-form-element__label" for="statusName">
+                            <abbr class="slds-required">*</abbr>Status Name
+                        </label>
+                        <div class="slds-form-element__control">
+                            <input
+                                id="statusName"
+                                class="slds-input"
+                                type="text"
+                                placeholder="e.g., Open, In Progress, Closed"
+                                value={newStatus.name}
+                                onchange={handleNameChange}
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Project Selection -->
+                    <div class="slds-form-element">
+                        <label class="slds-form-element__label" for="projectSelect">
+                            <abbr class="slds-required">*</abbr>Project
+                        </label>
+                        <div class="slds-form-element__control">
+                            <select
+                                id="projectSelect"
+                                class="slds-select"
+                                value={newStatus.projectId}
+                                onchange={handleProjectChange}
+                            >
+                                <template for:each={projectOptions} for:item="option">
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="slds-var-m-top_medium">
+                        <button
+                            class="slds-button slds-button_brand"
+                            type="button"
+                            onclick={handleCreateStatus}
+                            disabled={isLoading}
+                        >
+                            <template if:false={isLoading}>Create Status</template>
+                            <template if:true={isLoading}>Creating...</template>
+                        </button>
+                        <button
+                            class="slds-button slds-button_neutral slds-var-m-left_small"
+                            type="button"
+                            onclick={toggleForm}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </template>
+    </div>
+</template>

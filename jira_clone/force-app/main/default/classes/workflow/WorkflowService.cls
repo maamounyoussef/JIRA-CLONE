@@ -88,6 +88,24 @@ public with sharing class WorkflowService {
     }
     
     /**
+     * @description Get workflow by Id for validation purposes
+     * @param workflowId - The Workflow__c record Id
+     * @return Workflow__c record
+     * @throws WorkflowException - If workflow not found or other errors occur
+     */
+    public static Workflow__c getWorkflowById(String workflowId) {
+        try {
+            validateIdParameter(workflowId, 'Workflow Id');
+            
+            return WorkflowRepository.getWorkflow(workflowId);
+        } catch (WorkflowException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WorkflowException('Error retrieving workflow: ' + ex.getMessage());
+        }
+    }
+    
+    /**
      * @description Get all workflows
      * @return List of Workflow__c objects
      * @throws WorkflowException - If error occurs
