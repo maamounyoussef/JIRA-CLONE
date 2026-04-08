@@ -1,11 +1,11 @@
 import { LightningElement, track, wire } from 'lwc';
-import getWorkflow from '@salesforce/apex/workflow.WorkflowController.getWorkflow';
-import addValidationRule from '@salesforce/apex/workflow.WorkflowController.addValidationRule';
-import deleteValidationRule from '@salesforce/apex/workflow.WorkflowController.deleteValidationRule';
-import addWorkflowTransition from '@salesforce/apex/workflow.WorkflowController.addWorkflowTransition';
-import activateValidationRule from '@salesforce/apex/workflow.WorkflowController.activateValidationRule';
-import activateWorkflowTransition from '@salesforce/apex/workflow.WorkflowController.activateWorkflowTransition';
-import updateWorkflow from '@salesforce/apex/workflow.WorkflowController.updateWorkflow';
+import getWorkflow from '@salesforce/apex/WorkflowController.getWorkflow';
+import addValidationRule from '@salesforce/apex/WorkflowController.addValidationRule';
+import deleteValidationRule from '@salesforce/apex/WorkflowController.deleteValidationRule';
+import addWorkflowTransition from '@salesforce/apex/WorkflowController.addWorkflowTransition';
+import activateValidationRule from '@salesforce/apex/WorkflowController.activateValidationRule';
+import activateWorkflowTransition from '@salesforce/apex/WorkflowController.activateWorkflowTransition';
+import updateWorkflow from '@salesforce/apex/WorkflowController.updateWorkflow';
 
 export default class ManageWorkflow extends LightningElement {
     @track workflowId = '';

@@ -10,35 +10,80 @@ public with sharing class WorkflowRepository {
      * @return Workflow__c with related transitions and their validation rules
      * @throws WorkflowException - If workflow not found
      */
-    public static Workflow__c getWorkflowWithTransitions(String workflowId) {
-        List<Workflow__c> workflows = [
-            SELECT 
-                Id, 
-                Name, 
-                Project__c,
-                (SELECT 
+public static Workflow__c getWorkflowWithTransitions(String workflowId) {
+    List<Workflow__c> workflows = [
+        SELECT 
+            Id, 
+            Name, 
+            Project__c,
+            (
+                SELECT 
                     Id, 
                     Name, 
                     FromStatus__c, 
                     ToStatus__c, 
                     RecordStatus__c, 
-                    Workflow__c,
-                    (SELECT Id, TicketField__c, Type__c, RecordStatus__c 
-                     FROM ValidationRules__r 
-                     ORDER BY RecordStatus__c DESC, CreatedDate ASC)
-                 FROM WorkflowTransitions__r 
-                 ORDER BY RecordStatus__c DESC, CreatedDate ASC)
-            FROM Workflow__c 
-            WHERE Id = :workflowId 
-            LIMIT 1
-        ];
-        
-        if (workflows.isEmpty()) {
-            throw new WorkflowException('Workflow not found');
-        }
-        
-        return workflows[0];
+                    Workflow__c
+                FROM WorkflowTransitions__r 
+                ORDER BY RecordStatus__c DESC, CreatedDate ASC
+            )
+        FROM Workflow__c 
+        WHERE Id = :workflowId 
+        LIMIT 1
+    ];
+    
+    if (workflows.isEmpty()) {
+        throw new WorkflowException('Workflow not found');
     }
+
+    Workflow__c workflow = workflows[0];
+
+    Set<Id> transitionIds = new Set<Id>();
+
+    for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
+        transitionIds.add(transition.Id);
+    }
+
+    Map<Id, List<ValidationRule__c>> validationRulesByTransitionId = new Map<Id, List<ValidationRule__c>>();
+
+    if (!transitionIds.isEmpty()) {
+        List<ValidationRule__c> validationRules = [
+            SELECT 
+                Id, 
+                TicketField__c, 
+                Type__c, 
+                RecordStatus__c,
+                WorkflowTransition__c
+            FROM ValidationRule__c
+            WHERE WorkflowTransition__c IN :transitionIds
+            ORDER BY RecordStatus__c DESC, CreatedDate ASC
+        ];
+
+        for (ValidationRule__c rule : validationRules) {
+            if (!validationRulesByTransitionId.containsKey(rule.WorkflowTransition__c)) {
+                validationRulesByTransitionId.put(rule.WorkflowTransition__c, new List<ValidationRule__c>());
+            }
+
+            validationRulesByTransitionId.get(rule.WorkflowTransition__c).add(rule);
+        }
+    }
+
+for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
+    if (validationRulesByTransitionId.containsKey(transition.Id)) {
+        transition.put(
+            'ValidationRules__r',
+            validationRulesByTransitionId.get(transition.Id)
+        );
+    } else {
+        transition.put(
+            'ValidationRules__r',
+            new List<ValidationRule__c>()
+        );
+    }
+}
+
+    return workflow;
+}
     
     /**
      * @description Get workflow by Id
@@ -113,6 +158,20 @@ public with sharing class WorkflowRepository {
             SELECT Id 
             FROM Status__c 
             WHERE Id IN :statusIds
+        ];
+    }
+    
+    /**
+     * @description Get all statuses for a project
+     * @param projectId - The Project__c record Id
+     * @return List of Status__c records for the project
+     */
+    public static List<Status__c> getProjectStatuses(String projectId) {
+        return [
+            SELECT Id, Name, Project__c
+            FROM Status__c 
+            WHERE Project__c = :projectId
+            ORDER BY Name ASC
         ];
     }
     

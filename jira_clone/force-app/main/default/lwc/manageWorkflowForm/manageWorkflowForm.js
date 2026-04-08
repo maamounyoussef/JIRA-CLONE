@@ -1,7 +1,6 @@
 import { LightningElement, track } from 'lwc';
-import getProjectStatuses from '@salesforce/apex/workflow.WorkflowController.getProjectStatuses';
-import loadProjects from '@salesforce/apex/project.ProjectController.loadProjects';
-import loadTicketTypes from '@salesforce/apex/tickettype.TicketTypeController.loadTicketTypes';
+import loadProjects from '@salesforce/apex/ProjectController.loadProjects';
+import loadTicketTypes from '@salesforce/apex/TicketTypeController.loadTicketTypes';
 
 export default class ManageWorkflowForm extends LightningElement {
     @track ticketTypeOptions = [];
