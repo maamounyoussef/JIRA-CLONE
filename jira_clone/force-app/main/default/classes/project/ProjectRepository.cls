@@ -71,4 +71,22 @@ public with sharing class ProjectRepository {
             ORDER BY Name ASC
         ];
     }
+    
+    /**
+     * @description Create a new project
+     * @param name - The project name
+     * @return The created Project__c record
+     * @throws ProjectException - If DML exception occurs
+     */
+    public static Project__c createProject(String name) {
+        try {
+            Project__c project = new Project__c(
+                Name = name
+            );
+            insert project;
+            return project;
+        } catch (DmlException ex) {
+            throw new ProjectException('Error creating project: ' + ex.getMessage());
+        }
+    }
 }

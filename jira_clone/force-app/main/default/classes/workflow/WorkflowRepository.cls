@@ -176,6 +176,38 @@ for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
     }
     
     /**
+     * @description Get all workflows
+     * @return List of all Workflow__c records
+     */
+    public static List<Workflow__c> getAllWorkflows() {
+        return [
+            SELECT Id, Name, Project__c
+            FROM Workflow__c
+            ORDER BY Name ASC
+        ];
+    }
+    
+    /**
+     * @description Create a new workflow
+     * @param name - The workflow name
+     * @param projectId - The Project__c record Id
+     * @return The created Workflow__c record
+     * @throws WorkflowException - If DML exception occurs
+     */
+    public static Workflow__c createWorkflow(String name, String projectId) {
+        try {
+            Workflow__c workflow = new Workflow__c(
+                Name = name,
+                Project__c = projectId
+            );
+            insert workflow;
+            return workflow;
+        } catch (DmlException ex) {
+            throw new WorkflowException('Error creating workflow: ' + ex.getMessage());
+        }
+    }
+    
+    /**
      * @description Get all pending transitions for a workflow
      * @param workflowId - The Workflow__c record Id
      * @return List of pending WorkflowTransition__c records

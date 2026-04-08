@@ -38,6 +38,40 @@ public with sharing class WorkflowController {
             return new APIResponse(false, 'Error retrieving project statuses: ' + ex.getMessage());
         }
     }
+    
+    /**
+     * @description Load all workflows
+     * @return APIResponse containing List<Workflow__c> in data attribute
+     */
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadWorkflows() {
+        try {
+            List<Workflow__c> workflows = WorkflowService.loadWorkflows();
+            return new APIResponse(true, 'Workflows loaded successfully', workflows);
+        } catch (WorkflowException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading workflows: ' + ex.getMessage());
+        }
+    }
+    
+    /**
+     * @description Create a new workflow
+     * @param name - The workflow name
+     * @param projectId - The Project__c record Id
+     * @return APIResponse containing created Workflow__c in data attribute
+     */
+    @AuraEnabled
+    public static APIResponse createWorkflow(String name, String projectId) {
+        try {
+            Workflow__c workflow = WorkflowService.createWorkflow(name, projectId);
+            return new APIResponse(true, 'Workflow created successfully', workflow);
+        } catch (WorkflowException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error creating workflow: ' + ex.getMessage());
+        }
+    }
     // TODO ADD APILAYER
     
     /**

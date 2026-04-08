@@ -41,6 +41,36 @@ public with sharing class TicketTypeService {
             throw new TicketTypeException('Error retrieving ticket type by name: ' + ex.getMessage());
         }
     }
+
+    
+    /**
+     * @description Create a new ticket type
+     * @param name - The ticket type name
+     * @param description - The ticket type description
+     * @param iconUrl - The icon URL
+     * @param workflowId - The Workflow__c record Id
+     * @param projectId - The Project__c record Id
+     * @return The created TicketType__c record
+     * @throws TicketTypeException - If validation fails or DML error occurs
+     */
+    public static TicketType__c createTicketType(String name, String description, String iconUrl, String workflowId, String projectId) {
+        try {
+            validateNameParameter(name, 'Ticket Type Name');
+            validateIdParameter(workflowId, 'Workflow Id');
+            validateIdParameter(projectId, 'Project Id');
+            
+            // Verify project exists
+            ProjectRepository.getProjectById(projectId);
+            
+            return TicketTypeRepository.createTicketType(name, description, iconUrl, workflowId, projectId);
+        } catch (TicketTypeException ex) {
+            throw ex;
+        } catch (ProjectException ex) {
+            throw new TicketTypeException('Invalid project: ' + ex.getMessage());
+        } catch (Exception ex) {
+            throw new TicketTypeException('Error creating ticket type: ' + ex.getMessage());
+        }
+    }
     
     /**
      * @description Validate that a parameter is not blank

@@ -41,24 +41,31 @@ public with sharing class TicketTypeRepository {
         return ticketTypes[0];
     }
     
+
+    
     /**
-     * @description Get ticket type by Id
-     * @param ticketTypeId - The TicketType__c record Id
-     * @return TicketType__c record
-     * @throws TicketTypeException - If ticket type not found
+     * @description Create a new ticket type
+     * @param name - The ticket type name
+     * @param description - The ticket type description
+     * @param iconUrl - The icon URL
+     * @param workflowId - The Workflow__c record Id
+     * @param projectId - The Project__c record Id
+     * @return The created TicketType__c record
+     * @throws TicketTypeException - If DML exception occurs
      */
-    public static TicketType__c getTicketTypeById(String ticketTypeId) {
-        List<TicketType__c> ticketTypes = [
-            SELECT Id, Name, Project__c, CreatedDate
-            FROM TicketType__c
-            WHERE Id = :ticketTypeId
-            LIMIT 1
-        ];
-        
-        if (ticketTypes.isEmpty()) {
-            throw new TicketTypeException('Ticket Type not found');
+    public static TicketType__c createTicketType(String name, String description, String iconUrl, String workflowId, String projectId) {
+        try {
+            TicketType__c ticketType = new TicketType__c(
+                Name = name,
+                Description__c = description,
+                IconUrl__c = iconUrl,
+                Workflow__c = workflowId,
+                Project__c = projectId
+            );
+            insert ticketType;
+            return ticketType;
+        } catch (DmlException ex) {
+            throw new TicketTypeException('Error creating ticket type: ' + ex.getMessage());
         }
-        
-        return ticketTypes[0];
     }
 }

@@ -15,9 +15,8 @@ export default class ManageWorkflowContainer extends LightningElement {
         this.selectedTicketType = ticketType;
         this.selectedProjectId = projectId;
         
-        // TODO: Query for workflow ID based on ticket type
-        // For now, we'll need the workflow ID from somewhere
-        // This could be fetched from a method that takes ticketType and projectId
+        // TODO: Query for workflow ID based on ticket type and project ID
+        // TODO: call getWorkflow in WorkflowController for now just display the returned object
         
         this.showForm = false;
         this.showWorkflow = true;

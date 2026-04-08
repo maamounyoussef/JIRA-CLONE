@@ -56,6 +56,24 @@ public with sharing class ProjectService {
     }
     
     /**
+     * @description Create a new project
+     * @param name - The project name
+     * @return The created Project__c record
+     * @throws ProjectException - If validation fails or DML error occurs
+     */
+    public static Project__c createProject(String name) {
+        try {
+            validateNameParameter(name, 'Project Name');
+            
+            return ProjectRepository.createProject(name);
+        } catch (ProjectException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ProjectException('Error creating project: ' + ex.getMessage());
+        }
+    }
+    
+    /**
      * @description Validate that a parameter is not blank
      * @param value - The value to validate
      * @param paramName - The parameter name for error message

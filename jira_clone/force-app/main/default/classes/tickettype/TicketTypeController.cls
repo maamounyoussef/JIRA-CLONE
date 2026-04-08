@@ -39,4 +39,27 @@ public with sharing class TicketTypeController {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
     }
+    
+
+    
+    /**
+     * @description Create a new ticket type
+     * @param name - The ticket type name
+     * @param description - The ticket type description
+     * @param iconUrl - The icon URL
+     * @param workflowId - The Workflow__c record Id
+     * @param projectId - The Project__c record Id
+     * @return APIResponse containing created TicketType__c in data attribute
+     */
+    @AuraEnabled
+    public static APIResponse createTicketType(String name, String description, String iconUrl, String workflowId, String projectId) {
+        try {
+            TicketType__c ticketType = TicketTypeService.createTicketType(name, description, iconUrl, workflowId, projectId);
+            return new APIResponse(true, 'Ticket Type created successfully', ticketType);
+        } catch (TicketTypeException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error creating ticket type: ' + ex.getMessage());
+        }
+    }
 }

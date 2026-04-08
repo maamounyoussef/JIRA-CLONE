@@ -88,6 +88,65 @@ public with sharing class WorkflowService {
     }
     
     /**
+     * @description Get all workflows
+     * @return List of Workflow__c objects
+     * @throws WorkflowException - If error occurs
+     */
+    public static List<Workflow__c> loadWorkflows() {
+        try {
+            return WorkflowRepository.getAllWorkflows();
+        } catch (WorkflowException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WorkflowException('Error loading workflows: ' + ex.getMessage());
+        }
+    }
+    
+    /**
+     * @description Create a new workflow
+     * @param name - The workflow name
+     * @param projectId - The Project__c record Id
+     * @return The created Workflow__c record
+     * @throws WorkflowException - If validation fails or DML error occurs
+     */
+    public static Workflow__c createWorkflow(String name, String projectId) {
+        try {
+            validateNameParameter(name, 'Workflow Name');
+            validateIdParameter(projectId, 'Project Id');
+            
+            return WorkflowRepository.createWorkflow(name, projectId);
+        } catch (WorkflowException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WorkflowException('Error creating workflow: ' + ex.getMessage());
+        }
+    }
+    
+    /**
+     * @description Validate that a parameter is not blank
+     * @param value - The value to validate
+     * @param paramName - The parameter name for error message
+     * @throws WorkflowException - If value is blank
+     */
+    private static void validateNameParameter(String value, String paramName) {
+        if (String.isBlank(value)) {
+            throw new WorkflowException(paramName + ' is required');
+        }
+    }
+    
+    /**
+     * @description Validate that an Id parameter is not blank
+     * @param value - The value to validate
+     * @param paramName - The parameter name for error message
+     * @throws WorkflowException - If value is blank
+     */
+    private static void validateIdParameter(String value, String paramName) {
+        if (String.isBlank(value)) {
+            throw new WorkflowException(paramName + ' is required');
+        }
+    }
+    
+    /**
      * @description Add a new Validation Rule to a Workflow Transition
      * Validates inputs and ensures transition exists before creating rule
      * @param workflowTransitionId - The WorkflowTransition__c record Id
@@ -324,15 +383,6 @@ public with sharing class WorkflowService {
         }
     }
     
-    /**
-     * @description Validate that a parameter is not blank (used for Ids)
-     * @param value - The value to validate
-     * @param paramName - The parameter name for error message
-     * @throws WorkflowException - If value is blank
-     */
-    private static void validateIdParameter(String value, String paramName) {
-        if (String.isBlank(value)) {
-            throw new WorkflowException(paramName + ' is required');
-        }
-    }
+
+
 }

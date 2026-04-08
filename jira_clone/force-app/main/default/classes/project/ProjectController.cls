@@ -54,4 +54,21 @@ public with sharing class ProjectController {
             return new APIResponse(false, 'Error retrieving project statuses: ' + ex.getMessage());
         }
     }
+    
+    /**
+     * @description Create a new project
+     * @param name - The project name
+     * @return APIResponse containing created Project__c in data attribute
+     */
+    @AuraEnabled
+    public static APIResponse createProject(String name) {
+        try {
+            Project__c project = ProjectService.createProject(name);
+            return new APIResponse(true, 'Project created successfully', project);
+        } catch (ProjectException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error creating project: ' + ex.getMessage());
+        }
+    }
 }
