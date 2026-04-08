@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Workflow status for tickets</description>
+    <enableActivities>true</enableActivities>
+    <label>Status</label>
+    <nameField>
+        <label>Status Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Statuses</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

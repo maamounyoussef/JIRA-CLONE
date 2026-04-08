@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Type__c</fullName>
+    <description>Link type</description>
+    <label>Type</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Blocks</fullName>
+                <default>false</default>
+            </value>
+            <value>
+                <fullName>Relates To</fullName>
+                <default>false</default>
+            </value>
+            <value>
+                <fullName>Duplicates</fullName>
+                <default>false</default>
+            </value>
+            <value>
+                <fullName>Depends On</fullName>
+                <default>false</default>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

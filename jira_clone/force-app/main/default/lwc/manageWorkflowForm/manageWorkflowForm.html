@@ -1,0 +1,57 @@
+<template>
+    <lightning-card title="Manage Workflow Configuration" icon-name="standard:workflow">
+        <div class="slds-m-around_medium">
+            <lightning-layout multiple-rows="true">
+                <!-- Ticket Type Selection -->
+                <lightning-layout-item size="12" medium-device-size="6" large-device-size="6">
+                    <lightning-combobox
+                        name="ticketType"
+                        label="Ticket Type"
+                        value={selectedTicketType}
+                        options={ticketTypeOptions}
+                        onchange={handleTicketTypeChange}
+                        placeholder="Select a Ticket Type"
+                        required
+                    ></lightning-combobox>
+                </lightning-layout-item>
+
+                <!-- Project Selection -->
+                <lightning-layout-item size="12" medium-device-size="6" large-device-size="6">
+                    <lightning-combobox
+                        name="project"
+                        label="Project"
+                        value={selectedProject}
+                        options={projectOptions}
+                        onchange={handleProjectChange}
+                        placeholder="Select a Project"
+                        required
+                    ></lightning-combobox>
+                </lightning-layout-item>
+
+                <!-- Error Message -->
+                <lightning-layout-item size="12">
+                    <template if:true={errorMessage}>
+                        <lightning-alert variant="error" title="Error">{errorMessage}</lightning-alert>
+                    </template>
+                </lightning-layout-item>
+
+                <!-- Action Buttons -->
+                <lightning-layout-item size="12">
+                    <lightning-button-group>
+                        <lightning-button
+                            variant="brand"
+                            label="Launch Workflow Manager"
+                            onclick={handleLaunchWorkflow}
+                            class="slds-m-right_small"
+                        ></lightning-button>
+                        <lightning-button
+                            variant="neutral"
+                            label="Reset"
+                            onclick={handleReset}
+                        ></lightning-button>
+                    </lightning-button-group>
+                </lightning-layout-item>
+            </lightning-layout>
+        </div>
+    </lightning-card>
+</template>

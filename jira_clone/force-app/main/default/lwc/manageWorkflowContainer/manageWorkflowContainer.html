@@ -1,0 +1,21 @@
+<template>
+    <!-- Form Component -->
+    <template if:true={showForm}>
+        <c-manage-workflow-form onlaunchworkflow={handleLaunchWorkflow}></c-manage-workflow-form>
+    </template>
+
+    <!-- Workflow Manager Component -->
+    <template if:true={showWorkflow}>
+        <div class="slds-m-bottom_medium">
+            <lightning-button
+                variant="neutral"
+                label="< Back to Selection"
+                onclick={handleBack}
+                icon-name="utility:back"
+            ></lightning-button>
+        </div>
+        <c-manage-workflow
+            workflow-id={selectedWorkflowId}
+        ></c-manage-workflow>
+    </template>
+</template>

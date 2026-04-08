@@ -1,0 +1,29 @@
+.form-container {
+    padding: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 0.25rem;
+    color: white;
+}
+
+.form-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-title {
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.form-field {
+    margin-bottom: 1.5rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}

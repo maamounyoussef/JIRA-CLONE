@@ -1,0 +1,35 @@
+.transition-box {
+    padding: 1rem;
+    background-color: #f3f3f3;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 0.5rem;
+    border: 2px solid #cccccc;
+}
+
+.transition-box:hover {
+    background-color: #e8e8e8;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.transition-box--active {
+    border: 2px solid #04844b;
+    background-color: #f0f9f7;
+}
+
+.transition-box--active:hover {
+    border: 2px solid #04844b;
+    background-color: #e8f7f4;
+}
+
+.transition-box--pending {
+    border: 2px solid #ff9500;
+    background-color: #fffaf0;
+}
+
+.transition-box--pending:hover {
+    border: 2px solid #ff9500;
+    background-color: #fff5e6;
+}
+

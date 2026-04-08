@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LinkedFromTicket__c</fullName>
+    <description>Source ticket</description>
+    <label>Linked From Ticket</label>
+    <referenceTo>Ticket__c</referenceTo>
+    <relationshipLabel>Outgoing Ticket Links</relationshipLabel>
+    <relationshipName>OutgoingTicketLinks</relationshipName>
+    <required>true</required>
+    <type>Lookup</type>
+    <deleteConstraint>Restrict</deleteConstraint>
+</CustomField>
