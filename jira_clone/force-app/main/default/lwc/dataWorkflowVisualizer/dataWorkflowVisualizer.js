@@ -1,5 +1,4 @@
 import { LightningElement, api, track } from 'lwc';
-import addWorkflowTransition from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
 import { 
     calculatePositions, 
     calculateTransitionLines, 
@@ -18,7 +17,6 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track showCreateTransitionModal = false;
     @track selectedFromStatus = null;
     @track selectedToStatus = null;
-    @track newTransitionName = '';
     @track showTransitionDetail = false;
     @track selectedTransitionId = null;
     
@@ -154,7 +152,6 @@ export default class DataWorkflowVisualizer extends LightningElement {
         this.showCreateModal = false;
         this.selectedFromStatus = null;
         this.selectedToStatus = null;
-        this.newTransitionName = '';
     }
 
     /**
@@ -215,46 +212,42 @@ export default class DataWorkflowVisualizer extends LightningElement {
     /**
      * Handle create transition from modal component
      */
-    handleCreateTransitionFromModal(event) {
-        const { name, fromStatusId, toStatusId, fromStatusName, toStatusName } = event.detail;
-        
-        console.log('New Transition Created:', {
-            name: name,
-            from: fromStatusName,
-            to: toStatusName
-        });
-        
-        // Call apex method to persist transition
-        addWorkflowTransition({ 
-            workflowId: this.workflowData.workflow.id,
-            name: name,
-            fromStatusId: fromStatusId,
-            toStatusId: toStatusId
-        })
-        .then(result => {
-            console.log('Transition saved to database:', result);
-            
-            // Add new transition to frontend data
-            const newTransition = {
-                id: result.id,
-                name: name,
-                fromStatus: fromStatusId,
-                toStatus: toStatusId
+    handleTransitionCreated(event) {
+        const transitionData = event.detail;
+        console.log('Transition created successfully:', transitionData);
+
+        // Create a new transition object with proper structure
+        const newTransition = {
+            id: transitionData.id,
+            name: transitionData.name,
+            fromStatus: transitionData.fromStatus,
+            toStatus: transitionData.toStatus
+        };
+
+        // Add new transition to workflow data - create new array reference for reactivity
+        if (!this.workflowData.workflow.transitions) {
+            this.workflowData = {
+                ...this.workflowData,
+                workflow: {
+                    ...this.workflowData.workflow,
+                    transitions: [newTransition]
+                }
             };
-            
-            if (!this.workflowData.workflow.transitions) {
-                this.workflowData.workflow.transitions = [];
-            }
-            this.workflowData.workflow.transitions.push(newTransition);
-            this.transitionLines = calculateTransitionLines(this.workflowData, this.statusPositions, this.config);
-        })
-        .catch(error => {
-            console.error('Error saving transition:', error);
-            alert('Failed to create transition: ' + error.body?.message);
-        })
-        .finally(() => {
-            this.handleCloseCreateTransitionModal();
-        });
+        } else {
+            this.workflowData = {
+                ...this.workflowData,
+                workflow: {
+                    ...this.workflowData.workflow,
+                    transitions: [...this.workflowData.workflow.transitions, newTransition]
+                }
+            };
+        }
+
+        // Recalculate positions and lines
+        this.processWorkflowData();
+
+        // Close modal
+        this.showCreateTransitionModal = false;
     }
 
     /**
@@ -263,10 +256,6 @@ export default class DataWorkflowVisualizer extends LightningElement {
     handleCloseCreateTransitionModal() {
         this.showCreateTransitionModal = false;
         this.selectedFromStatus = null;
-    }
-
-    handleTransitionNameChange(event) {
-        this.newTransitionName = event.target.value;
     }
 
     /**

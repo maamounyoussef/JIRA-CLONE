@@ -73,6 +73,25 @@
     margin-bottom: 20px;
 }
 
+/* Error Message */
+.error-message {
+    padding: 12px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #dc2626;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.error-icon {
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
 /* Modal Actions */
 .modal-actions {
     display: flex;

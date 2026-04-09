@@ -104,8 +104,9 @@
             if:true={showCreateTransitionModal}
             from-status={selectedFromStatus}
             to-status={selectedToStatus}
+            workflow-id={workflowData.workflow.id}
             is-open={showCreateTransitionModal}
-            oncreatetransition={handleCreateTransitionFromModal}
+            ontransitioncreated={handleTransitionCreated}
             onclose={handleCloseCreateTransitionModal}
         ></c-create-transition-modal>
 
