@@ -3,17 +3,39 @@
     background-color: #ffffff;
     border: 1px solid #e8e8e8;
     border-radius: 4px;
-    padding: 20px;
-    min-height: 450px;
+    padding: 0;
+    min-height: 550px;
+    display: flex;
+    flex-direction: column;
+}
+
+.toolbar {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-info {
+    font-size: 13px;
+    color: #555;
+    flex: 1;
+}
+
+.toolbar-info strong {
+    color: #0070d2;
+    font-weight: 600;
 }
 
 .workflow-svg {
     width: 100%;
     height: auto;
     min-height: 450px;
-    background: linear-gradient(135deg, #f9f9f9 0%, #ffffff 100%);
-    border: 1px solid #e8e8e8;
-    border-radius: 2px;
+    background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+    flex: 1;
 }
 
 .status-rectangle-svg {
@@ -22,6 +44,7 @@
     stroke-width: 2;
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
     transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .status-rectangle-svg:hover {
@@ -50,14 +73,85 @@
     stroke-linejoin: round;
     opacity: 0.8;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .transition-line:hover {
     stroke-width: 3;
     opacity: 1;
+    filter: drop-shadow(0 1px 3px rgba(27, 150, 255, 0.3));
 }
 
 .transition-line-group {
-    pointer-events: none;
+    cursor: pointer;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 4px;
+    padding: 24px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 400px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 16px 0;
+}
+
+.modal-input {
+    margin-bottom: 20px;
+}
+
+.transition-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: #f3f3f3;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.from-label,
+.to-label {
+    background-color: #0070d2;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.arrow {
+    color: #0070d2;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
 }
 

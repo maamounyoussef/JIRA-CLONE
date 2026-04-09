@@ -1,5 +1,26 @@
 <template>
     <div class="workflow-visualizer-container">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <lightning-button
+                variant="brand"
+                label="+ Create Status"
+                onclick={openCreateStatusModal}
+                icon-name="utility:add"
+            ></lightning-button>
+            <span class="toolbar-info">
+                <template if:true={selectedFromStatus}>
+                    <strong>From: {selectedFromStatus.name}</strong>
+                    <template if:true={selectedToStatus}>
+                        → To: {selectedToStatus.name}
+                    </template>
+                </template>
+                <template if:false={selectedFromStatus}>
+                    Click two statuses to create a transition
+                </template>
+            </span>
+        </div>
+
         <template if:true={sortedStatuses}>
             <!-- SVG Canvas for Everything -->
             <svg class="workflow-svg" viewBox={svgViewBox} xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
@@ -23,7 +44,7 @@
 
                 <!-- Transition Lines -->
                 <template for:each={transitionLines} for:item="line">
-                    <g key={line.id} class="transition-line-group">
+                    <g key={line.id} class="transition-line-group" data-line-id={line.id} onclick={handleTransitionClick}>
                         <path
                             class="transition-line"
                             d={line.path}
@@ -37,7 +58,12 @@
 
                 <!-- Status Rectangles -->
                 <template for:each={statusesWithSVGData} for:item="status">
-                    <g key={status.id} class="status-group">
+                    <g 
+                        key={status.id} 
+                        class="status-group" 
+                        data-status-id={status.id}
+                        onclick={handleStatusClick}
+                    >
                         <rect
                             class="status-rectangle-svg"
                             x={status.x}
@@ -63,6 +89,68 @@
         <template if:false={sortedStatuses}>
             <div class="slds-text-color_weak slds-m-around_medium">
                 No workflow data available
+            </div>
+        </template>
+
+        <!-- Create Status/Transition Modal -->
+        <template if:true={showCreateModal}>
+            <div class="modal-overlay" onclick={closeCreateModal}>
+                <div class="modal-content" onclick={stopPropagation}>
+                    <template if:false={selectedFromStatus}>
+                        <!-- Create Status Form -->
+                        <h2 class="modal-title">Create New Status</h2>
+                        <lightning-input
+                            type="text"
+                            label="Status Name"
+                            placeholder="Enter status name (e.g., In Progress)"
+                            value={newStatusName}
+                            onchange={handleInputChange}
+                            class="modal-input"
+                        ></lightning-input>
+                        <div class="modal-actions">
+                            <lightning-button
+                                variant="neutral"
+                                label="Cancel"
+                                onclick={closeCreateModal}
+                            ></lightning-button>
+                            <lightning-button
+                                variant="brand"
+                                label="Create Status"
+                                onclick={handleCreateStatus}
+                            ></lightning-button>
+                        </div>
+                    </template>
+
+                    <template if:true={selectedFromStatus}>
+                        <!-- Create Transition Form -->
+                        <h2 class="modal-title">Create Transition</h2>
+                        <div class="transition-info">
+                            <span class="from-label">{selectedFromStatus.name}</span>
+                            <span class="arrow">→</span>
+                            <span class="to-label">{selectedToStatus.name}</span>
+                        </div>
+                        <lightning-input
+                            type="text"
+                            label="Transition Name"
+                            placeholder="Enter transition name (e.g., Start Work)"
+                            value={newTransitionName}
+                            onchange={handleTransitionNameChange}
+                            class="modal-input"
+                        ></lightning-input>
+                        <div class="modal-actions">
+                            <lightning-button
+                                variant="neutral"
+                                label="Cancel"
+                                onclick={closeCreateModal}
+                            ></lightning-button>
+                            <lightning-button
+                                variant="brand"
+                                label="Create Transition"
+                                onclick={handleCreateTransition}
+                            ></lightning-button>
+                        </div>
+                    </template>
+                </div>
             </div>
         </template>
     </div>

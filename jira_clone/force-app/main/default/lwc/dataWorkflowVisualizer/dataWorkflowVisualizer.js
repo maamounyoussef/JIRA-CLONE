@@ -5,6 +5,11 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track statusPositions = {};
     @track transitionLines = [];
     @track sortedStatuses = [];
+    @track showCreateModal = false;
+    @track selectedFromStatus = null;
+    @track selectedToStatus = null;
+    @track newStatusName = '';
+    @track newTransitionName = '';
     
     // Configuration for visualization
     statusWidth = 120;
@@ -188,5 +193,120 @@ export default class DataWorkflowVisualizer extends LightningElement {
      */
     get markerArrow() {
         return 'M 0 0 L 6 3 L 0 6 Z';
+    }
+
+    /**
+     * Handle transition line click
+     */
+    handleTransitionClick(event) {
+        const lineId = event.currentTarget.dataset.lineId;
+        const transition = this.workflowData.workflow.transitions.find(t => t.id === lineId);
+        
+        console.log('Transition Clicked:', {
+            id: lineId,
+            name: transition?.name,
+            fromStatus: transition?.fromStatus,
+            toStatus: transition?.toStatus,
+            fullObject: transition
+        });
+    }
+
+    /**
+     * Handle status rectangle click (for drawing line/creating transition)
+     */
+    handleStatusClick(event) {
+        const statusId = event.currentTarget.dataset.statusId;
+        const status = this.sortedStatuses.find(s => s.id === statusId);
+        
+        if (!this.selectedFromStatus) {
+            // First click - select from status
+            this.selectedFromStatus = status;
+            console.log('From Status selected:', status.name);
+        } else if (this.selectedFromStatus.id === statusId) {
+            // Deselect if clicking same status
+            this.selectedFromStatus = null;
+            console.log('Selection cleared');
+        } else {
+            // Second click - select to status and open create transition dialog
+            this.selectedToStatus = status;
+            console.log('To Status selected:', status.name);
+            this.openCreateTransitionModal();
+        }
+    }
+
+    /**
+     * Open modal to create new status
+     */
+    openCreateStatusModal() {
+        this.showCreateModal = true;
+        this.newStatusName = '';
+    }
+
+    /**
+     * Close create modal
+     */
+    closeCreateModal() {
+        this.showCreateModal = false;
+        this.selectedFromStatus = null;
+        this.selectedToStatus = null;
+        this.newStatusName = '';
+        this.newTransitionName = '';
+    }
+
+    /**
+     * Handle create status
+     */
+    handleCreateStatus() {
+        if (!this.newStatusName.trim()) {
+            alert('Please enter a status name');
+            return;
+        }
+        console.log('New Status Created:', this.newStatusName);
+        this.closeCreateModal();
+    }
+
+    /**
+     * Open modal to create transition
+     */
+    openCreateTransitionModal() {
+        this.showCreateModal = true;
+        this.newTransitionName = '';
+    }
+
+    /**
+     * Handle create transition
+     */
+    handleCreateTransition() {
+        if (!this.newTransitionName.trim()) {
+            alert('Please enter a transition name');
+            return;
+        }
+        console.log('New Transition Created:', {
+            name: this.newTransitionName,
+            from: this.selectedFromStatus.name,
+            to: this.selectedToStatus.name
+        });
+        this.closeCreateModal();
+    }
+
+    /**
+     * Handle input change for status name
+     */
+    handleInputChange(event) {
+        this.newStatusName = event.target.value;
+    }
+
+    /**
+     * Handle transition name change
+     */
+    handleTransitionNameChange(event) {
+        this.newTransitionName = event.target.value;
+    }
+
+    /**
+     * Stop event propagation for modal clicks
+     */
+    stopPropagation(event) {
+        event.stopPropagation();
     }
 }
