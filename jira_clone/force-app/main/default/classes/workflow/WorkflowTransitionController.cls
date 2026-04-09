@@ -110,4 +110,21 @@ public with sharing class WorkflowTransitionController {
             return new APIResponse(false, 'Error activating workflow transition: ' + ex.getMessage());
         }
     }
+
+    /**
+     * @description Delete a Workflow Transition (soft delete by setting status to deleted)
+     * @param workflowTransitionId - The WorkflowTransition__c record Id
+     * @return APIResponse with success status
+     */
+    @AuraEnabled
+    public static APIResponse deleteWorkflowTransition(String workflowTransitionId) {
+        try {
+            WorkflowTransitionService.deleteWorkflowTransition(workflowTransitionId);
+            return new APIResponse(true, 'Workflow Transition deleted successfully');
+        } catch (WorkflowException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error deleting workflow transition: ' + ex.getMessage());
+        }
+    }
 }

@@ -14,11 +14,34 @@
             </div>
         </template>
 
+        <!-- Success Message -->
+        <template if:true={successMessage}>
+            <div class="slds-m-around_medium">
+                <lightning-alert variant="success" title="Success">{successMessage}</lightning-alert>
+            </div>
+        </template>
+
         <!-- Transition Detail -->
         <template if:true={transitionData}>
             <lightning-card title="Transition Detail" icon-name="utility:flow">
-                <!-- Close Button -->
-                <div slot="actions">
+                <!-- Action Buttons -->
+                <div slot="actions" class="action-buttons">
+                    <template if:true={canActivate}>
+                        <lightning-button
+                            variant="success"
+                            label="Activate"
+                            onclick={handleActivateTransition}
+                            icon-name="utility:check"
+                            disabled={isActivating}
+                        ></lightning-button>
+                    </template>
+                    <lightning-button
+                        variant="destructive"
+                        label="Delete"
+                        onclick={handleDeleteTransition}
+                        icon-name="utility:delete"
+                        disabled={isDeleting}
+                    ></lightning-button>
                     <lightning-button
                         variant="neutral"
                         label="Close"

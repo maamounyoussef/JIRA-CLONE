@@ -63,3 +63,14 @@
     color: #7b1fa2;
     border: 1px solid #7b1fa2;
 }
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+lightning-alert {
+    display: block;
+    margin-bottom: 12px;
+}

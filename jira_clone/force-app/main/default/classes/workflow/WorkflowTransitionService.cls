@@ -171,6 +171,29 @@ public with sharing class WorkflowTransitionService {
     }
 
     /**
+     * @description Delete a Workflow Transition (soft delete by setting status to deleted)
+     * @param workflowTransitionId - The WorkflowTransition__c record Id
+     * @throws WorkflowException - If transition not found or other errors occur
+     */
+    public static void deleteWorkflowTransition(String workflowTransitionId) {
+        try {
+            validateIdParameter(workflowTransitionId, 'Workflow Transition Id');
+            
+            // Get the transition
+            WorkflowTransition__c transition = WorkflowTransitionRepository.getTransitionById(workflowTransitionId);
+            
+            // Soft delete: set status to deleted
+            transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
+            
+            WorkflowRepository.updateRecord(transition);
+        } catch (WorkflowException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WorkflowException('Error deleting workflow transition: ' + ex.getMessage());
+        }
+    }
+
+    /**
      * @description Validate that an Id parameter is not blank
      * @param value - The value to validate
      * @param paramName - The parameter name for error message
