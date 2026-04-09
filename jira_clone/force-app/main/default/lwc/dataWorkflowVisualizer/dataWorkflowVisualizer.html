@@ -4,7 +4,7 @@
         <div class="toolbar">
             <lightning-button
                 variant="brand"
-                label="+ Create Status"
+                label="Create Status"
                 onclick={openCreateStatusModal}
                 icon-name="utility:add"
             ></lightning-button>
@@ -91,6 +91,13 @@
                 No workflow data available
             </div>
         </template>
+
+        <!-- Create Status Modal Component -->
+        <c-create-status-modal
+            is-open={showCreateModal}
+            onstatuscreated={handleStatusCreated}
+            onclose={handleCreateStatusModalClose}
+        ></c-create-status-modal>
 
         <!-- Create Transition Modal Component -->
         <c-create-transition-modal

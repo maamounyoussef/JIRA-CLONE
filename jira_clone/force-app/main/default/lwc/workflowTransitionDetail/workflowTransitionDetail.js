@@ -29,7 +29,6 @@ export default class WorkflowTransitionDetail extends LightningElement {
             .then(response => {
                 if (response.success && response.data) {
                     this.transitionData = response.data;
-                    console.log('Transition Detail Loaded:', this.transitionData);
                 } else {
                     this.errorMessage = response.message || 'Failed to load transition';
                 }
@@ -69,7 +68,6 @@ export default class WorkflowTransitionDetail extends LightningElement {
                     this.successMessage = 'Transition activated successfully!';
                     // Update local state to show active status
                     this.transitionData.RecordStatus__c = 'active';
-                    console.log('Transition activated:', this.transitionData.Id);
                     // Clear success message after 3 seconds
                     setTimeout(() => {
                         this.successMessage = '';

@@ -1,5 +1,13 @@
 import { LightningElement, api, track } from 'lwc';
 import addWorkflowTransition from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
+import { 
+    calculatePositions, 
+    calculateTransitionLines, 
+    getSvgViewBox, 
+    getStatusesWithSVGData, 
+    getMarkerArrow,
+    VISUALIZATION_CONFIG
+} from './dataWorkflowVisualizerUtil.js';
 
 export default class DataWorkflowVisualizer extends LightningElement {
     @api workflowData;
@@ -10,17 +18,12 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track showCreateTransitionModal = false;
     @track selectedFromStatus = null;
     @track selectedToStatus = null;
-    @track newStatusName = '';
     @track newTransitionName = '';
     @track showTransitionDetail = false;
     @track selectedTransitionId = null;
     
-    // Configuration for visualization
-    statusWidth = 120;
-    statusHeight = 60;
-    horizontalSpacing = 180;
-    verticalSpacing = 120;
-    svgPadding = 40;
+    // Use visualization config from util
+    config = VISUALIZATION_CONFIG;
 
     connectedCallback() {
         this.processWorkflowData();
@@ -67,109 +70,15 @@ export default class DataWorkflowVisualizer extends LightningElement {
         }
 
         this.sortedStatuses = Array.from(statusMap.values());
-        this.calculatePositions();
-        this.calculateTransitionLines();
-    }
-
-    /**
-     * Calculate positions for each status in a grid layout
-     */
-    calculatePositions() {
-        this.statusPositions = {};
-        
-        // Optimize layout: 4 per row for standard layout
-        const statusesPerRow = 4;
-        
-        this.sortedStatuses.forEach((status, index) => {
-            const row = Math.floor(index / statusesPerRow);
-            const col = index % statusesPerRow;
-            
-            const x = this.svgPadding + col * this.horizontalSpacing;
-            const y = this.svgPadding + row * this.verticalSpacing;
-            
-            // Use status ID as key for positioning
-            this.statusPositions[status.id] = {
-                x,
-                y,
-                width: this.statusWidth,
-                height: this.statusHeight
-            };
-        });
-    }
-
-    /**
-     * Calculate lines for transitions
-     */
-    calculateTransitionLines() {
-        if (!this.workflowData.workflow.transitions) {
-            this.transitionLines = [];
-            return;
-        }
-
-        this.transitionLines = this.workflowData.workflow.transitions.map(transition => {
-            // Look up positions using IDs (from/to status IDs)
-            const fromPos = this.statusPositions[transition.fromStatus];
-            const toPos = this.statusPositions[transition.toStatus];
-
-            if (!fromPos || !toPos) {
-                return null;
-            }
-
-            // Calculate line coordinates (center of rectangles)
-            const fromX = fromPos.x + fromPos.width / 2;
-            const fromY = fromPos.y + fromPos.height / 2;
-            const toX = toPos.x + toPos.width / 2;
-            const toY = toPos.y + toPos.height / 2;
-
-            // Create a path from one rectangle to another with arrow
-            const path = this.createArrowPath(fromX, fromY, toX, toY);
-
-            return {
-                id: transition.id,
-                path,
-                name: transition.name,
-                label: `${transition.fromStatus} → ${transition.toStatus}`
-            };
-        }).filter(line => line !== null);
-    }
-
-    /**
-     * Create an SVG path with curved arrow for transition line
-     * Uses quadratic Bezier curve to avoid passing through other rectangles
-     */
-    createArrowPath(x1, y1, x2, y2) {
-        // Calculate control point for curve (above the line)
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
-        
-        // Curve height based on distance between points
-        const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-        const curveHeight = Math.min(distance * 0.3, 80);
-        
-        // Calculate perpendicular vector to control the curve direction
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        const perpX = -dy / len;
-        const perpY = dx / len;
-        
-        // Control point offset from midpoint
-        const ctrlX = midX + perpX * curveHeight;
-        const ctrlY = midY + perpY * curveHeight;
-        
-        // Quadratic Bezier curve
-        return `M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}`;
+        this.statusPositions = calculatePositions(this.sortedStatuses, this.config);
+        this.transitionLines = calculateTransitionLines(this.workflowData, this.statusPositions, this.config);
     }
 
     /**
      * Get SVG viewBox dimensions
      */
     get svgViewBox() {
-        const statusesPerRow = 4;
-        const maxRow = Math.ceil(this.sortedStatuses.length / statusesPerRow);
-        const width = this.svgPadding * 2 + 3 * this.horizontalSpacing + this.statusWidth;
-        const height = this.svgPadding * 2 + (maxRow - 1) * this.verticalSpacing + this.statusHeight;
-        return `0 0 ${width} ${height}`;
+        return getSvgViewBox(this.sortedStatuses, this.config);
     }
 
     /**
@@ -177,26 +86,14 @@ export default class DataWorkflowVisualizer extends LightningElement {
      * Uses status ID as unique key, displays status name
      */
     get statusesWithSVGData() {
-        return this.sortedStatuses.map(status => {
-            const pos = this.statusPositions[status.id];
-            return {
-                id: status.id, // Unique identifier
-                name: status.name, // Display name
-                x: pos?.x || 0,
-                y: pos?.y || 0,
-                width: this.statusWidth,
-                height: this.statusHeight,
-                textX: (pos?.x || 0) + this.statusWidth / 2,
-                textY: (pos?.y || 0) + this.statusHeight / 2
-            };
-        });
+        return getStatusesWithSVGData(this.sortedStatuses, this.statusPositions, this.config);
     }
 
     /**
      * Get marker arrow path for line endings
      */
     get markerArrow() {
-        return 'M 0 0 L 6 3 L 0 6 Z';
+        return getMarkerArrow();
     }
 
     /**
@@ -257,20 +154,54 @@ export default class DataWorkflowVisualizer extends LightningElement {
         this.showCreateModal = false;
         this.selectedFromStatus = null;
         this.selectedToStatus = null;
-        this.newStatusName = '';
         this.newTransitionName = '';
     }
 
     /**
-     * Handle create status
+     * Handle status created event from createStatusModal
+     */
+    handleStatusCreated(event) {
+        const newStatus = event.detail;
+        console.log('Status created successfully:', newStatus);
+
+        // Create a new status object with proper structure
+        const statusToAdd = {
+            id: newStatus.Id,
+            name: newStatus.Name
+        };
+
+        // Add new status to workflow data - create new array reference for reactivity
+        if (!this.workflowData.projectStatus) {
+            this.workflowData = {
+                ...this.workflowData,
+                projectStatus: [statusToAdd]
+            };
+        } else {
+            this.workflowData = {
+                ...this.workflowData,
+                projectStatus: [...this.workflowData.projectStatus, statusToAdd]
+            };
+        }
+
+        // Recalculate positions and lines
+        this.processWorkflowData();
+
+        // Close modal
+        this.showCreateModal = false;
+    }
+
+    /**
+     * Handle close event from create status modal
+     */
+    handleCreateStatusModalClose() {
+        this.showCreateModal = false;
+    }
+
+    /**
+     * Handle create status - now simplified to open modal
      */
     handleCreateStatus() {
-        if (!this.newStatusName.trim()) {
-            alert('Please enter a status name');
-            return;
-        }
-        console.log('New Status Created:', this.newStatusName);
-        this.closeCreateModal();
+        this.openCreateStatusModal();
     }
 
     /**
@@ -315,7 +246,7 @@ export default class DataWorkflowVisualizer extends LightningElement {
                 this.workflowData.workflow.transitions = [];
             }
             this.workflowData.workflow.transitions.push(newTransition);
-            this.calculateTransitionLines();
+            this.transitionLines = calculateTransitionLines(this.workflowData, this.statusPositions, this.config);
         })
         .catch(error => {
             console.error('Error saving transition:', error);

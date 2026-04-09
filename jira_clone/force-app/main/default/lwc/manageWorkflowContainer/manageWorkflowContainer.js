@@ -20,6 +20,10 @@ export default class ManageWorkflowContainer extends LightningElement {
         const { ticketType, projectId } = event.detail;
         this.selectedTicketType = ticketType;
         this.selectedProjectId = projectId;
+        
+        // Save project ID to localStorage
+        localStorage.setItem('selectedProjectId', projectId);
+        
         this.isLoading = true;
         this.errorMessage = '';
         
@@ -76,5 +80,8 @@ export default class ManageWorkflowContainer extends LightningElement {
         this.selectedProjectId = '';
         this.workflowData = null;
         this.errorMessage = '';
+        
+        // Clear project ID from localStorage
+        localStorage.removeItem('selectedProjectId');
     }
 }
