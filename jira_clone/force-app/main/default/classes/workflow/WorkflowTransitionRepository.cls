@@ -11,7 +11,8 @@ public with sharing class WorkflowTransitionRepository {
      */
     public static List<WorkflowTransition__c> getTransitionsByWorkflow(String workflowId) {
         return [
-            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c, RecordStatus__c, CreatedDate
+            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c, 
+                   FromStatus__r.Name, ToStatus__r.Name, RecordStatus__c, CreatedDate
             FROM WorkflowTransition__c
             WHERE Workflow__c = :workflowId
             ORDER BY Name ASC
@@ -21,12 +22,13 @@ public with sharing class WorkflowTransitionRepository {
     /**
      * @description Get transition by Id
      * @param transitionId - The WorkflowTransition__c record Id
-     * @return WorkflowTransition__c record
+     * @return WorkflowTransition__c record with related Status names
      * @throws WorkflowException - If transition not found
      */
     public static WorkflowTransition__c getTransitionById(String transitionId) {
         List<WorkflowTransition__c> transitions = [
-            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c, RecordStatus__c, CreatedDate
+            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c, 
+                   FromStatus__r.Name, ToStatus__r.Name, RecordStatus__c, CreatedDate
             FROM WorkflowTransition__c
             WHERE Id = :transitionId
             LIMIT 1

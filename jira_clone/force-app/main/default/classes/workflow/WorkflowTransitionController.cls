@@ -21,6 +21,23 @@ public with sharing class WorkflowTransitionController {
             return new APIResponse(false, 'Error loading workflow transitions: ' + ex.getMessage());
         }
     }
+
+    /**
+     * @description Get workflow transition by ID
+     * @param transitionId - The WorkflowTransition__c record Id
+     * @return APIResponse containing WorkflowTransition__c in data attribute
+     */
+    @AuraEnabled(cacheable=true)
+    public static APIResponse getWorkflowTransitionById(String transitionId) {
+        try {
+            WorkflowTransition__c transition = WorkflowTransitionService.getTransitionById(transitionId);
+            return new APIResponse(true, 'Workflow Transition retrieved successfully', transition);
+        } catch (WorkflowException ex) {
+            return new APIResponse(false, ex.getMessage());
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error retrieving workflow transition: ' + ex.getMessage());
+        }
+    }
     
     /**
      * @description Create a new workflow transition

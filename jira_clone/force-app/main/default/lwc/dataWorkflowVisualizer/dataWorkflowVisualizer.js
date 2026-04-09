@@ -10,6 +10,8 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track selectedToStatus = null;
     @track newStatusName = '';
     @track newTransitionName = '';
+    @track showTransitionDetail = false;
+    @track selectedTransitionId = null;
     
     // Configuration for visualization
     statusWidth = 120;
@@ -209,6 +211,10 @@ export default class DataWorkflowVisualizer extends LightningElement {
             toStatus: transition?.toStatus,
             fullObject: transition
         });
+
+        // Set state to show transition detail
+        this.selectedTransitionId = lineId;
+        this.showTransitionDetail = true;
     }
 
     /**
@@ -308,5 +314,13 @@ export default class DataWorkflowVisualizer extends LightningElement {
      */
     stopPropagation(event) {
         event.stopPropagation();
+    }
+
+    /**
+     * Handle close event from transition detail component
+     */
+    handleCloseTransitionDetail() {
+        this.showTransitionDetail = false;
+        this.selectedTransitionId = null;
     }
 }

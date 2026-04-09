@@ -153,5 +153,15 @@
                 </div>
             </div>
         </template>
+
+        <!-- Transition Detail Panel -->
+        <template if:true={showTransitionDetail}>
+            <div class="transition-detail-panel">
+                <c-workflow-transition-detail
+                    transition-id={selectedTransitionId}
+                    onclose={handleCloseTransitionDetail}
+                ></c-workflow-transition-detail>
+            </div>
+        </template>
     </div>
 </template>
