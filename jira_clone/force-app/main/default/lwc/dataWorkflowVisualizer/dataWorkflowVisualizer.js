@@ -1,4 +1,5 @@
 import { LightningElement, api, track } from 'lwc';
+import addWorkflowTransition from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
 
 export default class DataWorkflowVisualizer extends LightningElement {
     @api workflowData;
@@ -6,6 +7,7 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track transitionLines = [];
     @track sortedStatuses = [];
     @track showCreateModal = false;
+    @track showCreateTransitionModal = false;
     @track selectedFromStatus = null;
     @track selectedToStatus = null;
     @track newStatusName = '';
@@ -275,36 +277,63 @@ export default class DataWorkflowVisualizer extends LightningElement {
      * Open modal to create transition
      */
     openCreateTransitionModal() {
-        this.showCreateModal = true;
+        this.showCreateTransitionModal = true;
         this.newTransitionName = '';
     }
 
     /**
-     * Handle create transition
+     * Handle create transition from modal component
      */
-    handleCreateTransition() {
-        if (!this.newTransitionName.trim()) {
-            alert('Please enter a transition name');
-            return;
-        }
+    handleCreateTransitionFromModal(event) {
+        const { name, fromStatusId, toStatusId, fromStatusName, toStatusName } = event.detail;
+        
         console.log('New Transition Created:', {
-            name: this.newTransitionName,
-            from: this.selectedFromStatus.name,
-            to: this.selectedToStatus.name
+            name: name,
+            from: fromStatusName,
+            to: toStatusName
         });
-        this.closeCreateModal();
+        
+        // Call apex method to persist transition
+        addWorkflowTransition({ 
+            workflowId: this.workflowData.workflow.id,
+            name: name,
+            fromStatusId: fromStatusId,
+            toStatusId: toStatusId
+        })
+        .then(result => {
+            console.log('Transition saved to database:', result);
+            
+            // Add new transition to frontend data
+            const newTransition = {
+                id: result.id,
+                name: name,
+                fromStatus: fromStatusId,
+                toStatus: toStatusId
+            };
+            
+            if (!this.workflowData.workflow.transitions) {
+                this.workflowData.workflow.transitions = [];
+            }
+            this.workflowData.workflow.transitions.push(newTransition);
+            this.calculateTransitionLines();
+        })
+        .catch(error => {
+            console.error('Error saving transition:', error);
+            alert('Failed to create transition: ' + error.body?.message);
+        })
+        .finally(() => {
+            this.handleCloseCreateTransitionModal();
+        });
     }
 
     /**
-     * Handle input change for status name
+     * Handle close event from create transition modal
      */
-    handleInputChange(event) {
-        this.newStatusName = event.target.value;
+    handleCloseCreateTransitionModal() {
+        this.showCreateTransitionModal = false;
+        this.selectedFromStatus = null;
     }
 
-    /**
-     * Handle transition name change
-     */
     handleTransitionNameChange(event) {
         this.newTransitionName = event.target.value;
     }
