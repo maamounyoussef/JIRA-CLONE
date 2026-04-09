@@ -123,40 +123,7 @@ public with sharing class WorkflowController {
             return new APIResponse(false, 'Error deleting validation rule: ' + ex.getMessage());
         }
     }
-    
-    /**
-     * @description Add a new Workflow Transition to an existing Workflow
-     * @param workflowId - The Workflow__c record Id
-     * @param name - The name of the transition
-     * @param fromStatusId - The Id of the from status
-     * @param toStatusId - The Id of the to status
-     * @return APIResponse with success status and created WorkflowTransition__c object
-     */
-    @AuraEnabled
-    public static APIResponse addWorkflowTransition(
-        String workflowId, 
-        String name, 
-        String fromStatusId, 
-        String toStatusId
-    ) {
-        try {
-            WorkflowTransition__c transition = WorkflowService.addWorkflowTransition(
-                workflowId,
-                name,
-                fromStatusId,
-                toStatusId
-            );
-            return new APIResponse(
-                true, 
-                'Workflow Transition created successfully with pending status',
-                transition
-            );
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
-            return new APIResponse(false, 'Error adding workflow transition: ' + ex.getMessage());
-        }
-    }
+
     
     /**
      * @description Activate a Validation Rule (change status from pending to active)
@@ -175,23 +142,7 @@ public with sharing class WorkflowController {
             return new APIResponse(false, 'Error activating validation rule: ' + ex.getMessage());
         }
     }
-    
-    /**
-     * @description Activate a Workflow Transition (change status from pending to active)
-     * @param workflowTransitionId - The WorkflowTransition__c record Id
-     * @return APIResponse with success status
-     */
-    @AuraEnabled
-    public static APIResponse activateWorkflowTransition(String workflowTransitionId) {
-        try {
-            WorkflowService.activateWorkflowTransition(workflowTransitionId);
-            return new APIResponse(true, 'Workflow Transition activated successfully');
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
-            return new APIResponse(false, 'Error activating workflow transition: ' + ex.getMessage());
-        }
-    }
+
     
     /**
      * @description Final update workflow: activate all pending transitions and validation rules

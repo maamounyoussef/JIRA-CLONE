@@ -87,6 +87,90 @@ public with sharing class WorkflowTransitionService {
     }
     
     /**
+     * @description Add a new Workflow Transition to an existing Workflow
+     * Validates inputs and ensures workflow and statuses exist
+     * @param workflowId - The Workflow__c record Id
+     * @param name - The name of the transition
+     * @param fromStatusId - The Id of the from status
+     * @param toStatusId - The Id of the to status
+     * @return Created WorkflowTransition__c with pending status
+     * @throws WorkflowException - If validation fails or DML error occurs
+     */
+    public static WorkflowTransition__c addWorkflowTransition(
+        String workflowId, 
+        String name, 
+        String fromStatusId, 
+        String toStatusId
+    ) {
+        try {
+            // Validate inputs
+            validateIdParameter(workflowId, 'Workflow Id');
+            
+            if (String.isBlank(name)) {
+                throw new WorkflowException('Transition name is required');
+            }
+            
+            validateIdParameter(fromStatusId, 'From Status Id');
+            validateIdParameter(toStatusId, 'To Status Id');
+            
+            // Verify Workflow exists
+            WorkflowRepository.getWorkflowById(workflowId);
+            
+            // Verify both statuses exist
+            List<Status__c> statuses = WorkflowRepository.getStatusesById(
+                new List<String> { fromStatusId, toStatusId }
+            );
+            
+            if (statuses.size() != 2) {
+                throw new WorkflowException('One or both statuses not found');
+            }
+            
+            // Create new Workflow Transition with pending status
+            WorkflowTransition__c newTransition = new WorkflowTransition__c();
+            newTransition.Workflow__c = workflowId;
+            newTransition.Name = name;
+            newTransition.FromStatus__c = fromStatusId;
+            newTransition.ToStatus__c = toStatusId;
+            newTransition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING;
+            
+            return WorkflowTransitionRepository.insertWorkflowTransition(newTransition);
+        } catch (WorkflowException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WorkflowException('Error adding workflow transition: ' + ex.getMessage());
+        }
+    }
+
+    /**
+     * @description Activate a Workflow Transition (change status from pending to active)
+     * One-way operation: can only go from pending to active, not the reverse
+     * @param workflowTransitionId - The WorkflowTransition__c record Id
+     * @throws WorkflowException - If transition not pending or other errors occur
+     */
+    public static void activateWorkflowTransition(String workflowTransitionId) {
+        try {
+            validateIdParameter(workflowTransitionId, 'Workflow Transition Id');
+            
+            // Get the transition
+            WorkflowTransition__c transition = WorkflowTransitionRepository.getTransitionById(workflowTransitionId);
+            
+            // Can only activate if currently pending
+            if (transition.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
+                throw new WorkflowException(
+                    'Workflow Transition can only be activated from pending status'
+                );
+            }
+            
+            transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
+            WorkflowRepository.updateRecord(transition);
+        } catch (WorkflowException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WorkflowException('Error activating workflow transition: ' + ex.getMessage());
+        }
+    }
+
+    /**
      * @description Validate that an Id parameter is not blank
      * @param value - The value to validate
      * @param paramName - The parameter name for error message

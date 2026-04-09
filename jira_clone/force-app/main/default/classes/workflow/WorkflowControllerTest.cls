@@ -124,7 +124,7 @@ public class WorkflowControllerTest {
         List<Status__c> statuses = [SELECT Id FROM Status__c LIMIT 2];
         
         Test.startTest();
-        APIResponse result = WorkflowController.addWorkflowTransition(
+        APIResponse result = WorkflowTransitionController.addWorkflowTransition(
             workflow.Id,
             'In Progress > Done',
             statuses[0].Id,
@@ -174,7 +174,7 @@ public class WorkflowControllerTest {
         WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
         
         Test.startTest();
-        APIResponse result = WorkflowController.activateWorkflowTransition(transition.Id);
+        APIResponse result = WorkflowTransitionController.activateWorkflowTransition(transition.Id);
         Test.stopTest();
         
         Assert.isTrue(result.success, 'Activate transition should succeed');
@@ -251,7 +251,7 @@ public class WorkflowControllerTest {
         update transition;
         
         Test.startTest();
-        APIResponse result = WorkflowController.activateWorkflowTransition(transition.Id);
+        APIResponse result = WorkflowTransitionController.activateWorkflowTransition(transition.Id);
         Test.stopTest();
         
         Assert.isFalse(result.success, 'Should fail when trying to activate non-pending transition');

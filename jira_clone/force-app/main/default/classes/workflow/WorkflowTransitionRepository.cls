@@ -66,4 +66,19 @@ public with sharing class WorkflowTransitionRepository {
             throw new WorkflowException('Error creating workflow transition: ' + ex.getMessage());
         }
     }
+
+    /**
+     * @description Insert a new workflow transition
+     * @param transition - The WorkflowTransition__c record to insert
+     * @return The inserted WorkflowTransition__c record
+     * @throws WorkflowException - If DML exception occurs
+     */
+    public static WorkflowTransition__c insertWorkflowTransition(WorkflowTransition__c transition) {
+        try {
+            insert transition;
+            return transition;
+        } catch (DmlException ex) {
+            throw new WorkflowException('Error inserting workflow transition: ' + ex.getMessage());
+        }
+    }
 }
