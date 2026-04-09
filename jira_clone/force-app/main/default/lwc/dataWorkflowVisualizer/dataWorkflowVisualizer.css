@@ -1,0 +1,63 @@
+.workflow-visualizer-container {
+    width: 100%;
+    background-color: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    padding: 20px;
+    min-height: 450px;
+}
+
+.workflow-svg {
+    width: 100%;
+    height: auto;
+    min-height: 450px;
+    background: linear-gradient(135deg, #f9f9f9 0%, #ffffff 100%);
+    border: 1px solid #e8e8e8;
+    border-radius: 2px;
+}
+
+.status-rectangle-svg {
+    fill: url(#statusGradient);
+    stroke: #003fb3;
+    stroke-width: 2;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
+    transition: all 0.3s ease;
+}
+
+.status-rectangle-svg:hover {
+    stroke-width: 3;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
+}
+
+.status-text-svg {
+    font-size: 12px;
+    font-weight: 600;
+    fill: #ffffff;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.status-group {
+    cursor: pointer;
+}
+
+.status-group:hover .status-rectangle-svg {
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2));
+}
+
+.transition-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+}
+
+.transition-line:hover {
+    stroke-width: 3;
+    opacity: 1;
+}
+
+.transition-line-group {
+    pointer-events: none;
+}
+

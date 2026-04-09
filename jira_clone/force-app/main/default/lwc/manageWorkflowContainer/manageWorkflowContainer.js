@@ -49,6 +49,7 @@ export default class ManageWorkflowContainer extends LightningElement {
             .then(response => {
                 if (response && response.success && response.data) {
                     console.log('Workflow data loaded:', response.data);
+                    // Set workflow data for visualization component (dataWorkflowVisualizer)
                     this.workflowData = response.data;
                     this.showForm = false;
                     this.showWorkflow = true;

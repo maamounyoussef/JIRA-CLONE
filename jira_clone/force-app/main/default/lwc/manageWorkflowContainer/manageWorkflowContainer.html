@@ -14,8 +14,19 @@
                 icon-name="utility:back"
             ></lightning-button>
         </div>
-        <c-manage-workflow
-            workflow-id={selectedWorkflowId}
-        ></c-manage-workflow>
+        
+        <!-- Workflow Visualization -->
+        <lightning-card title="Workflow Visualization" icon-name="utility:flow">
+            <template if:true={workflowData}>
+                <c-data-workflow-visualizer 
+                    workflow-data={workflowData}
+                ></c-data-workflow-visualizer>
+            </template>
+            <template if:false={workflowData}>
+                <div class="slds-m-around_medium">
+                    <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+                </div>
+            </template>
+        </lightning-card>
     </template>
 </template>
