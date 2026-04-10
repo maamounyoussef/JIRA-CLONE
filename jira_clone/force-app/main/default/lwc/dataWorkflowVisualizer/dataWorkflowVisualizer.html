@@ -55,50 +55,152 @@
                     <!-- Arrow marker for active transition line endings -->
                     <marker
                         id="arrowhead"
-                        marker-width="10"
-                        marker-height="10"
+                        markerWidth="20"
+                        markerHeight="20"
+                        viewBox="0 0 20 20"
                         orient="auto"
                     >
-                        <polygon points="0 0, 10 3, 0 6" fill="#1b96ff" />
+                        <polygon points="0,0 20,10 0,20" fill="#1b96ff" />
                     </marker>
                     
                     <!-- Arrow marker for pending transition line endings -->
                     <marker
                         id="arrowhead-pending"
-                        marker-width="10"
-                        marker-height="10"
+                        markerWidth="20"
+                        markerHeight="20"
+                        viewBox="0 0 20 20"
                         orient="auto"
                     >
-                        <polygon points="0 0, 10 3, 0 6" fill="#FFA500" />
+                        <polygon points="0,0 20,10 0,20" fill="#FFA500" />
                     </marker>
                 </defs>
 
                 <!-- Active Transition Lines -->
                 <template for:each={activeTransitionLines} for:item="line">
                     <g key={line.id} class="transition-line-group active-transition" data-line-id={line.id} onclick={handleTransitionClick}>
+                        <!-- Connection circle at start point -->
+                        <circle
+                            class="transition-start-point"
+                            cx={line.startX}
+                            cy={line.startY}
+                            r="5"
+                            fill="#1b96ff"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                        ></circle>
+                        
+                        <!-- Transition line -->
                         <path
                             class="transition-line"
                             d={line.path}
                             stroke="#1b96ff"
-                            stroke-width="2"
+                            stroke-width="3"
                             fill="none"
-                            marker-end="url(#arrowhead)"
                         ></path>
+
+                        <!-- Explicit arrow polygon at the end -->
+                        <path
+                            class="transition-arrow"
+                            d={line.arrowPath}
+                            fill="#1b96ff"
+                            stroke="none"
+                        ></path>
+                        
+                        <!-- Connection circle at end point -->
+                        <circle
+                            class="transition-end-point"
+                            cx={line.endX}
+                            cy={line.endY}
+                            r="5"
+                            fill="#1b96ff"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                        ></circle>
+                        
+                        <!-- Status labels -->
+                        <text
+                            class="transition-label-start"
+                            x={line.startX}
+                            y={line.startLabelY}
+                            text-anchor="middle"
+                            fill="#1b96ff"
+                        >
+                            {line.fromStatus}
+                        </text>
+                        <text
+                            class="transition-label-end"
+                            x={line.endX}
+                            y={line.endLabelY}
+                            text-anchor="middle"
+                            fill="#1b96ff"
+                        >
+                            {line.toStatus}
+                        </text>
                     </g>
                 </template>
 
                 <!-- Pending Transition Lines -->
                 <template for:each={pendingTransitionLines} for:item="line">
                     <g key={line.id} class="transition-line-group pending-transition" data-line-id={line.id} onclick={handleTransitionClick}>
+                        <!-- Connection circle at start point -->
+                        <circle
+                            class="transition-start-point"
+                            cx={line.startX}
+                            cy={line.startY}
+                            r="5"
+                            fill="#FFA500"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                        ></circle>
+                        
+                        <!-- Transition line -->
                         <path
                             class="transition-line pending"
                             d={line.path}
                             stroke="#FFA500"
-                            stroke-width="2"
+                            stroke-width="3"
                             stroke-dasharray="5,5"
                             fill="none"
-                            marker-end="url(#arrowhead-pending)"
                         ></path>
+
+                        <!-- Explicit arrow polygon at the end -->
+                        <path
+                            class="transition-arrow pending"
+                            d={line.arrowPath}
+                            fill="#FFA500"
+                            stroke="none"
+                        ></path>
+                        
+                        <!-- Connection circle at end point -->
+                        <circle
+                            class="transition-end-point"
+                            cx={line.endX}
+                            cy={line.endY}
+                            r="5"
+                            fill="#FFA500"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                        ></circle>
+                        
+                        <!-- Status labels -->
+                        <text
+                            class="transition-label-start"
+                            x={line.startX}
+                            y={line.startLabelY}
+                            text-anchor="middle"
+                            fill="#FFA500"
+                        >
+                            {line.fromStatus}
+                        </text>
+                        <text
+                            class="transition-label-end"
+                            x={line.endX}
+                            y={line.endLabelY}
+                            text-anchor="middle"
+                            fill="#FFA500"
+                        >
+                            {line.toStatus}
+                        </text>
                     </g>
                 </template>
 

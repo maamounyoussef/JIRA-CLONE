@@ -59,14 +59,57 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
         const toX = toPos.x + toPos.width / 2;
         const toY = toPos.y + toPos.height / 2;
 
-        // Create a path from one rectangle to another with arrow
-        const path = createArrowPath(fromX, fromY, toX, toY);
+        // Create a curved path and control point for the Bezier curve
+        const { path, ctrlX, ctrlY } = createArrowPath(fromX, fromY, toX, toY);
+
+        // Compute an explicit arrow polygon at the end of the curve (so markers aren't required)
+        // Arrow size scales with distance but kept smaller for visual balance
+        const distance = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
+        const arrowLength = Math.min(Math.max(distance * 0.08, 6), 16); // between 6 and 16px
+        const arrowWidth = Math.min(Math.max(arrowLength * 0.55, 5), 12);
+
+        // Tangent at t=1 for quadratic Bezier is 2*(P2 - P1)
+        let dx = toX - ctrlX;
+        let dy = toY - ctrlY;
+        let len = Math.sqrt(dx * dx + dy * dy);
+        if (len === 0) {
+            dx = toX - fromX;
+            dy = toY - fromY;
+            len = Math.sqrt(dx * dx + dy * dy) || 1;
+        }
+        const ux = dx / len;
+        const uy = dy / len;
+
+        // Base center of the arrow (a bit behind the tip)
+        const baseCx = toX - ux * arrowLength;
+        const baseCy = toY - uy * arrowLength;
+
+        // Perpendicular vector for arrow base width
+        const perpX = -uy;
+        const perpY = ux;
+        const halfW = arrowWidth / 2;
+
+        const b1x = baseCx + perpX * halfW;
+        const b1y = baseCy + perpY * halfW;
+        const b2x = baseCx - perpX * halfW;
+        const b2y = baseCy - perpY * halfW;
+
+        const arrowPath = `M ${toX} ${toY} L ${b1x} ${b1y} L ${b2x} ${b2y} Z`;
 
         return {
             id: transition.id,
             path,
+            arrowPath,
             name: transition.name,
-            label: `${transition.fromStatus} → ${transition.toStatus}`
+            label: `${transition.fromStatus} → ${transition.toStatus}`,
+            startX: fromX,
+            startY: fromY,
+            endX: toX,
+            endY: toY,
+            startLabelY: fromY - 12,
+            endLabelY: toY - 12,
+            fromStatus: transition.fromStatus,
+            toStatus: transition.toStatus
         };
     }).filter(line => line !== null);
 }
@@ -96,7 +139,8 @@ export function createArrowPath(x1, y1, x2, y2) {
     const ctrlY = midY + perpY * curveHeight;
     
     // Quadratic Bezier curve
-    return `M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}`;
+    const path = `M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}`;
+    return { path, ctrlX, ctrlY };
 }
 
 /**

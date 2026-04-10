@@ -127,6 +127,59 @@
     cursor: pointer;
 }
 
+/* Arrow polygon at the end of the transition line */
+.transition-arrow {
+    opacity: 0.95;
+    transition: opacity 0.12s ease, filter 0.12s ease;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+    pointer-events: none;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+/* Hover filter to match line highlight (separate colors for active/pending) */
+.transition-line-group.active-transition:hover .transition-arrow {
+    filter: drop-shadow(0 1px 3px rgba(27,150,255,0.35));
+}
+
+.transition-line-group.pending-transition:hover .transition-arrow {
+    filter: drop-shadow(0 1px 3px rgba(255,165,0,0.35));
+}
+
+/* Transition Start and End Point Markers */
+.transition-start-point {
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+/* Hide end point circle completely - arrowhead is the only end indicator */
+.transition-end-point {
+    opacity: 0;
+    display: none;
+}
+
+.transition-line-group:hover .transition-start-point {
+    opacity: 1;
+    r: 7;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+/* Transition Labels (Status names) */
+.transition-label-start,
+.transition-label-end {
+    font-size: 10px;
+    font-weight: 600;
+    pointer-events: none;
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
 /* Transition Detail Panel */
 .transition-detail-panel {
     position: fixed;
