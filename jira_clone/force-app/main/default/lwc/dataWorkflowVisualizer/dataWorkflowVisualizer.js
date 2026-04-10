@@ -5,7 +5,9 @@ import {
     getSvgViewBox, 
     getStatusesWithSVGData, 
     getMarkerArrow,
-    VISUALIZATION_CONFIG
+    VISUALIZATION_CONFIG,
+    toggleClick,
+    clearClicks
 } from './dataWorkflowVisualizerUtil.js';
 
 export default class DataWorkflowVisualizer extends LightningElement {
@@ -20,9 +22,22 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track selectedToStatus = null;
     @track showTransitionDetail = false;
     @track selectedTransitionId = null;
+    @track clickedStatusIds = [];
     
     // Use visualization config from util
     config = VISUALIZATION_CONFIG;
+
+    get startPointRadius() {
+        return this.config.startPointRadius || 5;
+    }
+
+    get endPointRadius() {
+        return this.config.endPointRadius || 5;
+    }
+    
+    get rectRadius() {
+        return this.config.rectRadius || 10;
+    }
 
     connectedCallback() {
         this.processWorkflowData();
@@ -118,7 +133,7 @@ export default class DataWorkflowVisualizer extends LightningElement {
      * Uses status ID as unique key, displays status name
      */
     get statusesWithSVGData() {
-        return getStatusesWithSVGData(this.sortedStatuses, this.statusPositions, this.config);
+        return getStatusesWithSVGData(this.sortedStatuses, this.statusPositions, this.config, this.clickedStatusIds);
     }
 
     /**
@@ -169,6 +184,9 @@ export default class DataWorkflowVisualizer extends LightningElement {
             console.log('To Status selected:', status.name);
             this.openCreateTransitionModal();
         }
+
+        // Toggle clicked visual state for the status (use util helper)
+        this.clickedStatusIds = toggleClick(this.clickedStatusIds, statusId);
     }
 
     /**
@@ -216,6 +234,9 @@ export default class DataWorkflowVisualizer extends LightningElement {
 
         // Recalculate positions and lines
         this.processWorkflowData();
+
+        // Clear any clicked status visual state
+        this.clickedStatusIds = clearClicks();
 
         // Close modal
         this.showCreateModal = false;
@@ -281,6 +302,8 @@ export default class DataWorkflowVisualizer extends LightningElement {
         // Recalculate positions and lines
         this.processWorkflowData();
 
+        this.clickedStatusIds = clearClicks();
+
         // Close modal
         this.showCreateTransitionModal = false;
     }
@@ -291,6 +314,8 @@ export default class DataWorkflowVisualizer extends LightningElement {
     handleCloseCreateTransitionModal() {
         this.showCreateTransitionModal = false;
         this.selectedFromStatus = null;
+        // Clear clicked visual state when closing the transition modal
+        this.clickedStatusIds = clearClicks();
     }
 
     /**

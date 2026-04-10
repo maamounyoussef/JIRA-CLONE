@@ -1,50 +1,72 @@
 .workflow-visualizer-container {
+    --primary: #0b5fff; /* stronger blue */
+    --accent: #ff7a00;  /* stronger orange */
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --muted: #6b7280;
+    --text-on-card: #0f172a; /* dark text for status names */
+    /* Visual tuning variables */
+    --rect-stroke-width: 1.5;
+    --rect-stroke-opacity: 0.12;
+    --rect-hover-stroke-opacity: 0.18;
+    --rect-hover-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
+    --rect-hover-shadow-sm: 0 3px 8px rgba(0, 0, 0, 0.2);
+
+    --line-width: 3;
+    --line-hover-width: 4;
+    --line-dasharray: 5,5;
+
+    --arrow-shadow: 0 1px 2px rgba(0,0,0,0.12);
+    --active-arrow-glow: 0 1px 3px rgba(27,150,255,0.35);
+    --pending-arrow-glow: 0 1px 3px rgba(255,165,0,0.35);
+
+    --start-point-stroke-width: 2;
+    --start-point-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    --start-point-hover-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    --start-point-hover-scale: 1.4;
+
+    --label-stroke-width: 2;
+    --detail-panel-width: 500px;
     width: 100%;
-    background-color: #ffffff;
-    border: 1px solid #e8e8e8;
-    border-radius: 4px;
-    padding: 0;
-    min-height: 550px;
+    background-color: var(--bg);
+    padding: 18px;
+    min-height: 560px;
     display: flex;
     flex-direction: column;
 }
 
 .toolbar {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #e8e8e8;
-    padding: 12px 20px;
+    background: transparent;
+    padding: 6px 8px;
     display: flex;
     align-items: center;
-    gap: 20px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    gap: 12px;
 }
 
 .toolbar-info {
     font-size: 13px;
-    color: #555;
+    color: var(--muted);
     flex: 1;
 }
 
 .toolbar-info strong {
-    color: #0070d2;
-    font-weight: 600;
+    color: var(--primary);
+    font-weight: 700;
 }
 
 .legend-container {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #e8e8e8;
-    padding: 10px 20px;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
+    padding: 6px 0 12px 0;
 }
 
 .legend-title {
     font-size: 12px;
-    font-weight: 600;
-    color: #333;
+    font-weight: 700;
+    color: #374151;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 
 .legend-items {
@@ -59,46 +81,78 @@
     gap: 8px;
 }
 
-.legend-svg {
-    width: 50px;
-    height: 20px;
-    min-width: 50px;
+.legend-badge {
+    width: var(--legend-badge-width);
+    height: var(--legend-badge-height);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--legend-badge-height) / 2);
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffffff;
 }
 
+.legend-badge.active { background: var(--primary); }
+.legend-badge.pending { background: var(--accent); }
+
 .legend-label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
+    font-size: 13px;
+    color: #111827;
+    font-weight: 600;
 }
 
 .workflow-svg {
     width: 100%;
     height: auto;
-    min-height: 450px;
-    background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+    min-height: 480px;
+    background: transparent;
     flex: 1;
+    border-radius: 8px;
 }
+
 
 .status-rectangle-svg {
     fill: url(#statusGradient);
-    stroke: #003fb3;
-    stroke-width: 2;
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
-    transition: all 0.3s ease;
+    stroke: rgba(3, 37, 113, var(--rect-stroke-opacity));
+    stroke-width: var(--rect-stroke-width);
+    transition: transform 0.18s ease, filter 0.18s ease, fill 0.18s ease;
     cursor: pointer;
+    /* Ensure the filled body of the rectangle receives pointer events */
+    pointer-events: all;
 }
 
 .status-rectangle-svg:hover {
-    stroke-width: 3;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
+    filter: drop-shadow(var(--rect-hover-shadow));
+    /* change to primary fill on hover */
+    fill: var(--primary);
+    stroke: rgba(3, 37, 113, var(--rect-hover-stroke-opacity));
+}
+
+/* Ensure the status text is readable when the rectangle is hovered */
+.status-group:hover .status-text-svg {
+    fill: var(--card-bg);
+    transition: fill 0.18s ease;
+}
+
+/* Clicked state: persist a primary background and white text */
+.status-group.clicked .status-rectangle-svg {
+    fill: var(--primary);
+    stroke: rgba(3, 37, 113, 0.18);
+    transform: translateY(-2px);
+}
+
+.status-group.clicked .status-text-svg {
+    fill: var(--card-bg);
+    transition: fill 0.18s ease;
 }
 
 .status-text-svg {
-    font-size: 12px;
-    font-weight: 600;
-    fill: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--text-on-card);
     pointer-events: none;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: fill 0.18s ease;
 }
 
 .status-group {
@@ -106,22 +160,31 @@
 }
 
 .status-group:hover .status-rectangle-svg {
-    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2));
+    filter: drop-shadow(var(--rect-hover-shadow-sm));
 }
 
 .transition-line {
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.8;
-    transition: all 0.2s ease;
+    opacity: 0.95;
+    transition: stroke-width 0.12s ease, opacity 0.12s ease, filter 0.12s ease;
     cursor: pointer;
+    stroke: var(--primary);
+    stroke-width: var(--line-width);
 }
 
 .transition-line:hover {
-    stroke-width: 3;
+    stroke-width: var(--line-hover-width);
     opacity: 1;
-    filter: drop-shadow(0 1px 3px rgba(27, 150, 255, 0.3));
 }
+
+.transition-line.pending {
+    stroke: var(--accent);
+    stroke-dasharray: var(--line-dasharray);
+}
+
+.transition-arrow { fill: var(--primary); }
+.transition-arrow.pending { fill: var(--accent); }
 
 .transition-line-group {
     cursor: pointer;
@@ -131,7 +194,7 @@
 .transition-arrow {
     opacity: 0.95;
     transition: opacity 0.12s ease, filter 0.12s ease;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+    filter: drop-shadow(var(--arrow-shadow));
     pointer-events: none;
     transform-box: fill-box;
     transform-origin: center;
@@ -139,18 +202,20 @@
 
 /* Hover filter to match line highlight (separate colors for active/pending) */
 .transition-line-group.active-transition:hover .transition-arrow {
-    filter: drop-shadow(0 1px 3px rgba(27,150,255,0.35));
+    filter: drop-shadow(var(--active-arrow-glow));
 }
 
 .transition-line-group.pending-transition:hover .transition-arrow {
-    filter: drop-shadow(0 1px 3px rgba(255,165,0,0.35));
+    filter: drop-shadow(var(--pending-arrow-glow));
 }
 
 /* Transition Start and End Point Markers */
 .transition-start-point {
     opacity: 0.7;
-    transition: all 0.2s ease;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+    transition: all 0.2s ease, transform 0.12s ease;
+    filter: drop-shadow(var(--start-point-shadow));
+    transform-box: fill-box;
+    transform-origin: center;
 }
 
 /* Hide end point circle completely - arrowhead is the only end indicator */
@@ -161,8 +226,31 @@
 
 .transition-line-group:hover .transition-start-point {
     opacity: 1;
-    r: 7;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    transform: scale(var(--start-point-hover-scale));
+    filter: drop-shadow(var(--start-point-hover-shadow));
+}
+
+/* Color start markers and labels via classes (no inline attributes) */
+.transition-start-point {
+    fill: var(--primary);
+    stroke: #ffffff;
+    stroke-width: var(--start-point-stroke-width);
+}
+.transition-line-group.pending-transition .transition-start-point {
+    fill: var(--accent);
+}
+
+.transition-label-start {
+    fill: var(--primary);
+    opacity: 0; /* hidden by default */
+}
+.transition-label-end {
+    fill: var(--primary);
+    opacity: 1; /* end label visible */
+}
+.transition-line-group.pending-transition .transition-label-start,
+.transition-line-group.pending-transition .transition-label-end {
+    fill: var(--accent);
 }
 
 /* Transition Labels (Status names) */
@@ -173,7 +261,7 @@
     pointer-events: none;
     paint-order: stroke;
     stroke: #ffffff;
-    stroke-width: 2;
+    stroke-width: var(--label-stroke-width);
     stroke-linecap: round;
     stroke-linejoin: round;
     opacity: 0;
@@ -186,7 +274,7 @@
     right: 0;
     top: 0;
     bottom: 0;
-    width: 500px;
+    width: var(--detail-panel-width);
     background-color: #ffffff;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
     z-index: 1001;

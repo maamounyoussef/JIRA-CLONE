@@ -1,5 +1,5 @@
 <template>
-    <div class="workflow-visualizer-container">
+    <div class="workflow-visualizer-container" style="--start-point-radius: {startPointRadius}px; --end-point-radius: {endPointRadius}px; --line-width: {config.lineWidth}px; --line-hover-width: {config.lineHoverWidth}px; --line-dasharray: {config.lineDashArray}; --rect-stroke-width: {config.rectStrokeWidth}px; --rect-stroke-opacity: {config.rectStrokeOpacity}; --rect-hover-stroke-opacity: {config.rectHoverStrokeOpacity}; --arrow-length: {config.arrowLength}px; --arrow-width: {config.arrowWidth}px; --label-offset: {config.labelOffset}px; --curve-factor: {config.curveFactor}; --max-curve-height: {config.maxCurveHeight}px; --rect-radius: {config.rectRadius}px; --legend-badge-width: 44px; --legend-badge-height: 20px;">
         <!-- Toolbar -->
         <div class="toolbar">
             <lightning-button
@@ -26,17 +26,11 @@
             <div class="legend-title">Transition Types:</div>
             <div class="legend-items">
                 <div class="legend-item">
-                    <svg class="legend-svg" viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg">
-                        <line x1="5" y1="10" x2="50" y2="10" stroke="#1b96ff" stroke-width="2" />
-                        <polygon points="45 5, 55 10, 45 15" fill="#1b96ff" />
-                    </svg>
+                    <div class="legend-badge active"></div>
                     <span class="legend-label">Active Transition</span>
                 </div>
                 <div class="legend-item">
-                    <svg class="legend-svg" viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg">
-                        <line x1="5" y1="10" x2="50" y2="10" stroke="#FFA500" stroke-width="2" stroke-dasharray="5,5" />
-                        <polygon points="45 5, 55 10, 45 15" fill="#FFA500" />
-                    </svg>
+                    <div class="legend-badge pending"></div>
                     <span class="legend-label">Pending Transition</span>
                 </div>
             </div>
@@ -48,31 +42,11 @@
                 <defs>
                     <!-- Status gradient -->
                     <linearGradient id="statusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#0070d2;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#0052cc;stop-opacity:1" />
+                        <stop offset="0%" style="stop-color:#dbeafe;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#bfdbfe;stop-opacity:1" />
                     </linearGradient>
                     
-                    <!-- Arrow marker for active transition line endings -->
-                    <marker
-                        id="arrowhead"
-                        markerWidth="20"
-                        markerHeight="20"
-                        viewBox="0 0 20 20"
-                        orient="auto"
-                    >
-                        <polygon points="0,0 20,10 0,20" fill="#1b96ff" />
-                    </marker>
-                    
-                    <!-- Arrow marker for pending transition line endings -->
-                    <marker
-                        id="arrowhead-pending"
-                        markerWidth="20"
-                        markerHeight="20"
-                        viewBox="0 0 20 20"
-                        orient="auto"
-                    >
-                        <polygon points="0,0 20,10 0,20" fill="#FFA500" />
-                    </marker>
+                    <!-- marker defs removed: explicit arrow polygons are used instead -->
                 </defs>
 
                 <!-- Active Transition Lines -->
@@ -83,18 +57,13 @@
                             class="transition-start-point"
                             cx={line.startX}
                             cy={line.startY}
-                            r="5"
-                            fill="#1b96ff"
-                            stroke="#ffffff"
-                            stroke-width="2"
+                            r={startPointRadius}
                         ></circle>
                         
                         <!-- Transition line -->
                         <path
                             class="transition-line"
                             d={line.path}
-                            stroke="#1b96ff"
-                            stroke-width="3"
                             fill="none"
                         ></path>
 
@@ -102,8 +71,6 @@
                         <path
                             class="transition-arrow"
                             d={line.arrowPath}
-                            fill="#1b96ff"
-                            stroke="none"
                         ></path>
                         
                         <!-- Connection circle at end point -->
@@ -111,10 +78,7 @@
                             class="transition-end-point"
                             cx={line.endX}
                             cy={line.endY}
-                            r="5"
-                            fill="#1b96ff"
-                            stroke="#ffffff"
-                            stroke-width="2"
+                            r={endPointRadius}
                         ></circle>
                         
                         <!-- Status labels -->
@@ -123,7 +87,6 @@
                             x={line.startX}
                             y={line.startLabelY}
                             text-anchor="middle"
-                            fill="#1b96ff"
                         >
                             {line.fromStatus}
                         </text>
@@ -132,7 +95,6 @@
                             x={line.endX}
                             y={line.endLabelY}
                             text-anchor="middle"
-                            fill="#1b96ff"
                         >
                             {line.toStatus}
                         </text>
@@ -147,19 +109,13 @@
                             class="transition-start-point"
                             cx={line.startX}
                             cy={line.startY}
-                            r="5"
-                            fill="#FFA500"
-                            stroke="#ffffff"
-                            stroke-width="2"
+                            r={startPointRadius}
                         ></circle>
                         
                         <!-- Transition line -->
                         <path
                             class="transition-line pending"
                             d={line.path}
-                            stroke="#FFA500"
-                            stroke-width="3"
-                            stroke-dasharray="5,5"
                             fill="none"
                         ></path>
 
@@ -167,8 +123,6 @@
                         <path
                             class="transition-arrow pending"
                             d={line.arrowPath}
-                            fill="#FFA500"
-                            stroke="none"
                         ></path>
                         
                         <!-- Connection circle at end point -->
@@ -176,10 +130,7 @@
                             class="transition-end-point"
                             cx={line.endX}
                             cy={line.endY}
-                            r="5"
-                            fill="#FFA500"
-                            stroke="#ffffff"
-                            stroke-width="2"
+                            r={endPointRadius}
                         ></circle>
                         
                         <!-- Status labels -->
@@ -188,7 +139,6 @@
                             x={line.startX}
                             y={line.startLabelY}
                             text-anchor="middle"
-                            fill="#FFA500"
                         >
                             {line.fromStatus}
                         </text>
@@ -197,7 +147,6 @@
                             x={line.endX}
                             y={line.endLabelY}
                             text-anchor="middle"
-                            fill="#FFA500"
                         >
                             {line.toStatus}
                         </text>
@@ -208,7 +157,7 @@
                 <template for:each={statusesWithSVGData} for:item="status">
                     <g 
                         key={status.id} 
-                        class="status-group" 
+                        class={status.groupClass} 
                         data-status-id={status.id}
                         onclick={handleStatusClick}
                     >
@@ -218,7 +167,7 @@
                             y={status.y}
                             width={status.width}
                             height={status.height}
-                            rx="4"
+                            rx={rectRadius}
                         ></rect>
                         <text
                             class="status-text-svg"

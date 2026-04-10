@@ -7,8 +7,28 @@ export const VISUALIZATION_CONFIG = {
     horizontalSpacing: 180,
     verticalSpacing: 120,
     svgPadding: 40,
-    statusesPerRow: 4
+    statusesPerRow: 4,
+    // Arrow size (fixed) to keep all arrow heads consistent
+    arrowLength: 10,
+    arrowWidth: 10,
+    // Visual/tuning variables
+    startPointRadius: 5,
+    endPointRadius: 5,
+    labelOffset: 10,
+    // curve tuning
+    curveFactor: 0.3,
+    maxCurveHeight: 80,
+    // line widths
+    lineWidth: 3,
+    lineHoverWidth: 4,
+    lineDashArray: '5,5',
+    // rectangle stroke
+    rectStrokeWidth: 1.5,
+    rectStrokeOpacity: 0.12,
+    rectHoverStrokeOpacity: 0.18,
+    rectRadius: 10
 };
+
 
 /**
  * Calculate positions for each status in a grid layout
@@ -117,12 +137,12 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
         const endPt = getRectIntersection(toPos, toCenterX, toCenterY, fromCenterX, fromCenterY);
 
         // Create a curved path (quadratic Bezier) between the border points
-        const { path, ctrlX, ctrlY } = createArrowPath(startPt.x, startPt.y, endPt.x, endPt.y);
+        const { path, ctrlX, ctrlY } = createArrowPath(startPt.x, startPt.y, endPt.x, endPt.y, config);
 
         // Compute an explicit arrow polygon at the true end of the curve
-        const distance = Math.sqrt(Math.pow(endPt.x - startPt.x, 2) + Math.pow(endPt.y - startPt.y, 2));
-        const arrowLength = Math.min(Math.max(distance * 0.08, 6), 16);
-        const arrowWidth = Math.min(Math.max(arrowLength * 0.55, 5), 12);
+        // Use fixed arrow size from config so all arrows are consistent
+        const arrowLength = config.arrowLength || 10;
+        const arrowWidth = config.arrowWidth || 7;
 
         // Tangent at t=1 for quadratic Bezier is based on control point
         let dx = endPt.x - ctrlX;
@@ -159,8 +179,8 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
             startY: startPt.y,
             endX: endPt.x,
             endY: endPt.y,
-            startLabelY: startPt.y - 10,
-            endLabelY: endPt.y - 10,
+            startLabelY: startPt.y - (config.labelOffset || 10),
+            endLabelY: endPt.y - (config.labelOffset || 10),
             fromStatus: transition.fromStatus,
             toStatus: transition.toStatus
         };
@@ -171,14 +191,16 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
  * Create an SVG path with curved arrow for transition line
  * Uses quadratic Bezier curve to avoid passing through other rectangles
  */
-export function createArrowPath(x1, y1, x2, y2) {
+export function createArrowPath(x1, y1, x2, y2, config = VISUALIZATION_CONFIG) {
     // Calculate control point for curve (above the line)
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
     
     // Curve height based on distance between points
     const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    const curveHeight = Math.min(distance * 0.3, 80);
+    const factor = typeof config.curveFactor === 'number' ? config.curveFactor : 0.3;
+    const maxH = typeof config.maxCurveHeight === 'number' ? config.maxCurveHeight : 80;
+    const curveHeight = Math.min(distance * factor, maxH);
     
     // Calculate perpendicular vector to control the curve direction
     const dx = x2 - x1;
@@ -211,9 +233,10 @@ export function getSvgViewBox(sortedStatuses, config = VISUALIZATION_CONFIG) {
  * Get statuses with SVG rendering data
  * Uses status ID as unique key, displays status name
  */
-export function getStatusesWithSVGData(sortedStatuses, statusPositions, config = VISUALIZATION_CONFIG) {
+export function getStatusesWithSVGData(sortedStatuses, statusPositions, config = VISUALIZATION_CONFIG, clickedIds = []) {
     return sortedStatuses.map(status => {
         const pos = statusPositions[status.id];
+        const isClicked = Array.isArray(clickedIds) && clickedIds.includes(status.id);
         return {
             id: status.id, // Unique identifier
             name: status.name, // Display name
@@ -222,7 +245,9 @@ export function getStatusesWithSVGData(sortedStatuses, statusPositions, config =
             width: config.statusWidth,
             height: config.statusHeight,
             textX: (pos?.x || 0) + config.statusWidth / 2,
-            textY: (pos?.y || 0) + config.statusHeight / 2
+            textY: (pos?.y || 0) + config.statusHeight / 2,
+            // Provide a group-level class so the template can easily bind clicked state
+            groupClass: `status-group${isClicked ? ' clicked' : ''}`
         };
     });
 }
@@ -234,6 +259,28 @@ export function getMarkerArrow() {
     return 'M 0 0 L 6 3 L 0 6 Z';
 }
 
+/**
+ * Toggle a status id in the clicked list and return a new array
+ * Ensures immutability so callers can assign the returned array for reactivity
+ */
+export function toggleClick(clickedIds = [], statusId) {
+    const set = new Set(Array.isArray(clickedIds) ? clickedIds : []);
+    if (set.has(statusId)) {
+        set.delete(statusId);
+    } else {
+        set.add(statusId);
+    }
+    return Array.from(set);
+}
+
+/**
+ * Clear all clicked status IDs and return an empty array.
+ * Keeps API immutable for caller reactivity.
+ */
+export function clearClicks() {
+    return [];
+}
+
 export default {
     VISUALIZATION_CONFIG,
     calculatePositions,
@@ -241,5 +288,7 @@ export default {
     createArrowPath,
     getSvgViewBox,
     getStatusesWithSVGData,
-    getMarkerArrow
+    getMarkerArrow,
+    toggleClick,
+    clearClicks
 };
