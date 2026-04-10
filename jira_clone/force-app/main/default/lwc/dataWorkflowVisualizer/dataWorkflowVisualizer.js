@@ -9,6 +9,9 @@ import {
     toggleClick,
     clearClicks
 } from './dataWorkflowVisualizerUtil.js';
+import { workflowVisualizerStatusFromApex, workflowVisualizerTransitionFromApex } from './data/WorkflowVisualizerDTO.js';
+import { mapWorkflowVisualizer } from './logic/WorkflowVisualizerMapper.js';
+import { validateWorkflowVisualizerStatusName, createWorkflowVisualizerStatus } from './logic/WorkflowVisualizerService.js';
 
 export default class DataWorkflowVisualizer extends LightningElement {
     @api workflowData;
@@ -23,6 +26,10 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track showTransitionDetail = false;
     @track selectedTransitionId = null;
     @track clickedStatusIds = [];
+    @track workflowModel = null;
+    @track newStatusName = '';
+    @track isCreatingStatus = false;
+    @track createStatusErrorMessage = '';
     
     // Use visualization config from util
     config = VISUALIZATION_CONFIG;
@@ -57,68 +64,69 @@ export default class DataWorkflowVisualizer extends LightningElement {
      * Process workflow data and calculate positions
      */
     processWorkflowData() {
-        if (!this.workflowData || !this.workflowData.workflow) {
+        if (!this.workflowData || (!this.workflowData.projectStatus && !this.workflowData.workflow)) {
             return;
         }
 
-        // Extract all statuses using ID as key (prevents duplicates)
+        // Normalize incoming data (Apex DTOs or client DTOs) to a predictable DTO shape
+        const raw = this.workflowData;
+        const normalized = {
+            id: raw?.workflow?.id || raw?.id,
+            projectStatus: [],
+            workflow: { transitions: [] }
+        };
+
+        // Normalize statuses (handle Apex shape with Id/Name or already normalized id/name)
+        if (Array.isArray(raw.projectStatus) && raw.projectStatus.length) {
+            normalized.projectStatus = raw.projectStatus.map(s => {
+                if (s.Id || s.Name) return workflowVisualizerStatusFromApex(s);
+                return { id: s.id || s.Id || '', name: s.name || s.Name || '' };
+            });
+        }
+
+        // Normalize transitions (handle Apex shape or already-normalized)
+        if (raw.workflow && Array.isArray(raw.workflow.transitions) && raw.workflow.transitions.length) {
+            normalized.workflow.transitions = raw.workflow.transitions.map(t => {
+                if (t.Id || t.Name || t.FromStatusId) return workflowVisualizerTransitionFromApex(t);
+                return {
+                    id: t.id || t.Id || '',
+                    name: t.name || t.Name || '',
+                    fromStatus: t.fromStatus || t.FromStatus || t.from || '',
+                    toStatus: t.toStatus || t.ToStatus || t.to || '',
+                    recordStatus: t.recordStatus || t.RecordStatus || 'pending'
+                };
+            });
+        }
+
+        // Map to business model using the mapper
+        const workflowModel = mapWorkflowVisualizer(normalized);
+        this.workflowModel = workflowModel;
+
+        // Gather statuses and transitions from the business model
         const statusMap = new Map();
-        
-        // Add all statuses from projectStatus
-        if (this.workflowData.projectStatus && this.workflowData.projectStatus.length > 0) {
-            this.workflowData.projectStatus.forEach(status => {
-                statusMap.set(status.id, { id: status.id, name: status.name });
-            });
-        }
+        workflowModel.statuses.forEach(s => statusMap.set(s.id, { id: s.id, name: s.name }));
 
-        // Separate transitions into active and pending
-        let activeTransitions = [];
-        let pendingTransitions = [];
-        
-        if (this.workflowData.workflow.transitions) {
-            activeTransitions = this.workflowData.workflow.transitions.filter(
-                transition => transition.recordStatus === 'active'
-            );
-            pendingTransitions = this.workflowData.workflow.transitions.filter(
-                transition => transition.recordStatus === 'pending'
-            );
-        }
-
-        // Extract statuses from both active and pending transitions
-        const allTransitions = [...activeTransitions, ...pendingTransitions];
-        if (allTransitions && allTransitions.length > 0) {
-            allTransitions.forEach(transition => {
-                if (transition.fromStatus && !statusMap.has(transition.fromStatus)) {
-                    statusMap.set(transition.fromStatus, { id: transition.fromStatus, name: transition.fromStatus });
-                }
-                if (transition.toStatus && !statusMap.has(transition.toStatus)) {
-                    statusMap.set(transition.toStatus, { id: transition.toStatus, name: transition.toStatus });
-                }
-            });
-        }
+        // Ensure any statuses referenced by transitions are included
+        const allTransitions = workflowModel.transitions.map(t => ({ id: t.id, name: t.name, fromStatus: t.fromStatus, toStatus: t.toStatus, recordStatus: t.recordStatus }));
+        allTransitions.forEach(transition => {
+            if (transition.fromStatus && !statusMap.has(transition.fromStatus)) {
+                statusMap.set(transition.fromStatus, { id: transition.fromStatus, name: transition.fromStatus });
+            }
+            if (transition.toStatus && !statusMap.has(transition.toStatus)) {
+                statusMap.set(transition.toStatus, { id: transition.toStatus, name: transition.toStatus });
+            }
+        });
 
         this.sortedStatuses = Array.from(statusMap.values());
         this.statusPositions = calculatePositions(this.sortedStatuses, this.config);
-        
-        // Calculate transition lines for active transitions
-        const activeWorkflowData = {
-            ...this.workflowData,
-            workflow: {
-                ...this.workflowData.workflow,
-                transitions: activeTransitions
-            }
-        };
-        this.activeTransitionLines = calculateTransitionLines(activeWorkflowData, this.statusPositions, this.config);
-        
-        // Calculate transition lines for pending transitions
-        const pendingWorkflowData = {
-            ...this.workflowData,
-            workflow: {
-                ...this.workflowData.workflow,
-                transitions: pendingTransitions
-            }
-        };
-        this.pendingTransitionLines = calculateTransitionLines(pendingWorkflowData, this.statusPositions, this.config);
+
+        // Split transitions by recordStatus
+        const activeTransitions = allTransitions.filter(t => t.recordStatus === 'active');
+        const pendingTransitions = allTransitions.filter(t => t.recordStatus === 'pending');
+
+        // Calculate transition lines
+        this.activeTransitionLines = calculateTransitionLines({ workflow: { transitions: activeTransitions } }, this.statusPositions, this.config);
+        this.pendingTransitionLines = calculateTransitionLines({ workflow: { transitions: pendingTransitions } }, this.statusPositions, this.config);
     }
 
     /**
@@ -148,7 +156,13 @@ export default class DataWorkflowVisualizer extends LightningElement {
      */
     handleTransitionClick(event) {
         const lineId = event.currentTarget.dataset.lineId;
-        const transition = this.workflowData.workflow.transitions.find(t => t.id === lineId);
+        let transition = null;
+        if (this.workflowModel && Array.isArray(this.workflowModel.transitions)) {
+            transition = this.workflowModel.transitions.find(t => t.id === lineId);
+        }
+        if (!transition && this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
+            transition = this.workflowData.workflow.transitions.find(t => t.id === lineId);
+        }
         
         console.log('Transition Clicked:', {
             id: lineId,
@@ -187,6 +201,61 @@ export default class DataWorkflowVisualizer extends LightningElement {
 
         // Toggle clicked visual state for the status (use util helper)
         this.clickedStatusIds = toggleClick(this.clickedStatusIds, statusId);
+    }
+
+    /**
+     * Handle input change for the create-status modal
+     */
+    handleStatusNameChange(event) {
+        this.newStatusName = event.target.value;
+        this.createStatusErrorMessage = '';
+    }
+
+    handleModalKeyPress(event) {
+        if (event.key === 'Enter') {
+            this.handleCreateSubmit();
+        } else if (event.key === 'Escape') {
+            this.closeCreateModal();
+        }
+    }
+
+    /**
+     * Submit create status request (calls repository)
+     */
+    async handleCreateSubmit() {
+        const validation = validateWorkflowVisualizerStatusName(this.newStatusName);
+        if (!validation.valid) {
+            this.createStatusErrorMessage = validation.message || 'Invalid name';
+            return;
+        }
+
+        const projectId = localStorage.getItem('selectedProjectId');
+        if (!projectId) {
+            this.createStatusErrorMessage = 'Project ID not found. Please select a project first.';
+            return;
+        }
+
+        this.isCreatingStatus = true;
+        this.createStatusErrorMessage = '';
+
+        try {
+            const result = await createWorkflowVisualizerStatus(this.newStatusName, projectId);
+            // Service/repository expected to return { success, data, message }
+            if (result && result.success) {
+                this.handleStatusCreated({ detail: result.data });
+                this.closeCreateModal();
+            } else if (result && result.data) {
+                this.handleStatusCreated({ detail: result.data });
+                this.closeCreateModal();
+            } else {
+                this.createStatusErrorMessage = result?.message || 'Failed to create status';
+            }
+        } catch (err) {
+            console.error('Error creating status:', err);
+            this.createStatusErrorMessage = err?.body?.message || err?.message || 'An error occurred while creating the status';
+        } finally {
+            this.isCreatingStatus = false;
+        }
     }
 
     /**
@@ -242,16 +311,7 @@ export default class DataWorkflowVisualizer extends LightningElement {
         this.showCreateModal = false;
     }
 
-    /**
-     * Handle close event from create status modal
-     */
-    handleCreateStatusModalClose() {
-        this.showCreateModal = false;
-    }
 
-    /**
-     * Handle create status - now simplified to open modal
-     */
     handleCreateStatus() {
         this.openCreateStatusModal();
     }

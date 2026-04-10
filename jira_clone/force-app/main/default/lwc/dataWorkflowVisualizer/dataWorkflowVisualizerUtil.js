@@ -56,6 +56,7 @@ export function calculatePositions(sortedStatuses, config = VISUALIZATION_CONFIG
     return statusPositions;
 }
 
+
 /**
  * Compute intersection point between a ray from (cx,cy) towards (px,py) and the rectangle boundary.
  * Returns {x,y} on the rectangle edge. If no intersection found, returns the center (cx,cy).
@@ -108,6 +109,7 @@ export function getRectIntersection(rect, cx, cy, px, py) {
     candidates.sort((a, b) => a.t - b.t);
     return { x: candidates[0].x, y: candidates[0].y };
 }
+
 
 /**
  * Calculate lines for transitions
@@ -187,6 +189,7 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
     }).filter(line => line !== null);
 }
 
+
 /**
  * Create an SVG path with curved arrow for transition line
  * Uses quadratic Bezier curve to avoid passing through other rectangles
@@ -218,6 +221,7 @@ export function createArrowPath(x1, y1, x2, y2, config = VISUALIZATION_CONFIG) {
     return { path, ctrlX, ctrlY };
 }
 
+
 /**
  * Get SVG viewBox dimensions
  */
@@ -228,6 +232,7 @@ export function getSvgViewBox(sortedStatuses, config = VISUALIZATION_CONFIG) {
     const height = config.svgPadding * 2 + (maxRow - 1) * config.verticalSpacing + config.statusHeight;
     return `0 0 ${width} ${height}`;
 }
+
 
 /**
  * Get statuses with SVG rendering data
@@ -252,12 +257,14 @@ export function getStatusesWithSVGData(sortedStatuses, statusPositions, config =
     });
 }
 
+
 /**
  * Get marker arrow path for line endings
  */
 export function getMarkerArrow() {
     return 'M 0 0 L 6 3 L 0 6 Z';
 }
+
 
 /**
  * Toggle a status id in the clicked list and return a new array

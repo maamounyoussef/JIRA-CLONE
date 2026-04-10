@@ -189,12 +189,47 @@
             </div>
         </template>
 
-        <!-- Create Status Modal Component -->
-        <c-create-status-modal
-            is-open={showCreateModal}
-            onstatuscreated={handleStatusCreated}
-            onclose={handleCreateStatusModalClose}
-        ></c-create-status-modal>
+        <!-- Inline Create Status Modal -->
+        <template if:true={showCreateModal}>
+            <div class="modal-backdrop" onclick={closeCreateModal}></div>
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 class="modal-title">Create New Status</h2>
+                    <button class="close-button" onclick={closeCreateModal} title="Close">✕</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="statusNameInput" class="form-label">Status Name</label>
+                        <input
+                            id="statusNameInput"
+                            type="text"
+                            class="form-input"
+                            placeholder="Enter status name"
+                            value={newStatusName}
+                            onchange={handleStatusNameChange}
+                            onkeypress={handleModalKeyPress}
+                            disabled={isCreatingStatus}
+                        />
+                    </div>
+
+                    <template if:true={createStatusErrorMessage}>
+                        <div class="error-message">
+                            <span class="error-icon">⚠</span>
+                            <span>{createStatusErrorMessage}</span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick={closeCreateModal} disabled={isCreatingStatus}>Cancel</button>
+                    <button class="btn btn-primary" onclick={handleCreateSubmit} disabled={isCreatingStatus}>
+                        <template if:false={isCreatingStatus}>Create Status</template>
+                        <template if:true={isCreatingStatus}>Creating...</template>
+                    </button>
+                </div>
+            </div>
+        </template>
 
         <!-- Create Transition Modal Component -->
         <c-create-transition-modal
