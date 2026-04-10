@@ -37,6 +37,59 @@ export function calculatePositions(sortedStatuses, config = VISUALIZATION_CONFIG
 }
 
 /**
+ * Compute intersection point between a ray from (cx,cy) towards (px,py) and the rectangle boundary.
+ * Returns {x,y} on the rectangle edge. If no intersection found, returns the center (cx,cy).
+ */
+export function getRectIntersection(rect, cx, cy, px, py) {
+    const rx = rect.x;
+    const ry = rect.y;
+    const rw = rect.width;
+    const rh = rect.height;
+
+    const dx = px - cx;
+    const dy = py - cy;
+    const eps = 1e-6;
+    const candidates = [];
+
+    if (Math.abs(dx) > eps) {
+        // left edge
+        let t = (rx - cx) / dx;
+        if (t > 0) {
+            const y = cy + t * dy;
+            if (y >= ry - eps && y <= ry + rh + eps) candidates.push({ t, x: rx, y });
+        }
+        // right edge
+        t = (rx + rw - cx) / dx;
+        if (t > 0) {
+            const y = cy + t * dy;
+            if (y >= ry - eps && y <= ry + rh + eps) candidates.push({ t, x: rx + rw, y });
+        }
+    }
+
+    if (Math.abs(dy) > eps) {
+        // top edge
+        let t = (ry - cy) / dy;
+        if (t > 0) {
+            const x = cx + t * dx;
+            if (x >= rx - eps && x <= rx + rw + eps) candidates.push({ t, x, y: ry });
+        }
+        // bottom edge
+        t = (ry + rh - cy) / dy;
+        if (t > 0) {
+            const x = cx + t * dx;
+            if (x >= rx - eps && x <= rx + rw + eps) candidates.push({ t, x, y: ry + rh });
+        }
+    }
+
+    if (candidates.length === 0) {
+        return { x: cx, y: cy };
+    }
+
+    candidates.sort((a, b) => a.t - b.t);
+    return { x: candidates[0].x, y: candidates[0].y };
+}
+
+/**
  * Calculate lines for transitions
  */
 export function calculateTransitionLines(workflowData, statusPositions, config = VISUALIZATION_CONFIG) {
@@ -53,38 +106,38 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
             return null;
         }
 
-        // Calculate line coordinates (center of rectangles)
-        const fromX = fromPos.x + fromPos.width / 2;
-        const fromY = fromPos.y + fromPos.height / 2;
-        const toX = toPos.x + toPos.width / 2;
-        const toY = toPos.y + toPos.height / 2;
+        // Calculate center points for each rectangle
+        const fromCenterX = fromPos.x + fromPos.width / 2;
+        const fromCenterY = fromPos.y + fromPos.height / 2;
+        const toCenterX = toPos.x + toPos.width / 2;
+        const toCenterY = toPos.y + toPos.height / 2;
 
-        // Create a curved path and control point for the Bezier curve
-        const { path, ctrlX, ctrlY } = createArrowPath(fromX, fromY, toX, toY);
+        // Compute start/end points at rectangle borders (towards the other rect)
+        const startPt = getRectIntersection(fromPos, fromCenterX, fromCenterY, toCenterX, toCenterY);
+        const endPt = getRectIntersection(toPos, toCenterX, toCenterY, fromCenterX, fromCenterY);
 
-        // Compute an explicit arrow polygon at the end of the curve (so markers aren't required)
-        // Arrow size scales with distance but kept smaller for visual balance
-        const distance = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
-        const arrowLength = Math.min(Math.max(distance * 0.08, 6), 16); // between 6 and 16px
+        // Create a curved path (quadratic Bezier) between the border points
+        const { path, ctrlX, ctrlY } = createArrowPath(startPt.x, startPt.y, endPt.x, endPt.y);
+
+        // Compute an explicit arrow polygon at the true end of the curve
+        const distance = Math.sqrt(Math.pow(endPt.x - startPt.x, 2) + Math.pow(endPt.y - startPt.y, 2));
+        const arrowLength = Math.min(Math.max(distance * 0.08, 6), 16);
         const arrowWidth = Math.min(Math.max(arrowLength * 0.55, 5), 12);
 
-        // Tangent at t=1 for quadratic Bezier is 2*(P2 - P1)
-        let dx = toX - ctrlX;
-        let dy = toY - ctrlY;
+        // Tangent at t=1 for quadratic Bezier is based on control point
+        let dx = endPt.x - ctrlX;
+        let dy = endPt.y - ctrlY;
         let len = Math.sqrt(dx * dx + dy * dy);
         if (len === 0) {
-            dx = toX - fromX;
-            dy = toY - fromY;
+            dx = endPt.x - startPt.x;
+            dy = endPt.y - startPt.y;
             len = Math.sqrt(dx * dx + dy * dy) || 1;
         }
         const ux = dx / len;
         const uy = dy / len;
 
-        // Base center of the arrow (a bit behind the tip)
-        const baseCx = toX - ux * arrowLength;
-        const baseCy = toY - uy * arrowLength;
-
-        // Perpendicular vector for arrow base width
+        const baseCx = endPt.x - ux * arrowLength;
+        const baseCy = endPt.y - uy * arrowLength;
         const perpX = -uy;
         const perpY = ux;
         const halfW = arrowWidth / 2;
@@ -94,7 +147,7 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
         const b2x = baseCx - perpX * halfW;
         const b2y = baseCy - perpY * halfW;
 
-        const arrowPath = `M ${toX} ${toY} L ${b1x} ${b1y} L ${b2x} ${b2y} Z`;
+        const arrowPath = `M ${endPt.x} ${endPt.y} L ${b1x} ${b1y} L ${b2x} ${b2y} Z`;
 
         return {
             id: transition.id,
@@ -102,12 +155,12 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
             arrowPath,
             name: transition.name,
             label: `${transition.fromStatus} → ${transition.toStatus}`,
-            startX: fromX,
-            startY: fromY,
-            endX: toX,
-            endY: toY,
-            startLabelY: fromY - 12,
-            endLabelY: toY - 12,
+            startX: startPt.x,
+            startY: startPt.y,
+            endX: endPt.x,
+            endY: endPt.y,
+            startLabelY: startPt.y - 10,
+            endLabelY: endPt.y - 10,
             fromStatus: transition.fromStatus,
             toStatus: transition.toStatus
         };
