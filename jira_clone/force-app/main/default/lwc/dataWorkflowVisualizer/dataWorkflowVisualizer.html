@@ -21,6 +21,27 @@
             </span>
         </div>
 
+        <!-- Legend for Transition Types -->
+        <div class="legend-container">
+            <div class="legend-title">Transition Types:</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <svg class="legend-svg" viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="5" y1="10" x2="50" y2="10" stroke="#1b96ff" stroke-width="2" />
+                        <polygon points="45 5, 55 10, 45 15" fill="#1b96ff" />
+                    </svg>
+                    <span class="legend-label">Active Transition</span>
+                </div>
+                <div class="legend-item">
+                    <svg class="legend-svg" viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="5" y1="10" x2="50" y2="10" stroke="#FFA500" stroke-width="2" stroke-dasharray="5,5" />
+                        <polygon points="45 5, 55 10, 45 15" fill="#FFA500" />
+                    </svg>
+                    <span class="legend-label">Pending Transition</span>
+                </div>
+            </div>
+        </div>
+
         <template if:true={sortedStatuses}>
             <!-- SVG Canvas for Everything -->
             <svg class="workflow-svg" viewBox={svgViewBox} xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
@@ -31,7 +52,7 @@
                         <stop offset="100%" style="stop-color:#0052cc;stop-opacity:1" />
                     </linearGradient>
                     
-                    <!-- Arrow marker for line endings -->
+                    <!-- Arrow marker for active transition line endings -->
                     <marker
                         id="arrowhead"
                         marker-width="10"
@@ -40,11 +61,21 @@
                     >
                         <polygon points="0 0, 10 3, 0 6" fill="#1b96ff" />
                     </marker>
+                    
+                    <!-- Arrow marker for pending transition line endings -->
+                    <marker
+                        id="arrowhead-pending"
+                        marker-width="10"
+                        marker-height="10"
+                        orient="auto"
+                    >
+                        <polygon points="0 0, 10 3, 0 6" fill="#FFA500" />
+                    </marker>
                 </defs>
 
-                <!-- Transition Lines -->
-                <template for:each={transitionLines} for:item="line">
-                    <g key={line.id} class="transition-line-group" data-line-id={line.id} onclick={handleTransitionClick}>
+                <!-- Active Transition Lines -->
+                <template for:each={activeTransitionLines} for:item="line">
+                    <g key={line.id} class="transition-line-group active-transition" data-line-id={line.id} onclick={handleTransitionClick}>
                         <path
                             class="transition-line"
                             d={line.path}
@@ -52,6 +83,21 @@
                             stroke-width="2"
                             fill="none"
                             marker-end="url(#arrowhead)"
+                        ></path>
+                    </g>
+                </template>
+
+                <!-- Pending Transition Lines -->
+                <template for:each={pendingTransitionLines} for:item="line">
+                    <g key={line.id} class="transition-line-group pending-transition" data-line-id={line.id} onclick={handleTransitionClick}>
+                        <path
+                            class="transition-line pending"
+                            d={line.path}
+                            stroke="#FFA500"
+                            stroke-width="2"
+                            stroke-dasharray="5,5"
+                            fill="none"
+                            marker-end="url(#arrowhead-pending)"
                         ></path>
                     </g>
                 </template>

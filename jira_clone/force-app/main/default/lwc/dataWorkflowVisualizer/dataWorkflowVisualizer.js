@@ -11,7 +11,8 @@ import {
 export default class DataWorkflowVisualizer extends LightningElement {
     @api workflowData;
     @track statusPositions = {};
-    @track transitionLines = [];
+    @track activeTransitionLines = [];
+    @track pendingTransitionLines = [];
     @track sortedStatuses = [];
     @track showCreateModal = false;
     @track showCreateTransitionModal = false;
@@ -55,9 +56,23 @@ export default class DataWorkflowVisualizer extends LightningElement {
             });
         }
 
-        // Also extract any statuses mentioned in transitions that aren't in projectStatus
+        // Separate transitions into active and pending
+        let activeTransitions = [];
+        let pendingTransitions = [];
+        
         if (this.workflowData.workflow.transitions) {
-            this.workflowData.workflow.transitions.forEach(transition => {
+            activeTransitions = this.workflowData.workflow.transitions.filter(
+                transition => transition.recordStatus === 'active'
+            );
+            pendingTransitions = this.workflowData.workflow.transitions.filter(
+                transition => transition.recordStatus === 'pending'
+            );
+        }
+
+        // Extract statuses from both active and pending transitions
+        const allTransitions = [...activeTransitions, ...pendingTransitions];
+        if (allTransitions && allTransitions.length > 0) {
+            allTransitions.forEach(transition => {
                 if (transition.fromStatus && !statusMap.has(transition.fromStatus)) {
                     statusMap.set(transition.fromStatus, { id: transition.fromStatus, name: transition.fromStatus });
                 }
@@ -69,7 +84,26 @@ export default class DataWorkflowVisualizer extends LightningElement {
 
         this.sortedStatuses = Array.from(statusMap.values());
         this.statusPositions = calculatePositions(this.sortedStatuses, this.config);
-        this.transitionLines = calculateTransitionLines(this.workflowData, this.statusPositions, this.config);
+        
+        // Calculate transition lines for active transitions
+        const activeWorkflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: activeTransitions
+            }
+        };
+        this.activeTransitionLines = calculateTransitionLines(activeWorkflowData, this.statusPositions, this.config);
+        
+        // Calculate transition lines for pending transitions
+        const pendingWorkflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: pendingTransitions
+            }
+        };
+        this.pendingTransitionLines = calculateTransitionLines(pendingWorkflowData, this.statusPositions, this.config);
     }
 
     /**
@@ -221,7 +255,8 @@ export default class DataWorkflowVisualizer extends LightningElement {
             id: transitionData.id,
             name: transitionData.name,
             fromStatus: transitionData.fromStatus,
-            toStatus: transitionData.toStatus
+            toStatus: transitionData.toStatus,
+            recordStatus: transitionData.recordStatus || 'pending'
         };
 
         // Add new transition to workflow data - create new array reference for reactivity
