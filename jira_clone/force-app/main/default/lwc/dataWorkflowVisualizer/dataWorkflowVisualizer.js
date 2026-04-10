@@ -266,6 +266,30 @@ export default class DataWorkflowVisualizer extends LightningElement {
     }
 
     /**
+     * Handle transition deleted event from transition detail component
+     */
+    handleTransitionDeleted(event) {
+        const deletedTransitionId = event.detail.id;
+        console.log('Transition deleted:', deletedTransitionId);
+
+        // Remove transition from workflow data - create new array reference for reactivity
+        if (this.workflowData.workflow.transitions) {
+            this.workflowData = {
+                ...this.workflowData,
+                workflow: {
+                    ...this.workflowData.workflow,
+                    transitions: this.workflowData.workflow.transitions.filter(
+                        transition => transition.id !== deletedTransitionId
+                    )
+                }
+            };
+
+            // Recalculate positions and lines
+            this.processWorkflowData();
+        }
+    }
+
+    /**
      * Handle close event from transition detail component
      */
     handleCloseTransitionDetail() {

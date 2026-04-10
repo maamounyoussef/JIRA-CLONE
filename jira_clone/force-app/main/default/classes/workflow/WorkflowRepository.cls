@@ -25,6 +25,7 @@ public static Workflow__c getWorkflowWithTransitions(String workflowId) {
                     RecordStatus__c, 
                     Workflow__c
                 FROM WorkflowTransitions__r 
+                WHERE RecordStatus__c != 'Deleted'
                 ORDER BY RecordStatus__c DESC, CreatedDate ASC
             )
         FROM Workflow__c 

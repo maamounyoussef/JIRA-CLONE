@@ -46,7 +46,10 @@ export default class WorkflowTransitionDetail extends LightningElement {
      * Handle close button click
      */
     handleClose() {
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CustomEvent('close', {
+            bubbles: true,
+            composed: true
+        }));
     }
 
     /**
@@ -108,9 +111,23 @@ export default class WorkflowTransitionDetail extends LightningElement {
                 if (response.success) {
                     this.successMessage = 'Transition deleted successfully!';
                     console.log('Transition deleted:', this.transitionData.Id);
+                    
+                    // Dispatch event with deleted transition ID
+                    this.dispatchEvent(new CustomEvent('transitiondeleted', {
+                        detail: {
+                            id: this.transitionData.Id,
+                            name: this.transitionData.Name
+                        },
+                        bubbles: true,
+                        composed: true
+                    }));
+                    
                     // Close panel after successful deletion
                     setTimeout(() => {
-                        this.dispatchEvent(new CustomEvent('close'));
+                        this.dispatchEvent(new CustomEvent('close', {
+                            bubbles: true,
+                            composed: true
+                        }));
                     }, 1500);
                 } else {
                     this.errorMessage = response.message || 'Failed to delete transition';

@@ -7,7 +7,7 @@ public with sharing class WorkflowTransitionRepository {
     /**
      * @description Get all transitions for a workflow
      * @param workflowId - The Workflow__c record Id
-     * @return List of WorkflowTransition__c records
+     * @return List of WorkflowTransition__c records (excluding deleted)
      */
     public static List<WorkflowTransition__c> getTransitionsByWorkflow(String workflowId) {
         return [
@@ -15,6 +15,7 @@ public with sharing class WorkflowTransitionRepository {
                    FromStatus__r.Name, ToStatus__r.Name, RecordStatus__c, CreatedDate
             FROM WorkflowTransition__c
             WHERE Workflow__c = :workflowId
+            AND RecordStatus__c != 'deleted'
             ORDER BY Name ASC
         ];
     }
@@ -22,8 +23,8 @@ public with sharing class WorkflowTransitionRepository {
     /**
      * @description Get transition by Id
      * @param transitionId - The WorkflowTransition__c record Id
-     * @return WorkflowTransition__c record with related Status names
-     * @throws WorkflowException - If transition not found
+     * @return WorkflowTransition__c record with related Status names (excluding deleted)
+     * @throws WorkflowException - If transition not found or is deleted
      */
     public static WorkflowTransition__c getTransitionById(String transitionId) {
         List<WorkflowTransition__c> transitions = [
@@ -31,6 +32,7 @@ public with sharing class WorkflowTransitionRepository {
                    FromStatus__r.Name, ToStatus__r.Name, RecordStatus__c, CreatedDate
             FROM WorkflowTransition__c
             WHERE Id = :transitionId
+            AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         
