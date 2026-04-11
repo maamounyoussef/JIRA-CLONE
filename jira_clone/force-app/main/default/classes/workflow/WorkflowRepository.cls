@@ -25,7 +25,7 @@ public static Workflow__c getWorkflowWithTransitions(String workflowId) {
                     RecordStatus__c, 
                     Workflow__c
                 FROM WorkflowTransitions__r 
-                WHERE RecordStatus__c != 'Deleted'
+                WHERE RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
                 ORDER BY RecordStatus__c DESC, CreatedDate ASC
             )
         FROM Workflow__c 
@@ -140,7 +140,8 @@ public static Workflow__c getWorkflowWithTransitions(String workflowId) {
         List<WorkflowTransition__c> transitions = [
             SELECT Id, Workflow__c 
             FROM WorkflowTransition__c 
-            WHERE Id = :transitionId 
+            WHERE Id = :transitionId
+            AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
             LIMIT 1
         ];
         
@@ -255,7 +256,7 @@ public static Workflow__c getWorkflowWithTransitions(String workflowId) {
             SELECT Id, RecordStatus__c 
             FROM ValidationRule__c 
             WHERE WorkflowTransition__c IN (
-                SELECT Id FROM WorkflowTransition__c WHERE Workflow__c = :workflowId
+                SELECT Id FROM WorkflowTransition__c WHERE Workflow__c = :workflowId AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
             )
               AND RecordStatus__c = :WorkflowConstants.RECORD_STATUS_PENDING
         ];

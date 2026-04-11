@@ -83,4 +83,25 @@ public with sharing class WorkflowTransitionRepository {
             throw new WorkflowException('Error inserting workflow transition: ' + ex.getMessage());
         }
     }
+    
+    /**
+     * @description Check if a transition name already exists within a workflow (excluding deleted)
+     * @param workflowId - The Workflow__c record Id
+     * @param name - The transition name to check
+     * @return Boolean - true if exists, false otherwise
+     */
+    public static Boolean transitionNameExists(String workflowId, String name) {
+        if (String.isBlank(workflowId) || String.isBlank(name)) {
+            return false;
+        }
+        List<WorkflowTransition__c> found = [
+            SELECT Id
+            FROM WorkflowTransition__c
+            WHERE Workflow__c = :workflowId
+            AND Name = :name
+            AND RecordStatus__c != 'deleted'
+            LIMIT 1
+        ];
+        return !found.isEmpty();
+    }
 }

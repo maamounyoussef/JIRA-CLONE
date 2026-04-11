@@ -75,6 +75,11 @@ public with sharing class StatusService {
             // Verify project exists
             ProjectRepository.getProjectById(projectId);
             
+            // Ensure status name is unique within the project
+            if (StatusRepository.statusNameExists(projectId, name)) {
+                throw new StatusException('Status name already exists in this project');
+            }
+            
             return StatusRepository.createStatus(name, projectId);
         } catch (StatusException ex) {
             throw ex;

@@ -81,4 +81,25 @@ public with sharing class StatusRepository {
             throw new StatusException('Error creating status: ' + ex.getMessage());
         }
     }
+    
+    /**
+     * @description Check if a status name already exists within a project
+     * @param projectId - The Project__c record Id
+     * @param name - The status name to check
+     * @return Boolean - true if exists, false otherwise
+     */
+    public static Boolean statusNameExists(String projectId, String name) {
+        if (String.isBlank(projectId) || String.isBlank(name)) {
+            return false;
+        }
+        String normalized = name.trim();
+        List<Status__c> found = [
+            SELECT Id
+            FROM Status__c
+            WHERE Project__c = :projectId
+            AND Name = :normalized
+            LIMIT 1
+        ];
+        return !found.isEmpty();
+    }
 }

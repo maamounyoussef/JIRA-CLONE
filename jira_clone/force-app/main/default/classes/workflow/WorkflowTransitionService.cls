@@ -64,6 +64,11 @@ public with sharing class WorkflowTransitionService {
             StatusRepository.getStatusById(fromStatusId);
             StatusRepository.getStatusById(toStatusId);
             
+            // Ensure transition name is unique within the workflow
+            if (WorkflowTransitionRepository.transitionNameExists(workflowId, name)) {
+                throw new WorkflowException('Transition name already exists in this workflow');
+            }
+            
             return WorkflowTransitionRepository.createTransition(name, workflowId, fromStatusId, toStatusId, recordStatus);
         } catch (WorkflowException ex) {
             throw ex;
@@ -123,6 +128,11 @@ public with sharing class WorkflowTransitionService {
             
             if (statuses.size() != 2) {
                 throw new WorkflowException('One or both statuses not found');
+            }
+            
+            // Ensure transition name is unique within the workflow
+            if (WorkflowTransitionRepository.transitionNameExists(workflowId, name)) {
+                throw new WorkflowException('Transition name already exists in this workflow');
             }
             
             // Create new Workflow Transition with pending status
