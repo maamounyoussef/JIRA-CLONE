@@ -103,6 +103,61 @@ export default class DataWorkflowVisualizer extends LightningElement {
     }
 
     /**
+     * Update a transition's recordStatus in the main workflow data and reprocess.
+     */
+    updateTransitionRecordStatus(transitionId, recordStatus) {
+        if (!this.workflowData || !this.workflowData.workflow || !Array.isArray(this.workflowData.workflow.transitions)) return;
+        this.workflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: this.workflowData.workflow.transitions.map(t => {
+                    const matches = (t && ((t.id && t.id === transitionId) || (t.Id && t.Id === transitionId)));
+                    if (!matches) return t;
+                    const updated = { ...t };
+                    // set normalized client-side field
+                    updated.recordStatus = recordStatus;
+                    // set common Apex-style fields so normalization picks it up
+                    updated.RecordStatus__c = recordStatus;
+                    updated.RecordStatus = recordStatus;
+                    return updated;
+                })
+            }
+        };
+        this.processWorkflowData();
+    }
+
+    /**
+     * Remove a transition from the main workflow data and reprocess.
+     */
+    removeTransitionFromWorkflow(transitionId) {
+        if (!this.workflowData || !this.workflowData.workflow || !Array.isArray(this.workflowData.workflow.transitions)) return;
+        this.workflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: this.workflowData.workflow.transitions.filter(t => {
+                    if (!t) return false;
+                    return !((t.id && t.id === transitionId) || (t.Id && t.Id === transitionId));
+                })
+            }
+        };
+        this.processWorkflowData();
+    }
+
+    /**
+     * Add new status to workflow data and reprocess.
+     */
+    addStatusToWorkflow(status) {
+        if (!this.workflowData) return;
+        this.workflowData = {
+            ...this.workflowData,
+            projectStatus: this.workflowData.projectStatus ? [...this.workflowData.projectStatus, status] : [status]
+        };
+        this.processWorkflowData();
+    }
+
+    /**
      * Get SVG viewBox dimensions
      */
     get svgViewBox() {
@@ -134,7 +189,7 @@ export default class DataWorkflowVisualizer extends LightningElement {
             transition = this.workflowModel.transitions.find(t => t.id === lineId);
         }
         if (!transition && this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
-            transition = this.workflowData.workflow.transitions.find(t => t.id === lineId);
+            transition = this.workflowData.workflow.transitions.find(t => t && ((t.id && t.id === lineId) || (t.Id && t.Id === lineId)));
         }
 
         // Set state to show transition detail and load details
@@ -153,10 +208,24 @@ export default class DataWorkflowVisualizer extends LightningElement {
 
         try {
             const res = await fetchTransitionDetail(this.selectedTransitionId);
-            if (res && res.success && res.data) {
-                this.transitionData = res.data;
-            } else if (res && res.data) {
-                this.transitionData = res.data;
+            if (res && (res.success || res.data)) {
+                // Use normalized data from service/repo when available
+                const serverData = res.data || res;
+                this.transitionData = serverData;
+
+                // If we have a local workflowData copy that was updated (e.g. after activate), prefer its recordStatus
+                try {
+                    const localTransition = this.workflowData?.workflow?.transitions?.find(t => t && ((t.id && t.id === this.selectedTransitionId) || (t.Id && t.Id === this.selectedTransitionId)));
+                    if (localTransition) {
+                        const localRecordStatus = localTransition.recordStatus || localTransition.RecordStatus__c || localTransition.RecordStatus;
+                        if (localRecordStatus && localRecordStatus !== this.transitionData.recordStatus) {
+                            this.transitionData = { ...this.transitionData, recordStatus: localRecordStatus };
+                        }
+                    }
+                } catch (err) {
+                    // ignore reconciliation errors
+                    console.warn('Reconcile local transition failed', err);
+                }
             } else {
                 this.transitionErrorMessage = res.message || 'Failed to load transition';
             }
@@ -187,22 +256,10 @@ export default class DataWorkflowVisualizer extends LightningElement {
                 this.transitionSuccessMessage = 'Transition activated successfully!';
                 // Update local state to show active status
                 this.transitionData = { ...this.transitionData, recordStatus: 'active' };
-
-                // Also update the main workflow data transitions list if present
-                if (this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
-                    this.workflowData = {
-                        ...this.workflowData,
-                        workflow: {
-                            ...this.workflowData.workflow,
-                            transitions: this.workflowData.workflow.transitions.map(t => t.id === this.transitionData.id ? { ...t, recordStatus: 'active' } : t)
-                        }
-                    };
-                    this.processWorkflowData();
-                }
-
+                this.updateTransitionRecordStatus(this.transitionData.id, 'active');
                 setTimeout(() => {
-                    this.transitionSuccessMessage = '';
-                }, 3000);
+                    this.handleCloseTransitionDetail();
+                }, 0);
             } else {
                 this.transitionErrorMessage = result?.message || 'Failed to activate transition';
             }
@@ -235,22 +292,12 @@ export default class DataWorkflowVisualizer extends LightningElement {
             const result = await deleteWorkflowTransition(this.transitionData.id);
             if (result && result.success) {
                 this.transitionSuccessMessage = 'Transition deleted successfully!';
-                // Remove transition from workflow data
-                if (this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
-                    this.workflowData = {
-                        ...this.workflowData,
-                        workflow: {
-                            ...this.workflowData.workflow,
-                            transitions: this.workflowData.workflow.transitions.filter(transition => transition.id !== this.transitionData.id)
-                        }
-                    };
-                    this.processWorkflowData();
-                }
+                this.removeTransitionFromWorkflow(this.transitionData.id);
 
                 // Close panel after successful deletion
                 setTimeout(() => {
                     this.handleCloseTransitionDetail();
-                }, 1500);
+                }, 0);
             } else {
                 this.transitionErrorMessage = result.message || 'Failed to delete transition';
             }
@@ -397,22 +444,8 @@ export default class DataWorkflowVisualizer extends LightningElement {
             id: newStatus.Id,
             name: newStatus.Name
         };
-
-        // Add new status to workflow data - create new array reference for reactivity
-        if (!this.workflowData.projectStatus) {
-            this.workflowData = {
-                ...this.workflowData,
-                projectStatus: [statusToAdd]
-            };
-        } else {
-            this.workflowData = {
-                ...this.workflowData,
-                projectStatus: [...this.workflowData.projectStatus, statusToAdd]
-            };
-        }
-
-        // Recalculate positions and lines
-        this.processWorkflowData();
+        // Add new status to workflow data
+        this.addStatusToWorkflow(statusToAdd);
 
         // Clear any clicked status visual state
         this.clickedStatusIds = clearClicks();
