@@ -171,6 +171,11 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
 
         const arrowPath = `M ${endPt.x} ${endPt.y} L ${b1x} ${b1y} L ${b2x} ${b2y} Z`;
 
+        const recordStatus = transition.recordStatus || 'active';
+        const groupClass = `transition-line-group ${recordStatus === 'pending' ? 'pending-transition' : 'active-transition'}`;
+        const lineClass = `transition-line${recordStatus === 'pending' ? ' pending' : ''}`;
+        const arrowClass = `transition-arrow${recordStatus === 'pending' ? ' pending' : ''}`;
+
         return {
             id: transition.id,
             path,
@@ -184,7 +189,12 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
             startLabelY: startPt.y - (config.labelOffset || 10),
             endLabelY: endPt.y - (config.labelOffset || 10),
             fromStatus: transition.fromStatus,
-            toStatus: transition.toStatus
+            toStatus: transition.toStatus,
+            // metadata for template bindings
+            recordStatus,
+            groupClass,
+            lineClass,
+            arrowClass
         };
     }).filter(line => line !== null);
 }

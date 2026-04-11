@@ -1,4 +1,5 @@
 .workflow-visualizer-container {
+    /* Component-scoped custom properties so inline overrides work correctly */
     --primary: #0b5fff; /* stronger blue */
     --accent: #ff7a00;  /* stronger orange */
     --bg: #f4f6f8;
@@ -27,6 +28,7 @@
 
     --label-stroke-width: 2;
     --detail-panel-width: 500px;
+
     width: 100%;
     background-color: var(--bg);
     padding: 18px;
@@ -297,8 +299,9 @@
     }
 }
 
-/* Modal styles from createStatusModal component (merged here) */
-.modal-backdrop {
+/* Modal Backdrop - unified overlay  */
+.modal-backdrop,
+.transition-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -308,7 +311,16 @@
     z-index: 999;
 }
 
-.modal-container {
+.transition-modal-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* Modal Container - unified dialog */
+.modal-container,
+.transition-modal-content {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -321,6 +333,25 @@
     max-width: 600px;
 }
 
+.transition-modal-content {
+    position: static;
+    transform: none;
+    top: auto;
+    left: auto;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 4px;
+    padding: 15px 20px;
+}
+
+.transition-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 16px 0;
+}
+
+/* Modal Header, Body, Footer */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -363,6 +394,17 @@
     padding: 20px;
 }
 
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Form Elements */
 .form-group {
     margin-bottom: 16px;
 }
@@ -414,16 +456,7 @@
     font-weight: bold;
 }
 
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 20px;
-    border-top: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-    border-radius: 0 0 8px 8px;
-}
-
+/* Buttons */
 .btn {
     padding: 8px 16px;
     border: none;
@@ -455,5 +488,79 @@
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* Transition Info Display */
+.transition-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: #f3f3f3;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 12px;
+    color: white;
+}
+
+.status-badge.from {
+    background-color: #0070d2;
+}
+
+.status-badge.to {
+    background-color: #7b1fa2;
+}
+
+.arrow {
+    color: #0070d2;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* ========== Modal Support Styles (createStatusModal integration) ========== */
+
+/* Alternative Modal Overlay/Content Names for flexibility */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 4px;
+    padding: 24px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 400px;
+}
+
+/* Modal Input Container */
+.modal-input {
+    margin-bottom: 20px;
+}
+
+/* Modal Actions Container */
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
 }
 

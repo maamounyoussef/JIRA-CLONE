@@ -9,9 +9,10 @@ import {
     toggleClick,
     clearClicks
 } from './dataWorkflowVisualizerUtil.js';
-import { workflowVisualizerStatusFromApex, workflowVisualizerTransitionFromApex } from './data/WorkflowVisualizerDTO.js';
+import addWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
+import { normalizeWorkflowData } from './data/WorkflowVisualizerRepository.js';
 import { mapWorkflowVisualizer } from './logic/WorkflowVisualizerMapper.js';
-import { validateWorkflowVisualizerStatusName, createWorkflowVisualizerStatus } from './logic/WorkflowVisualizerService.js';
+import { validateWorkflowVisualizerStatusName, createWorkflowVisualizerStatus, validateWorkflowVisualizerTransition, processWorkflowVisualizerData } from './logic/WorkflowVisualizerService.js';
 
 export default class DataWorkflowVisualizer extends LightningElement {
     @api workflowData;
@@ -30,6 +31,9 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track newStatusName = '';
     @track isCreatingStatus = false;
     @track createStatusErrorMessage = '';
+    @track newTransitionName = '';
+    @track isCreatingTransition = false;
+    @track createTransitionErrorMessage = '';
     
     // Use visualization config from util
     config = VISUALIZATION_CONFIG;
@@ -44,6 +48,10 @@ export default class DataWorkflowVisualizer extends LightningElement {
     
     get rectRadius() {
         return this.config.rectRadius || 10;
+    }
+
+    get createStatusButtonLabel() {
+        return this.isCreatingStatus ? 'Creating...' : 'Create Status';
     }
 
     connectedCallback() {
@@ -68,56 +76,15 @@ export default class DataWorkflowVisualizer extends LightningElement {
             return;
         }
 
-        // Normalize incoming data (Apex DTOs or client DTOs) to a predictable DTO shape
-        const raw = this.workflowData;
-        const normalized = {
-            id: raw?.workflow?.id || raw?.id,
-            projectStatus: [],
-            workflow: { transitions: [] }
-        };
+        // Normalize data in repository
+        const normalized = normalizeWorkflowData(this.workflowData);
 
-        // Normalize statuses (handle Apex shape with Id/Name or already normalized id/name)
-        if (Array.isArray(raw.projectStatus) && raw.projectStatus.length) {
-            normalized.projectStatus = raw.projectStatus.map(s => {
-                if (s.Id || s.Name) return workflowVisualizerStatusFromApex(s);
-                return { id: s.id || s.Id || '', name: s.name || s.Name || '' };
-            });
-        }
+        // Process (map, gather statuses, ensure completeness) in service logic
+        const { workflowModel, sortedStatuses, allTransitions } = processWorkflowVisualizerData(normalized);
 
-        // Normalize transitions (handle Apex shape or already-normalized)
-        if (raw.workflow && Array.isArray(raw.workflow.transitions) && raw.workflow.transitions.length) {
-            normalized.workflow.transitions = raw.workflow.transitions.map(t => {
-                if (t.Id || t.Name || t.FromStatusId) return workflowVisualizerTransitionFromApex(t);
-                return {
-                    id: t.id || t.Id || '',
-                    name: t.name || t.Name || '',
-                    fromStatus: t.fromStatus || t.FromStatus || t.from || '',
-                    toStatus: t.toStatus || t.ToStatus || t.to || '',
-                    recordStatus: t.recordStatus || t.RecordStatus || 'pending'
-                };
-            });
-        }
-
-        // Map to business model using the mapper
-        const workflowModel = mapWorkflowVisualizer(normalized);
+        // Store for use in component
         this.workflowModel = workflowModel;
-
-        // Gather statuses and transitions from the business model
-        const statusMap = new Map();
-        workflowModel.statuses.forEach(s => statusMap.set(s.id, { id: s.id, name: s.name }));
-
-        // Ensure any statuses referenced by transitions are included
-        const allTransitions = workflowModel.transitions.map(t => ({ id: t.id, name: t.name, fromStatus: t.fromStatus, toStatus: t.toStatus, recordStatus: t.recordStatus }));
-        allTransitions.forEach(transition => {
-            if (transition.fromStatus && !statusMap.has(transition.fromStatus)) {
-                statusMap.set(transition.fromStatus, { id: transition.fromStatus, name: transition.fromStatus });
-            }
-            if (transition.toStatus && !statusMap.has(transition.toStatus)) {
-                statusMap.set(transition.toStatus, { id: transition.toStatus, name: transition.toStatus });
-            }
-        });
-
-        this.sortedStatuses = Array.from(statusMap.values());
+        this.sortedStatuses = sortedStatuses;
         this.statusPositions = calculatePositions(this.sortedStatuses, this.config);
 
         // Split transitions by recordStatus
@@ -322,6 +289,81 @@ export default class DataWorkflowVisualizer extends LightningElement {
     openCreateTransitionModal() {
         this.showCreateTransitionModal = true;
         this.newTransitionName = '';
+        this.createTransitionErrorMessage = '';
+    }
+
+    /**
+     * Handle transition name input change
+     */
+    handleTransitionNameChange(event) {
+        this.newTransitionName = event.target.value;
+        this.createTransitionErrorMessage = '';
+    }
+
+    /**
+     * Submit create transition request
+     */
+    async handleCreateTransitionSubmit() {
+        const validation = validateWorkflowVisualizerTransition({
+            fromStatus: this.selectedFromStatus?.id,
+            toStatus: this.selectedToStatus?.id
+        });
+        if (!validation.valid) {
+            this.createTransitionErrorMessage = validation.message || 'Invalid transition';
+            return;
+        }
+
+        if (!this.newTransitionName.trim()) {
+            this.createTransitionErrorMessage = 'Transition name is required';
+            return;
+        }
+
+        const workflowId = this.workflowData.workflow?.id;
+        if (!workflowId) {
+            this.createTransitionErrorMessage = 'Workflow ID not found';
+            return;
+        }
+
+        this.isCreatingTransition = true;
+        this.createTransitionErrorMessage = '';
+
+        try {
+            const result = await addWorkflowTransitionApex({
+                workflowId,
+                name: this.newTransitionName,
+                fromStatusId: this.selectedFromStatus.id,
+                toStatusId: this.selectedToStatus.id
+            });
+
+            if (result && result.success) {
+                // Dispatch event with the created transition
+                const transitionData = {
+                    id: result.data.Id,
+                    name: this.newTransitionName,
+                    fromStatus: this.selectedFromStatus.id,
+                    toStatus: this.selectedToStatus.id
+                };
+                this.handleTransitionCreated({ detail: transitionData });
+                this.closeCreateTransitionModal();
+            } else {
+                this.createTransitionErrorMessage = result?.message || 'Failed to create transition';
+            }
+        } catch (err) {
+            console.error('Error creating transition:', err);
+            this.createTransitionErrorMessage = err?.body?.message || err?.message || 'An error occurred';
+        } finally {
+            this.isCreatingTransition = false;
+        }
+    }
+
+    /**
+     * Close create transition modal
+     */
+    closeCreateTransitionModal() {
+        this.showCreateTransitionModal = false;
+        this.newTransitionName = '';
+        this.createTransitionErrorMessage = '';
+        this.isCreatingTransition = false;
     }
 
     /**

@@ -51,7 +51,7 @@
 
                 <!-- Active Transition Lines -->
                 <template for:each={activeTransitionLines} for:item="line">
-                    <g key={line.id} class="transition-line-group active-transition" data-line-id={line.id} onclick={handleTransitionClick}>
+                    <g key={line.id} class={line.groupClass} data-line-id={line.id} onclick={handleTransitionClick}>
                         <!-- Connection circle at start point -->
                         <circle
                             class="transition-start-point"
@@ -62,14 +62,14 @@
                         
                         <!-- Transition line -->
                         <path
-                            class="transition-line"
+                            class={line.lineClass}
                             d={line.path}
                             fill="none"
                         ></path>
 
                         <!-- Explicit arrow polygon at the end -->
                         <path
-                            class="transition-arrow"
+                            class={line.arrowClass}
                             d={line.arrowPath}
                         ></path>
                         
@@ -103,7 +103,7 @@
 
                 <!-- Pending Transition Lines -->
                 <template for:each={pendingTransitionLines} for:item="line">
-                    <g key={line.id} class="transition-line-group pending-transition" data-line-id={line.id} onclick={handleTransitionClick}>
+                    <g key={line.id} class={line.groupClass} data-line-id={line.id} onclick={handleTransitionClick}>
                         <!-- Connection circle at start point -->
                         <circle
                             class="transition-start-point"
@@ -114,14 +114,14 @@
                         
                         <!-- Transition line -->
                         <path
-                            class="transition-line pending"
+                            class={line.lineClass}
                             d={line.path}
                             fill="none"
                         ></path>
 
                         <!-- Explicit arrow polygon at the end -->
                         <path
-                            class="transition-arrow pending"
+                            class={line.arrowClass}
                             d={line.arrowPath}
                         ></path>
                         
@@ -195,23 +195,20 @@
             <div class="modal-container">
                 <div class="modal-header">
                     <h2 class="modal-title">Create New Status</h2>
-                    <button class="close-button" onclick={closeCreateModal} title="Close">✕</button>
+                    <lightning-button-icon icon-name="utility:close" alternative-text="Close" class="close-button" onclick={closeCreateModal}></lightning-button-icon>
                 </div>
 
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="statusNameInput" class="form-label">Status Name</label>
-                        <input
-                            id="statusNameInput"
-                            type="text"
-                            class="form-input"
-                            placeholder="Enter status name"
-                            value={newStatusName}
-                            onchange={handleStatusNameChange}
-                            onkeypress={handleModalKeyPress}
-                            disabled={isCreatingStatus}
-                        />
-                    </div>
+                    <lightning-input
+                        type="text"
+                        label="Status Name"
+                        value={newStatusName}
+                        onchange={handleStatusNameChange}
+                        onkeypress={handleModalKeyPress}
+                        class="modal-input"
+                        disabled={isCreatingStatus}
+                        placeholder="Enter Status Name"
+                    ></lightning-input>
 
                     <template if:true={createStatusErrorMessage}>
                         <div class="error-message">
@@ -222,25 +219,65 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick={closeCreateModal} disabled={isCreatingStatus}>Cancel</button>
-                    <button class="btn btn-primary" onclick={handleCreateSubmit} disabled={isCreatingStatus}>
-                        <template if:false={isCreatingStatus}>Create Status</template>
-                        <template if:true={isCreatingStatus}>Creating...</template>
-                    </button>
+                    <lightning-button variant="neutral" label="Cancel" onclick={closeCreateModal} disabled={isCreatingStatus}></lightning-button>
+                    <lightning-button variant="brand" label={createStatusButtonLabel} onclick={handleCreateSubmit} disabled={isCreatingStatus}></lightning-button>
                 </div>
             </div>
         </template>
 
-        <!-- Create Transition Modal Component -->
-        <c-create-transition-modal
-            if:true={showCreateTransitionModal}
-            from-status={selectedFromStatus}
-            to-status={selectedToStatus}
-            workflow-id={workflowData.workflow.id}
-            is-open={showCreateTransitionModal}
-            ontransitioncreated={handleTransitionCreated}
-            onclose={handleCloseCreateTransitionModal}
-        ></c-create-transition-modal>
+        <!-- Create Transition Modal (inlined from createTransitionModal component) -->
+        <template if:true={showCreateTransitionModal}>
+            <div class="transition-modal-overlay" onclick={handleCloseCreateTransitionModal}>
+                <div class="transition-modal-content" onclick={stopPropagation}>
+                    <!-- Modal Header -->
+                    <h2 class="transition-modal-title">Create Transition</h2>
+
+                    <!-- Status Flow Display -->
+                    <template if:true={selectedFromStatus}>
+                        <div class="transition-info">
+                            <span class="status-badge from">{selectedFromStatus.name}</span>
+                            <span class="arrow">→</span>
+                            <span class="status-badge to">{selectedToStatus.name}</span>
+                        </div>
+                    </template>
+
+                    <!-- Error Message -->
+                    <template if:true={createTransitionErrorMessage}>
+                        <div class="error-message">
+                            <span class="error-icon">⚠</span>
+                            <span>{createTransitionErrorMessage}</span>
+                        </div>
+                    </template>
+
+                    <!-- Transition Name Input -->
+                    <lightning-input
+                        type="text"
+                        label="Transition Name"
+                        placeholder="Enter transition name (e.g., Start Work)"
+                        value={newTransitionName}
+                        onchange={handleTransitionNameChange}
+                        class="modal-input"
+                        disabled={isCreatingTransition}
+                    ></lightning-input>
+
+                    <!-- Action Buttons -->
+                    <div class="modal-actions">
+                        <lightning-button
+                            variant="neutral"
+                            label="Cancel"
+                            onclick={handleCloseCreateTransitionModal}
+                            disabled={isCreatingTransition}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="brand"
+                            label="Create Transition"
+                            onclick={handleCreateTransitionSubmit}
+                            disabled={isCreatingTransition}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </div>
+        </template>
 
         <!-- Transition Detail Panel -->
         <template if:true={showTransitionDetail}>

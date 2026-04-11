@@ -2,6 +2,7 @@
  * Business logic and validation for workflow visualizer (renamed with WorkflowVisualizer prefix)
  */
 import WorkflowVisualizerRepository from '../data/WorkflowVisualizerRepository.js';
+import { mapWorkflowVisualizer } from './WorkflowVisualizerMapper.js';
 
 export function validateWorkflowVisualizerStatusName(name) {
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -47,8 +48,49 @@ export async function createWorkflowVisualizerStatus(name, projectId) {
     }
 }
 
+/**
+ * Process normalized workflow data: map to business model, gather statuses, and ensure completeness.
+ * Returns { workflowModel, sortedStatuses, allTransitions }
+ */
+export function processWorkflowVisualizerData(normalizedData = {}) {
+    // Map to business model using the mapper
+    const workflowModel = mapWorkflowVisualizer(normalizedData);
+
+    // Gather statuses and transitions from the business model
+    const statusMap = new Map();
+    workflowModel.statuses.forEach(s => statusMap.set(s.id, { id: s.id, name: s.name }));
+
+    // Map transitions for easier processing
+    const allTransitions = workflowModel.transitions.map(t => ({
+        id: t.id,
+        name: t.name,
+        fromStatus: t.fromStatus,
+        toStatus: t.toStatus,
+        recordStatus: t.recordStatus
+    }));
+
+    // Ensure any statuses referenced by transitions are included
+    allTransitions.forEach(transition => {
+        if (transition.fromStatus && !statusMap.has(transition.fromStatus)) {
+            statusMap.set(transition.fromStatus, { id: transition.fromStatus, name: transition.fromStatus });
+        }
+        if (transition.toStatus && !statusMap.has(transition.toStatus)) {
+            statusMap.set(transition.toStatus, { id: transition.toStatus, name: transition.toStatus });
+        }
+    });
+
+    const sortedStatuses = Array.from(statusMap.values());
+
+    return {
+        workflowModel,
+        sortedStatuses,
+        allTransitions
+    };
+}
+
 export default {
     validateWorkflowVisualizerStatusName,
     validateWorkflowVisualizerTransition,
-    createWorkflowVisualizerStatus
+    createWorkflowVisualizerStatus,
+    processWorkflowVisualizerData
 };
