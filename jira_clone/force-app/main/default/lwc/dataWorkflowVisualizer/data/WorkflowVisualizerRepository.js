@@ -6,6 +6,9 @@
 // Example Apex import (commented):
 // import fetchWorkflowApex from '@salesforce/apex/WorkflowController.fetchWorkflow';
 import createStatusApex from '@salesforce/apex/StatusController.createStatus';
+import getWorkflowTransitionByIdApex from '@salesforce/apex/WorkflowTransitionController.getWorkflowTransitionById';
+import activateWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.activateWorkflowTransition';
+import deleteWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.deleteWorkflowTransition';
 import { workflowVisualizerStatusFromApex, workflowVisualizerTransitionFromApex } from './WorkflowVisualizerDTO.js';
 
 /**
@@ -31,12 +34,12 @@ export function normalizeWorkflowData(raw = {}) {
     if (raw.workflow && Array.isArray(raw.workflow.transitions) && raw.workflow.transitions.length) {
         normalized.workflow.transitions = raw.workflow.transitions.map(t => {
             if (t.Id || t.Name || t.FromStatusId) return workflowVisualizerTransitionFromApex(t);
-            return {
+                return {
                 id: t.id || t.Id || '',
                 name: t.name || t.Name || '',
                 fromStatus: t.fromStatus || t.FromStatus || t.from || '',
                 toStatus: t.toStatus || t.ToStatus || t.to || '',
-                recordStatus: t.recordStatus || t.RecordStatus || 'pending'
+                recordStatus: t.recordStatus || t.RecordStatus__c || t.RecordStatus || 'pending'
             };
         });
     }
@@ -71,9 +74,69 @@ export async function createWorkflowVisualizerTransition(payload) {
     return Promise.resolve({ id: 'tmp-t-' + Date.now(), ...payload });
 }
 
+/**
+ * Fetch a single workflow transition by id and normalize it to client DTO
+ */
+export async function fetchTransitionById(transitionId) {
+    if (!transitionId) {
+        return Promise.resolve({ success: false, message: 'transitionId is required' });
+    }
+
+    try {
+        const response = await getWorkflowTransitionByIdApex({ transitionId });
+
+        // Support APIResponse-like wrappers or raw SObject
+        const raw = (response && response.success && response.data) ? response.data : response;
+
+        if (!raw) {
+            return { success: false, message: 'Transition not found' };
+        }
+
+        const normalized = workflowVisualizerTransitionFromApex(raw);
+        return { success: true, data: normalized };
+    } catch (err) {
+        console.error('Apex fetchTransitionById error', err);
+        const message = err?.body?.message || err?.message || String(err);
+        return { success: false, message };
+    }
+}
+
+/**
+ * Activate a transition via Apex
+ */
+export async function activateTransition(transitionId) {
+    if (!transitionId) return Promise.resolve({ success: false, message: 'transitionId is required' });
+    try {
+        const result = await activateWorkflowTransitionApex({ workflowTransitionId: transitionId });
+        return result;
+    } catch (err) {
+        console.error('Apex activateTransition error', err);
+        const message = err?.body?.message || err?.message || String(err);
+        return { success: false, message };
+    }
+}
+
+/**
+ * Delete a transition via Apex
+ */
+export async function deleteTransition(transitionId) {
+    if (!transitionId) return Promise.resolve({ success: false, message: 'transitionId is required' });
+    try {
+        const result = await deleteWorkflowTransitionApex({ workflowTransitionId: transitionId });
+        return result;
+    } catch (err) {
+        console.error('Apex deleteTransition error', err);
+        const message = err?.body?.message || err?.message || String(err);
+        return { success: false, message };
+    }
+}
+
 export default {
     normalizeWorkflowData,
     fetchWorkflowVisualizerWorkflow,
     createStatus,
-    createWorkflowVisualizerTransition
+    createWorkflowVisualizerTransition,
+    fetchTransitionById,
+    activateTransition,
+    deleteTransition
 };

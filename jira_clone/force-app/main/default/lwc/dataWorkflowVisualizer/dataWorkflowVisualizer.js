@@ -12,7 +12,7 @@ import {
 import addWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
 import { normalizeWorkflowData } from './data/WorkflowVisualizerRepository.js';
 import { mapWorkflowVisualizer } from './logic/WorkflowVisualizerMapper.js';
-import { validateWorkflowVisualizerStatusName, createWorkflowVisualizerStatus, validateWorkflowVisualizerTransition, processWorkflowVisualizerData } from './logic/WorkflowVisualizerService.js';
+import { validateWorkflowVisualizerStatusName, createWorkflowVisualizerStatus, validateWorkflowVisualizerTransition, processWorkflowVisualizerData, fetchTransitionDetail, activateWorkflowTransition, deleteWorkflowTransition } from './logic/WorkflowVisualizerService.js';
 
 export default class DataWorkflowVisualizer extends LightningElement {
     @api workflowData;
@@ -26,6 +26,12 @@ export default class DataWorkflowVisualizer extends LightningElement {
     @track selectedToStatus = null;
     @track showTransitionDetail = false;
     @track selectedTransitionId = null;
+    @track transitionData = null;
+    @track transitionIsLoading = false;
+    @track transitionErrorMessage = '';
+    @track transitionSuccessMessage = '';
+    @track transitionIsActivating = false;
+    @track transitionIsDeleting = false;
     @track clickedStatusIds = [];
     @track workflowModel = null;
     @track newStatusName = '';
@@ -130,18 +136,155 @@ export default class DataWorkflowVisualizer extends LightningElement {
         if (!transition && this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
             transition = this.workflowData.workflow.transitions.find(t => t.id === lineId);
         }
-        
-        console.log('Transition Clicked:', {
-            id: lineId,
-            name: transition?.name,
-            fromStatus: transition?.fromStatus,
-            toStatus: transition?.toStatus,
-            fullObject: transition
-        });
 
-        // Set state to show transition detail
+        // Set state to show transition detail and load details
         this.selectedTransitionId = lineId;
         this.showTransitionDetail = true;
+        this.loadTransitionDetail();
+    }
+
+    /**
+     * Load transition details via service/repository
+     */
+    async loadTransitionDetail() {
+        if (!this.selectedTransitionId) return;
+        this.transitionIsLoading = true;
+        this.transitionErrorMessage = '';
+
+        try {
+            const res = await fetchTransitionDetail(this.selectedTransitionId);
+            if (res && res.success && res.data) {
+                this.transitionData = res.data;
+            } else if (res && res.data) {
+                this.transitionData = res.data;
+            } else {
+                this.transitionErrorMessage = res.message || 'Failed to load transition';
+            }
+        } catch (err) {
+            this.transitionErrorMessage = 'Error loading transition: ' + (err?.body?.message || err?.message);
+            console.error('Error loading transition:', err);
+        } finally {
+            this.transitionIsLoading = false;
+        }
+    }
+
+    /**
+     * Activate workflow transition
+     */
+    async handleActivateTransition() {
+        if (!this.transitionData || !this.transitionData.id) {
+            this.transitionErrorMessage = 'Cannot activate: Transition data not loaded';
+            return;
+        }
+
+        this.transitionIsActivating = true;
+        this.transitionErrorMessage = '';
+        this.transitionSuccessMessage = '';
+
+        try {
+            const result = await activateWorkflowTransition(this.transitionData);
+            if (result && result.success) {
+                this.transitionSuccessMessage = 'Transition activated successfully!';
+                // Update local state to show active status
+                this.transitionData = { ...this.transitionData, recordStatus: 'active' };
+
+                // Also update the main workflow data transitions list if present
+                if (this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
+                    this.workflowData = {
+                        ...this.workflowData,
+                        workflow: {
+                            ...this.workflowData.workflow,
+                            transitions: this.workflowData.workflow.transitions.map(t => t.id === this.transitionData.id ? { ...t, recordStatus: 'active' } : t)
+                        }
+                    };
+                    this.processWorkflowData();
+                }
+
+                setTimeout(() => {
+                    this.transitionSuccessMessage = '';
+                }, 3000);
+            } else {
+                this.transitionErrorMessage = result?.message || 'Failed to activate transition';
+            }
+        } catch (err) {
+            this.transitionErrorMessage = 'Error activating transition: ' + (err?.body?.message || err?.message);
+            console.error('Error activating transition:', err);
+        } finally {
+            this.transitionIsActivating = false;
+        }
+    }
+
+    /**
+     * Delete workflow transition
+     */
+    async handleDeleteTransition() {
+        if (!this.transitionData || !this.transitionData.id) {
+            this.transitionErrorMessage = 'Cannot delete: Transition data not loaded';
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete the transition "${this.transitionData.name || this.transitionData.Name || ''}"?`)) {
+            return;
+        }
+
+        this.transitionIsDeleting = true;
+        this.transitionErrorMessage = '';
+        this.transitionSuccessMessage = '';
+
+        try {
+            const result = await deleteWorkflowTransition(this.transitionData.id);
+            if (result && result.success) {
+                this.transitionSuccessMessage = 'Transition deleted successfully!';
+                // Remove transition from workflow data
+                if (this.workflowData && this.workflowData.workflow && Array.isArray(this.workflowData.workflow.transitions)) {
+                    this.workflowData = {
+                        ...this.workflowData,
+                        workflow: {
+                            ...this.workflowData.workflow,
+                            transitions: this.workflowData.workflow.transitions.filter(transition => transition.id !== this.transitionData.id)
+                        }
+                    };
+                    this.processWorkflowData();
+                }
+
+                // Close panel after successful deletion
+                setTimeout(() => {
+                    this.handleCloseTransitionDetail();
+                }, 1500);
+            } else {
+                this.transitionErrorMessage = result.message || 'Failed to delete transition';
+            }
+        } catch (err) {
+            this.transitionErrorMessage = 'Error deleting transition: ' + (err?.body?.message || err?.message);
+            console.error('Error deleting transition:', err);
+        } finally {
+            this.transitionIsDeleting = false;
+        }
+    }
+
+    get transitionCanActivate() {
+        return this.transitionData && this.transitionData.recordStatus === 'pending';
+    }
+
+    get formattedTransitionCreatedDate() {
+        if (!this.transitionData || !this.transitionData.createdDate) return '';
+        const date = new Date(this.transitionData.createdDate);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    get fromTransitionStatusName() {
+        if (!this.transitionData) return '';
+        return this.transitionData.fromStatusName || this.transitionData.fromStatus || '';
+    }
+
+    get toTransitionStatusName() {
+        if (!this.transitionData) return '';
+        return this.transitionData.toStatusName || this.transitionData.toStatus || '';
+    }
+
+    get transitionRecordStatus() {
+        if (!this.transitionData) return '';
+        return this.transitionData.recordStatus || '';
     }
 
     /**
@@ -457,5 +600,11 @@ export default class DataWorkflowVisualizer extends LightningElement {
     handleCloseTransitionDetail() {
         this.showTransitionDetail = false;
         this.selectedTransitionId = null;
+        this.transitionData = null;
+        this.transitionIsLoading = false;
+        this.transitionErrorMessage = '';
+        this.transitionSuccessMessage = '';
+        this.transitionIsActivating = false;
+        this.transitionIsDeleting = false;
     }
 }

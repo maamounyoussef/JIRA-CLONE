@@ -4,6 +4,53 @@
 import WorkflowVisualizerRepository from '../data/WorkflowVisualizerRepository.js';
 import { mapWorkflowVisualizer } from './WorkflowVisualizerMapper.js';
 
+/**
+ * Fetch transition detail via repository and return normalized DTO
+ */
+export async function fetchTransitionDetail(transitionId) {
+    if (!transitionId) return { success: false, message: 'transitionId is required' };
+    try {
+        const result = await WorkflowVisualizerRepository.fetchTransitionById(transitionId);
+        return result;
+    } catch (err) {
+        console.error('Service.fetchTransitionDetail error', err);
+        const message = err?.body?.message || err?.message || String(err);
+        return { success: false, message };
+    }
+}
+
+/**
+ * Activate a workflow transition after enforcing simple business rules
+ */
+export async function activateWorkflowTransition(transition) {
+    if (!transition || !transition.id) return { success: false, message: 'Transition required' };
+    // Only pending transitions can be activated
+    if (transition.recordStatus && transition.recordStatus !== 'pending') {
+        return { success: false, message: 'Only pending transitions can be activated' };
+    }
+
+    try {
+        const result = await WorkflowVisualizerRepository.activateTransition(transition.id);
+        return result;
+    } catch (err) {
+        console.error('Service.activateWorkflowTransition error', err);
+        const message = err?.body?.message || err?.message || String(err);
+        return { success: false, message };
+    }
+}
+
+export async function deleteWorkflowTransition(transitionId) {
+    if (!transitionId) return { success: false, message: 'transitionId is required' };
+    try {
+        const result = await WorkflowVisualizerRepository.deleteTransition(transitionId);
+        return result;
+    } catch (err) {
+        console.error('Service.deleteWorkflowTransition error', err);
+        const message = err?.body?.message || err?.message || String(err);
+        return { success: false, message };
+    }
+}
+
 export function validateWorkflowVisualizerStatusName(name) {
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return { valid: false, message: 'Name is required' };
@@ -93,4 +140,5 @@ export default {
     validateWorkflowVisualizerTransition,
     createWorkflowVisualizerStatus,
     processWorkflowVisualizerData
+    ,fetchTransitionDetail, activateWorkflowTransition, deleteWorkflowTransition
 };

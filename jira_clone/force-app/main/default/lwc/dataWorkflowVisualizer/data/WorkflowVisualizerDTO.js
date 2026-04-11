@@ -16,7 +16,10 @@ export function workflowVisualizerTransitionFromApex(apexTransition = {}) {
         name: apexTransition.Name || apexTransition.name || '',
         fromStatus: apexTransition.FromStatusId || apexTransition.fromStatus || apexTransition.from || '',
         toStatus: apexTransition.ToStatusId || apexTransition.toStatus || apexTransition.to || '',
-        recordStatus: apexTransition.RecordStatus || apexTransition.recordStatus || 'pending'
+        recordStatus: apexTransition.RecordStatus__c || apexTransition.RecordStatus || apexTransition.recordStatus || 'pending',
+        createdDate: apexTransition.CreatedDate || apexTransition.createdDate || '',
+        fromStatusName: (apexTransition.FromStatus__r && apexTransition.FromStatus__r.Name) || apexTransition.FromStatusName || apexTransition.fromStatusName || '',
+        toStatusName: (apexTransition.ToStatus__r && apexTransition.ToStatus__r.Name) || apexTransition.ToStatusName || apexTransition.toStatusName || ''
     };
 }
 
