@@ -171,6 +171,10 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
 
         const arrowPath = `M ${endPt.x} ${endPt.y} L ${b1x} ${b1y} L ${b2x} ${b2y} Z`;
 
+        // Midpoint of quadratic bezier curve for label positioning
+        const nameMidX = 0.25 * startPt.x + 0.5 * ctrlX + 0.25 * endPt.x;
+        const nameMidY = 0.25 * startPt.y + 0.5 * ctrlY + 0.25 * endPt.y;
+
         const recordStatus = transition.recordStatus || 'active';
         const groupClass = `transition-line-group ${recordStatus === 'pending' ? 'pending-transition' : 'active-transition'}`;
         const lineClass = `transition-line${recordStatus === 'pending' ? ' pending' : ''}`;
@@ -188,6 +192,8 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
             endY: endPt.y,
             startLabelY: startPt.y - (config.labelOffset || 10),
             endLabelY: endPt.y - (config.labelOffset || 10),
+            nameMidX: nameMidX,
+            nameMidY: nameMidY - 6,
             fromStatus: transition.fromStatus,
             toStatus: transition.toStatus,
             // metadata for template bindings

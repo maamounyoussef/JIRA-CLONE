@@ -42,8 +42,8 @@
                 <defs>
                     <!-- Status gradient -->
                     <linearGradient id="statusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#dbeafe;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#bfdbfe;stop-opacity:1" />
+                        <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#f8fafc;stop-opacity:1" />
                     </linearGradient>
                     
                     <!-- marker defs removed: explicit arrow polygons are used instead -->
@@ -81,22 +81,14 @@
                             r={endPointRadius}
                         ></circle>
                         
-                        <!-- Status labels -->
+                        <!-- Transition Name Label -->
                         <text
-                            class="transition-label-start"
-                            x={line.startX}
-                            y={line.startLabelY}
+                            class="transition-label"
+                            x={line.nameMidX}
+                            y={line.nameMidY}
                             text-anchor="middle"
                         >
-                            {line.fromStatus}
-                        </text>
-                        <text
-                            class="transition-label-end"
-                            x={line.endX}
-                            y={line.endLabelY}
-                            text-anchor="middle"
-                        >
-                            {line.toStatus}
+                            {line.name}
                         </text>
                     </g>
                 </template>
@@ -133,22 +125,14 @@
                             r={endPointRadius}
                         ></circle>
                         
-                        <!-- Status labels -->
+                        <!-- Transition Name Label -->
                         <text
-                            class="transition-label-start"
-                            x={line.startX}
-                            y={line.startLabelY}
+                            class="transition-label"
+                            x={line.nameMidX}
+                            y={line.nameMidY}
                             text-anchor="middle"
                         >
-                            {line.fromStatus}
-                        </text>
-                        <text
-                            class="transition-label-end"
-                            x={line.endX}
-                            y={line.endLabelY}
-                            text-anchor="middle"
-                        >
-                            {line.toStatus}
+                            {line.name}
                         </text>
                     </g>
                 </template>
@@ -279,153 +263,135 @@
             </div>
         </template>
 
-        <!-- Transition Detail Panel (inlined) -->
+        <!-- Transition Detail Panel -->
         <template if:true={showTransitionDetail}>
             <div class="transition-detail-panel">
-                <div class="transition-detail-container">
+                <!-- Sticky Header — Close button always visible -->
+                <div class="panel-header">
+                    <h2 class="panel-header-title">
+                        <lightning-icon icon-name="utility:flow" size="small"></lightning-icon>
+                        Transition Detail
+                    </h2>
+                    <div class="panel-header-actions">
+                        <template if:true={transitionCanActivate}>
+                            <lightning-button
+                                variant="success"
+                                label="Activate"
+                                onclick={handleActivateTransition}
+                                icon-name="utility:check"
+                                disabled={transitionIsActivating}
+                            ></lightning-button>
+                        </template>
+                        <lightning-button
+                            variant="destructive"
+                            label="Delete"
+                            onclick={handleDeleteTransition}
+                            icon-name="utility:delete"
+                            disabled={transitionIsDeleting}
+                        ></lightning-button>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            variant="border-filled"
+                            onclick={handleCloseTransitionDetail}
+                            class="close-button"
+                        ></lightning-button-icon>
+                    </div>
+                </div>
+
+                <!-- Scrollable Body -->
+                <div class="panel-body">
                     <!-- Loading Indicator -->
                     <template if:true={transitionIsLoading}>
-                        <div class="slds-m-around_medium">
+                        <div class="slds-m-around_large slds-align_absolute-center" style="min-height: 200px;">
                             <lightning-spinner alternative-text="Loading..."></lightning-spinner>
                         </div>
                     </template>
 
                     <!-- Error Message -->
                     <template if:true={transitionErrorMessage}>
-                        <div class="slds-m-around_medium">
-                            <lightning-alert variant="error" title="Error">{transitionErrorMessage}</lightning-alert>
+                        <div class="error-message">
+                            <span class="error-icon">⚠</span>
+                            <span>{transitionErrorMessage}</span>
                         </div>
                     </template>
 
                     <!-- Success Message -->
                     <template if:true={transitionSuccessMessage}>
-                        <div class="slds-m-around_medium">
+                        <div style="padding: 16px 24px;">
                             <lightning-alert variant="success" title="Success">{transitionSuccessMessage}</lightning-alert>
                         </div>
                     </template>
 
-                    <!-- Transition Detail -->
+                    <!-- Detail Fields -->
                     <template if:true={transitionData}>
-                        <lightning-card title="Transition Detail" icon-name="utility:flow">
-                            <!-- Action Buttons -->
-                            <div slot="actions" class="action-buttons">
-                                <template if:true={transitionCanActivate}>
-                                    <lightning-button
-                                        variant="success"
-                                        label="Activate"
-                                        onclick={handleActivateTransition}
-                                        icon-name="utility:check"
-                                        disabled={transitionIsActivating}
-                                    ></lightning-button>
-                                </template>
-                                <lightning-button
-                                    variant="destructive"
-                                    label="Delete"
-                                    onclick={handleDeleteTransition}
-                                    icon-name="utility:delete"
-                                    disabled={transitionIsDeleting}
-                                ></lightning-button>
-                                <lightning-button
-                                    variant="neutral"
-                                    label="Close"
-                                    onclick={handleCloseTransitionDetail}
-                                    icon-name="utility:close"
-                                ></lightning-button>
+                        <div class="transition-detail-container">
+                            <!-- Transition Name -->
+                            <div class="detail-field">
+                                <dt class="detail-label">
+                                    <lightning-icon icon-name="utility:text" size="x-small" alternative-text="Name"></lightning-icon>
+                                    <span>Name</span>
+                                </dt>
+                                <dd class="detail-value">
+                                    <strong>{transitionData.name}</strong>
+                                </dd>
                             </div>
 
-                            <!-- Content -->
-                            <div class="slds-m-around_medium">
-                                <!-- Transition Name -->
-                                <div class="detail-field">
-                                    <dt class="detail-label">
-                                        <lightning-icon
-                                            icon-name="utility:text"
-                                            alternative-text="Name"
-                                            title="Name"
-                                        ></lightning-icon>
-                                        <span>Transition Name</span>
-                                    </dt>
-                                    <dd class="detail-value">
-                                        <strong>{transitionData.name}</strong>
-                                    </dd>
-                                </div>
-
-                                <!-- Transition ID -->
-                                <div class="detail-field">
-                                    <dt class="detail-label">
-                                        <lightning-icon
-                                            icon-name="utility:unicode"
-                                            alternative-text="ID"
-                                            title="ID"
-                                        ></lightning-icon>
-                                        <span>ID</span>
-                                    </dt>
-                                    <dd class="detail-value">
-                                        <code class="id-value">{transitionData.id}</code>
-                                    </dd>
-                                </div>
-
-                                <!-- From Status -->
-                                <div class="detail-field">
-                                    <dt class="detail-label">
-                                        <lightning-icon
-                                            icon-name="utility:forward"
-                                            alternative-text="From"
-                                            title="From Status"
-                                        ></lightning-icon>
-                                        <span>From Status</span>
-                                    </dt>
-                                    <dd class="detail-value">
-                                        <span class="status-badge from">{fromTransitionStatusName}</span>
-                                    </dd>
-                                </div>
-
-                                <!-- To Status -->
-                                <div class="detail-field">
-                                    <dt class="detail-label">
-                                        <lightning-icon
-                                            icon-name="utility:forward"
-                                            alternative-text="To"
-                                            title="To Status"
-                                        ></lightning-icon>
-                                        <span>To Status</span>
-                                    </dt>
-                                    <dd class="detail-value">
-                                        <span class="status-badge to">{toTransitionStatusName}</span>
-                                    </dd>
-                                </div>
-
-                                <!-- Record Status -->
-                                <div class="detail-field">
-                                    <dt class="detail-label">
-                                        <lightning-icon
-                                            icon-name="utility:record"
-                                            alternative-text="Status"
-                                            title="Record Status"
-                                        ></lightning-icon>
-                                        <span>Record Status</span>
-                                    </dt>
-                                    <dd class="detail-value">
-                                        <lightning-badge label={transitionRecordStatus}></lightning-badge>
-                                    </dd>
-                                </div>
-
-                                <!-- Created Date -->
-                                <div class="detail-field">
-                                    <dt class="detail-label">
-                                        <lightning-icon
-                                            icon-name="utility:date_input"
-                                            alternative-text="Created"
-                                            title="Created Date"
-                                        ></lightning-icon>
-                                        <span>Created Date</span>
-                                    </dt>
-                                    <dd class="detail-value">
-                                        {formattedTransitionCreatedDate}
-                                    </dd>
-                                </div>
+                            <!-- Transition ID -->
+                            <div class="detail-field">
+                                <dt class="detail-label">
+                                    <lightning-icon icon-name="utility:unicode" size="x-small" alternative-text="ID"></lightning-icon>
+                                    <span>ID</span>
+                                </dt>
+                                <dd class="detail-value">
+                                    <code class="id-value">{transitionData.id}</code>
+                                </dd>
                             </div>
-                        </lightning-card>
+
+                            <!-- From Status -->
+                            <div class="detail-field">
+                                <dt class="detail-label">
+                                    <lightning-icon icon-name="utility:forward" size="x-small" alternative-text="From"></lightning-icon>
+                                    <span>From Status</span>
+                                </dt>
+                                <dd class="detail-value">
+                                    <span class="status-badge from">{fromTransitionStatusName}</span>
+                                </dd>
+                            </div>
+
+                            <!-- To Status -->
+                            <div class="detail-field">
+                                <dt class="detail-label">
+                                    <lightning-icon icon-name="utility:forward" size="x-small" alternative-text="To"></lightning-icon>
+                                    <span>To Status</span>
+                                </dt>
+                                <dd class="detail-value">
+                                    <span class="status-badge to">{toTransitionStatusName}</span>
+                                </dd>
+                            </div>
+
+                            <!-- Record Status -->
+                            <div class="detail-field">
+                                <dt class="detail-label">
+                                    <lightning-icon icon-name="utility:record" size="x-small" alternative-text="Status"></lightning-icon>
+                                    <span>Record Status</span>
+                                </dt>
+                                <dd class="detail-value">
+                                    <lightning-badge label={transitionRecordStatus}></lightning-badge>
+                                </dd>
+                            </div>
+
+                            <!-- Created Date -->
+                            <div class="detail-field">
+                                <dt class="detail-label">
+                                    <lightning-icon icon-name="utility:date_input" size="x-small" alternative-text="Created"></lightning-icon>
+                                    <span>Created Date</span>
+                                </dt>
+                                <dd class="detail-value">
+                                    {formattedTransitionCreatedDate}
+                                </dd>
+                            </div>
+                        </div>
                     </template>
                 </div>
             </div>

@@ -1,175 +1,200 @@
+/* ═══════════════════════════════════════════════════════════════════
+   dataWorkflowVisualizer — Design System
+   Modern, minimal, consistent UI with a unified token layer.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Design Tokens ─────────────────────────────────────────────── */
 .workflow-visualizer-container {
-    /* Component-scoped custom properties so inline overrides work correctly */
-    --primary: #0b5fff; /* stronger blue */
-    --accent: #ff7a00;  /* stronger orange */
-    --bg: #f4f6f8;
-    --card-bg: #ffffff;
-    --muted: #6b7280;
-    --text-on-card: #0f172a; /* dark text for status names */
-    /* Visual tuning variables */
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --primary-hover: #4f46e5;
+    --primary-bg: rgba(99, 102, 241, 0.08);
+    --accent: #f59e0b;
+    --accent-light: #fbbf24;
+    --danger: #ef4444;
+    --success: #22c55e;
+
+    --surface: #ffffff;
+    --surface-secondary: #f8fafc;
+    --surface-glass: rgba(255, 255, 255, 0.72);
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.1);
+
+    /* SVG tuning vars (kept for inline-style bindings) */
     --rect-stroke-width: 1.5;
-    --rect-stroke-opacity: 0.12;
-    --rect-hover-stroke-opacity: 0.18;
-    --rect-hover-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
-    --rect-hover-shadow-sm: 0 3px 8px rgba(0, 0, 0, 0.2);
-
-    --line-width: 3;
-    --line-hover-width: 4;
-    --line-dasharray: 5,5;
-
-    --arrow-shadow: 0 1px 2px rgba(0,0,0,0.12);
-    --active-arrow-glow: 0 1px 3px rgba(27,150,255,0.35);
-    --pending-arrow-glow: 0 1px 3px rgba(255,165,0,0.35);
-
+    --line-width: 2.5;
+    --line-hover-width: 3.5;
+    --line-dasharray: 6,6;
     --start-point-stroke-width: 2;
-    --start-point-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-    --start-point-hover-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-    --start-point-hover-scale: 1.4;
+    --start-point-hover-scale: 1.35;
+    --label-stroke-width: 3;
+    --detail-panel-width: 560px;
 
-    --label-stroke-width: 2;
-    --detail-panel-width: 500px;
-
+    /* Root layout */
     width: 100%;
-    background-color: var(--bg);
-    padding: 18px;
-    min-height: 560px;
+    background: linear-gradient(160deg, var(--surface-secondary) 0%, var(--border) 100%);
+    padding: 24px;
+    min-height: 600px;
     display: flex;
     flex-direction: column;
+    gap: 12px;
+    border-radius: var(--radius-lg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* ── Toolbar ───────────────────────────────────────────────────── */
 .toolbar {
-    background: transparent;
-    padding: 6px 8px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 10px 18px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    box-shadow: var(--shadow-xs);
 }
 
 .toolbar-info {
     font-size: 13px;
-    color: var(--muted);
+    color: var(--text-muted);
     flex: 1;
+    font-weight: 500;
 }
 
 .toolbar-info strong {
     color: var(--primary);
     font-weight: 700;
+    padding: 3px 10px;
+    background: var(--primary-bg);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
 }
 
+/* ── Legend ─────────────────────────────────────────────────────── */
 .legend-container {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 0 12px 0;
+    gap: 14px;
+    padding: 0 4px;
 }
 
 .legend-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: #374151;
+    color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 1px;
 }
 
 .legend-items {
     display: flex;
-    gap: 25px;
-    flex: 1;
+    gap: 12px;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
+    background: var(--surface-glass);
+    padding: 5px 14px 5px 8px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-light);
 }
 
 .legend-badge {
-    width: var(--legend-badge-width);
-    height: var(--legend-badge-height);
+    width: 24px;
+    height: 10px;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: calc(var(--legend-badge-height) / 2);
-    font-size: 11px;
-    font-weight: 600;
-    color: #ffffff;
+    border-radius: 5px;
 }
 
-.legend-badge.active { background: var(--primary); }
-.legend-badge.pending { background: var(--accent); }
+.legend-badge.active {
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+}
+
+.legend-badge.pending {
+    background: linear-gradient(90deg, var(--accent), var(--accent-light));
+}
 
 .legend-label {
-    font-size: 13px;
-    color: #111827;
+    font-size: 12px;
+    color: var(--text-secondary);
     font-weight: 600;
 }
 
+/* ── SVG Canvas ────────────────────────────────────────────────── */
 .workflow-svg {
     width: 100%;
     height: auto;
     min-height: 480px;
     background: transparent;
     flex: 1;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
 }
 
-
+/* ── Status Nodes ──────────────────────────────────────────────── */
 .status-rectangle-svg {
     fill: url(#statusGradient);
-    stroke: rgba(3, 37, 113, var(--rect-stroke-opacity));
+    stroke: rgba(99, 102, 241, 0.25);
     stroke-width: var(--rect-stroke-width);
-    transition: transform 0.18s ease, filter 0.18s ease, fill 0.18s ease;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     cursor: pointer;
-    /* Ensure the filled body of the rectangle receives pointer events */
     pointer-events: all;
+    rx: 10px;
 }
 
-.status-rectangle-svg:hover {
-    filter: drop-shadow(var(--rect-hover-shadow));
-    /* change to primary fill on hover */
-    fill: var(--primary);
-    stroke: rgba(3, 37, 113, var(--rect-hover-stroke-opacity));
-}
+.status-group { cursor: pointer; }
 
-/* Ensure the status text is readable when the rectangle is hovered */
-.status-group:hover .status-text-svg {
-    fill: var(--card-bg);
-    transition: fill 0.18s ease;
-}
-
-/* Clicked state: persist a primary background and white text */
-.status-group.clicked .status-rectangle-svg {
-    fill: var(--primary);
-    stroke: rgba(3, 37, 113, 0.18);
+.status-group:hover .status-rectangle-svg {
+    stroke: rgba(99, 102, 241, 0.6);
+    filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.15));
     transform: translateY(-2px);
 }
 
+.status-group.clicked .status-rectangle-svg {
+    fill: var(--primary);
+    stroke: var(--primary-hover);
+    filter: drop-shadow(0 6px 16px rgba(99, 102, 241, 0.35));
+    transform: translateY(-3px) scale(1.03);
+}
+
 .status-group.clicked .status-text-svg {
-    fill: var(--card-bg);
-    transition: fill 0.18s ease;
+    fill: #ffffff;
 }
 
 .status-text-svg {
     font-size: 13px;
-    font-weight: 700;
-    fill: var(--text-on-card);
+    font-weight: 600;
+    fill: var(--text-primary);
     pointer-events: none;
-    transition: fill 0.18s ease;
+    transition: fill 0.2s ease;
+    letter-spacing: 0.2px;
 }
 
-.status-group {
-    cursor: pointer;
-}
-
-.status-group:hover .status-rectangle-svg {
-    filter: drop-shadow(var(--rect-hover-shadow-sm));
-}
-
+/* ── Transition Lines ──────────────────────────────────────────── */
 .transition-line {
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.95;
-    transition: stroke-width 0.12s ease, opacity 0.12s ease, filter 0.12s ease;
+    opacity: 0.8;
+    transition: all 0.2s ease;
     cursor: pointer;
     stroke: var(--primary);
     stroke-width: var(--line-width);
@@ -178,49 +203,54 @@
 .transition-line:hover {
     stroke-width: var(--line-hover-width);
     opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.35));
 }
 
 .transition-line.pending {
     stroke: var(--accent);
     stroke-dasharray: var(--line-dasharray);
+    animation: dashFlow 2.5s linear infinite;
 }
 
-.transition-arrow { fill: var(--primary); }
-.transition-arrow.pending { fill: var(--accent); }
-
-.transition-line-group {
-    cursor: pointer;
+@keyframes dashFlow {
+    to { stroke-dashoffset: -24; }
 }
 
-/* Arrow polygon at the end of the transition line */
+/* ── Arrows ────────────────────────────────────────────────────── */
 .transition-arrow {
-    opacity: 0.95;
-    transition: opacity 0.12s ease, filter 0.12s ease;
-    filter: drop-shadow(var(--arrow-shadow));
+    fill: var(--primary);
+    opacity: 0.85;
+    transition: all 0.2s ease;
     pointer-events: none;
     transform-box: fill-box;
     transform-origin: center;
 }
 
-/* Hover filter to match line highlight (separate colors for active/pending) */
+.transition-arrow.pending { fill: var(--accent); }
+
+.transition-line-group { cursor: pointer; }
+
 .transition-line-group.active-transition:hover .transition-arrow {
-    filter: drop-shadow(var(--active-arrow-glow));
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.45));
+    transform: scale(1.15);
 }
 
 .transition-line-group.pending-transition:hover .transition-arrow {
-    filter: drop-shadow(var(--pending-arrow-glow));
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.45));
+    transform: scale(1.15);
 }
 
-/* Transition Start and End Point Markers */
+/* ── Start / End Points ────────────────────────────────────────── */
 .transition-start-point {
-    opacity: 0.7;
-    transition: all 0.2s ease, transform 0.12s ease;
-    filter: drop-shadow(var(--start-point-shadow));
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     transform-box: fill-box;
     transform-origin: center;
+    fill: var(--surface);
+    stroke: var(--primary);
+    stroke-width: var(--start-point-stroke-width);
 }
 
-/* Hide end point circle completely - arrowhead is the only end indicator */
 .transition-end-point {
     opacity: 0;
     display: none;
@@ -229,353 +259,120 @@
 .transition-line-group:hover .transition-start-point {
     opacity: 1;
     transform: scale(var(--start-point-hover-scale));
-    filter: drop-shadow(var(--start-point-hover-shadow));
+    filter: drop-shadow(0 3px 6px rgba(99, 102, 241, 0.3));
+    fill: var(--primary);
+    stroke: var(--surface);
 }
 
-/* Color start markers and labels via classes (no inline attributes) */
-.transition-start-point {
-    fill: var(--primary);
-    stroke: #ffffff;
-    stroke-width: var(--start-point-stroke-width);
-}
 .transition-line-group.pending-transition .transition-start-point {
+    stroke: var(--accent);
+}
+
+.transition-line-group.pending-transition:hover .transition-start-point {
     fill: var(--accent);
 }
 
-.transition-label-start {
-    fill: var(--primary);
-    opacity: 0; /* hidden by default */
-}
-.transition-label-end {
-    fill: var(--primary);
-    opacity: 1; /* end label visible */
-}
-.transition-line-group.pending-transition .transition-label-start,
-.transition-line-group.pending-transition .transition-label-end {
-    fill: var(--accent);
-}
-
-/* Transition Labels (Status names) */
-.transition-label-start,
-.transition-label-end {
-    font-size: 10px;
+/* ── Transition Name Label (on curve) ──────────────────────────── */
+.transition-label {
+    font-size: 11px;
     font-weight: 600;
     pointer-events: none;
-    paint-order: stroke;
-    stroke: #ffffff;
-    stroke-width: var(--label-stroke-width);
+    paint-order: stroke fill;
+    stroke: var(--surface-secondary);
+    stroke-width: 3.5px;
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    fill: var(--primary);
+    opacity: 0.8;
+    transition: all 0.2s ease;
 }
 
-/* Transition Detail Panel */
+.transition-line-group:hover .transition-label {
+    opacity: 1;
+    font-weight: 700;
+}
+
+.transition-line-group.pending-transition .transition-label {
+    fill: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DETAIL PANEL — wider, with a sticky close header
+   ═══════════════════════════════════════════════════════════════════ */
 .transition-detail-panel {
     position: fixed;
     right: 0;
     top: 0;
     bottom: 0;
     width: var(--detail-panel-width);
-    background-color: #ffffff;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -6px 0 32px rgba(0, 0, 0, 0.08);
     z-index: 1001;
     overflow-y: auto;
-    animation: slideInRight 0.3s ease-out;
+    animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-    }
-    to {
-        transform: translateX(0);
-    }
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }
 
 @media (max-width: 768px) {
-    .transition-detail-panel {
-        width: 100%;
-    }
+    .transition-detail-panel { width: 100%; }
 }
 
-/* Modal Backdrop - unified overlay  */
-.modal-backdrop,
-.transition-modal-overlay {
-    position: fixed;
+/* Sticky panel header — close button is ALWAYS visible */
+.panel-header {
+    position: sticky;
     top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-}
-
-.transition-modal-overlay {
     display: flex;
     align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-/* Modal Container - unified dialog */
-.modal-container,
-.transition-modal-content {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    min-width: 400px;
-    max-width: 600px;
-}
-
-.transition-modal-content {
-    position: static;
-    transform: none;
-    top: auto;
-    left: auto;
-    width: 90%;
-    max-width: 400px;
-    border-radius: 4px;
-    padding: 15px 20px;
-}
-
-.transition-modal-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #000;
-    margin: 0 0 16px 0;
-}
-
-/* Modal Header, Body, Footer */
-.modal-header {
-    display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-    border-radius: 8px 8px 0 0;
+    padding: 20px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+    z-index: 2;
+    flex-shrink: 0;
 }
 
-.modal-title {
-    margin: 0;
+.panel-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.close-button {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #6b7280;
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
+.panel-header-actions {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.close-button:hover {
-    background-color: #e5e7eb;
-    color: #1f2937;
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 20px;
-    border-top: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-    border-radius: 0 0 8px 8px;
-}
-
-/* Form Elements */
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #1f2937;
-}
-
-.form-input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input:disabled {
-    background-color: #f3f4f6;
-    color: #9ca3af;
-    cursor: not-allowed;
-}
-
-.error-message {
-    padding: 12px;
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 4px;
-    color: #dc2626;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
     gap: 8px;
-    margin-bottom: 16px;
-}
-
-.error-icon {
-    font-weight: bold;
-}
-
-/* Buttons */
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-secondary {
-    background-color: #e5e7eb;
-    color: #1f2937;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background-color: #d1d5db;
-}
-
-.btn-primary {
-    background-color: #3b82f6;
-    color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-    background-color: #2563eb;
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* Transition Info Display */
-.transition-info {
-    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding: 12px;
-    background-color: #f3f3f3;
-    border-radius: 4px;
-    font-size: 14px;
 }
 
-.status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 3px;
-    font-weight: 600;
-    font-size: 12px;
-    color: white;
+/* Panel body scrolls beneath the sticky header */
+.panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
 }
 
-.status-badge.from {
-    background-color: #0070d2;
-}
-
-.status-badge.to {
-    background-color: #7b1fa2;
-}
-
-.arrow {
-    color: #0070d2;
-    font-weight: bold;
-    font-size: 16px;
-}
-
-/* ========== Modal Support Styles (createStatusModal integration) ========== */
-
-/* Alternative Modal Overlay/Content Names for flexibility */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background-color: white;
-    border-radius: 4px;
-    padding: 24px;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
-    width: 90%;
-    max-width: 400px;
-}
-
-/* Modal Input Container */
-.modal-input {
-    margin-bottom: 20px;
-}
-
-/* Modal Actions Container */
-.modal-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 24px;
-}
-
-/* ========== Appended from workflowTransitionDetail.css (merged as-is) ========== */
+/* ── Detail Fields ─────────────────────────────────────────────── */
 .transition-detail-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    padding: 0;
 }
 
 .detail-field {
     display: flex;
-    gap: 12px;
-    padding: 12px;
-    border-bottom: 1px solid #e8e8e8;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-light);
     align-items: center;
 }
 
@@ -586,49 +383,30 @@
 .detail-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-secondary);
     min-width: 150px;
-    font-style: normal;
-    margin: 0;
+    font-size: 13px;
 }
 
 .detail-value {
     flex: 1;
-    color: #565656;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
     margin: 0;
     word-break: break-word;
 }
 
 .id-value {
-    background-color: #f3f3f3;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-family: monospace;
+    background-color: var(--surface-secondary);
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 12px;
-    color: #0070d2;
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.status-badge.from {
-    background-color: #e3f2fd;
-    color: #0052cc;
-    border: 1px solid #0052cc;
-}
-
-.status-badge.to {
-    background-color: #f3e5f5;
-    color: #7b1fa2;
-    border: 1px solid #7b1fa2;
+    color: var(--primary);
+    border: 1px solid var(--border);
 }
 
 .action-buttons {
@@ -637,8 +415,208 @@
     align-items: center;
 }
 
-lightning-alert {
-    display: block;
-    margin-bottom: 12px;
+/* ═══════════════════════════════════════════════════════════════════
+   MODALS — consistent overlay + card pattern
+   ═══════════════════════════════════════════════════════════════════ */
+.modal-backdrop,
+.transition-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 999;
+    animation: fadeIn 0.2s ease-out;
 }
 
+.transition-modal-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-container,
+.transition-modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    min-width: 440px;
+    max-width: 560px;
+    animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    overflow: hidden;
+}
+
+@keyframes modalPop {
+    to { transform: translate(-50%, -50%) scale(1); }
+}
+
+.transition-modal-content {
+    position: static;
+    transform: none;
+    top: auto;
+    left: auto;
+    width: 92%;
+    max-width: 480px;
+    padding: 0;
+    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUp {
+    from { transform: scale(0.96); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ── Modal Header / Body / Footer ──────────────────────────────── */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.transition-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 22px 24px 16px 24px;
+    margin: 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.close-button {
+    background: var(--surface-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.close-button:hover {
+    background: var(--border);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 24px;
+    border-top: 1px solid var(--border-light);
+    background: var(--surface-secondary);
+}
+
+.modal-input {
+    margin-bottom: 20px;
+    padding: 0 24px;
+}
+
+.modal-body .modal-input {
+    padding: 0;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 18px 24px;
+    background: var(--surface-secondary);
+    border-top: 1px solid var(--border-light);
+}
+
+/* ── Errors ────────────────────────────────────────────────────── */
+.error-message {
+    padding: 12px 16px;
+    background-color: #fef2f2;
+    border-left: 3px solid var(--danger);
+    border-radius: var(--radius-sm);
+    color: #b91c1c;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 24px 20px 24px;
+}
+
+.modal-body .error-message {
+    margin: 0 0 20px 0;
+}
+
+.error-icon {
+    font-size: 16px;
+}
+
+/* ── Transition Info (Create Modal) ────────────────────────────── */
+.transition-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 20px 24px;
+    padding: 18px;
+    background-color: var(--surface-secondary);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+}
+
+/* ── Badges ────────────────────────────────────────────────────── */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 14px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.2px;
+}
+
+.status-badge.from {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.status-badge.to {
+    background-color: #fdf4ff;
+    color: #a855f7;
+    border: 1px solid #e9d5ff;
+}
+
+.arrow {
+    color: var(--text-muted);
+    font-weight: bold;
+    font-size: 18px;
+}
