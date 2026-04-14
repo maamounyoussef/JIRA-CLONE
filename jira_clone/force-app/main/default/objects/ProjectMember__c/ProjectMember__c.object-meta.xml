@@ -10,4 +10,5 @@
     </nameField>
     <pluralLabel>Project Members</pluralLabel>
     <sharingModel>ReadWrite</sharingModel>
+
 </CustomObject>

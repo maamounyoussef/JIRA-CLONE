@@ -3,7 +3,7 @@
     <fullName>Assignee__c</fullName>
     <description>Subtask assignee</description>
     <label>Assignee</label>
-    <referenceTo>User</referenceTo>
+    <referenceTo>ProjectMember__c</referenceTo>
     <relationshipLabel>Assigned Subtasks</relationshipLabel>
     <relationshipName>AssignedSubtasks</relationshipName>
     <required>false</required>

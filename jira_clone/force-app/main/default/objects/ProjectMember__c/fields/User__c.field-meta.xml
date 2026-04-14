@@ -6,7 +6,8 @@
     <referenceTo>User</referenceTo>
     <relationshipLabel>Project Memberships</relationshipLabel>
     <relationshipName>ProjectMemberships</relationshipName>
-    <required>true</required>
     <type>Lookup</type>
-    <deleteConstraint>SetNull</deleteConstraint>
+<required>false</required>
+<deleteConstraint>SetNull</deleteConstraint>
+
 </CustomField>

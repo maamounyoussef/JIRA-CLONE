@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Type__c</fullName>
+    <fullName>Ticket_Type__c</fullName>
     <description>Ticket type</description>
     <label>Type</label>
     <referenceTo>TicketType__c</referenceTo>

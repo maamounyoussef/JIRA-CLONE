@@ -23,7 +23,7 @@ public class WorkflowConstants {
         'START_DATE' => 'StartDate__c',
         'STORY_POINT' => 'StoryPoint__c',
         'SUMMARY' => 'Summary__c',
-        'TYPE' => 'Type__c'
+        'TYPE' => 'Ticket_Type__c'
     };
     
     // Ticket Field Display Names

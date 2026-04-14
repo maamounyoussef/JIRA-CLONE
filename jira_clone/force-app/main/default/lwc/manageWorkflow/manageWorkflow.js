@@ -366,7 +366,7 @@ export default class ManageWorkflow extends LightningElement {
             { label: 'Start Date', value: 'StartDate__c' },
             { label: 'Story Point', value: 'StoryPoint__c' },
             { label: 'Summary', value: 'Summary__c' },
-            { label: 'Type', value: 'Type__c' }
+            { label: 'Type', value: 'Ticket_Type__c' }
         ];
     }
 

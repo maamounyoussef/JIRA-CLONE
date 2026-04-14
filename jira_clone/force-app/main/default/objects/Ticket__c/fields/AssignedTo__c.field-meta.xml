@@ -3,7 +3,7 @@
     <fullName>AssignedTo__c</fullName>
     <description>Assigned to custom user</description>
     <label>Assigned To</label>
-    <referenceTo>User</referenceTo>
+    <referenceTo>ProjectMember__c</referenceTo>
     <relationshipLabel>Assigned Tickets</relationshipLabel>
     <relationshipName>AssignedTickets</relationshipName>
     <required>false</required>
