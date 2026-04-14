@@ -6,6 +6,7 @@ import {
     getStatusesWithSVGData, 
     getMarkerArrow,
     VISUALIZATION_CONFIG,
+    getResponsiveConfig,
     toggleClick,
     clearClicks
 } from './dataWorkflowVisualizerUtil.js';
@@ -43,6 +44,8 @@ export default class DataWorkflowVisualizer extends LightningElement {
     
     // Use visualization config from util
     config = VISUALIZATION_CONFIG;
+    _resizeObserver = null;
+    _lastMeasuredWidth = 0;
 
     get startPointRadius() {
         return this.config.startPointRadius || 5;
@@ -62,6 +65,33 @@ export default class DataWorkflowVisualizer extends LightningElement {
 
     connectedCallback() {
         this.processWorkflowData();
+    }
+
+    renderedCallback() {
+        if (!this._resizeObserver) {
+            const container = this.template.querySelector('.workflow-visualizer-container');
+            if (container) {
+                this._resizeObserver = new ResizeObserver(entries => {
+                    for (const entry of entries) {
+                        const width = entry.contentRect.width;
+                        // Only recalculate if width changed meaningfully (> 20px)
+                        if (Math.abs(width - this._lastMeasuredWidth) > 20) {
+                            this._lastMeasuredWidth = width;
+                            this.config = getResponsiveConfig(width);
+                            this.processWorkflowData();
+                        }
+                    }
+                });
+                this._resizeObserver.observe(container);
+            }
+        }
+    }
+
+    disconnectedCallback() {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
     }
 
     @api

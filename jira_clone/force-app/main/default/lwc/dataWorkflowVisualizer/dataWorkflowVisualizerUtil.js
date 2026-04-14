@@ -31,11 +31,50 @@ export const VISUALIZATION_CONFIG = {
 
 
 /**
+ * Get a responsive config by merging overrides based on container / viewport width.
+ * Returns a NEW config object — never mutates the base config.
+ * @param {number} containerWidth - measured width of the host element (or window.innerWidth)
+ * @param {object} baseConfig - optional base; defaults to VISUALIZATION_CONFIG
+ */
+export function getResponsiveConfig(containerWidth, baseConfig = VISUALIZATION_CONFIG) {
+    const overrides = {};
+
+    if (containerWidth <= 480) {
+        // Mobile: 2 columns, smaller cards
+        overrides.statusesPerRow = 2;
+        overrides.statusWidth = 100;
+        overrides.statusHeight = 48;
+        overrides.horizontalSpacing = 130;
+        overrides.verticalSpacing = 90;
+        overrides.svgPadding = 20;
+        overrides.rectRadius = 8;
+        overrides.arrowLength = 8;
+        overrides.arrowWidth = 8;
+        overrides.lineWidth = 2;
+        overrides.lineHoverWidth = 3;
+        overrides.startPointRadius = 4;
+        overrides.endPointRadius = 4;
+    } else if (containerWidth <= 768) {
+        // Tablet: 3 columns
+        overrides.statusesPerRow = 3;
+        overrides.statusWidth = 110;
+        overrides.statusHeight = 54;
+        overrides.horizontalSpacing = 155;
+        overrides.verticalSpacing = 105;
+        overrides.svgPadding = 30;
+    }
+    // Desktop (>768): keep base config as-is
+
+    return { ...baseConfig, ...overrides };
+}
+
+
+/**
  * Calculate positions for each status in a grid layout
  */
 export function calculatePositions(sortedStatuses, config = VISUALIZATION_CONFIG) {
     const statusPositions = {};
-    const statusesPerRow = 4;
+    const statusesPerRow = config.statusesPerRow || 4;
     
     sortedStatuses.forEach((status, index) => {
         const row = Math.floor(index / statusesPerRow);
@@ -139,14 +178,13 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
         const endPt = getRectIntersection(toPos, toCenterX, toCenterY, fromCenterX, fromCenterY);
 
         // Create a curved path (quadratic Bezier) between the border points
-        const { path, ctrlX, ctrlY } = createArrowPath(startPt.x, startPt.y, endPt.x, endPt.y, config);
+        const { path: fullPath, ctrlX, ctrlY } = createArrowPath(startPt.x, startPt.y, endPt.x, endPt.y, config);
 
-        // Compute an explicit arrow polygon at the true end of the curve
-        // Use fixed arrow size from config so all arrows are consistent
+        // Compute arrow geometry at the end of the curve
         const arrowLength = config.arrowLength || 10;
-        const arrowWidth = config.arrowWidth || 7;
+        const arrowWidth = config.arrowWidth || 10;
 
-        // Tangent at t=1 for quadratic Bezier is based on control point
+        // Tangent at t=1 for quadratic Bezier (direction: ctrl → end)
         let dx = endPt.x - ctrlX;
         let dy = endPt.y - ctrlY;
         let len = Math.sqrt(dx * dx + dy * dy);
@@ -158,6 +196,7 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
         const ux = dx / len;
         const uy = dy / len;
 
+        // Arrow base point (where the line should end and the arrowhead starts)
         const baseCx = endPt.x - ux * arrowLength;
         const baseCy = endPt.y - uy * arrowLength;
         const perpX = -uy;
@@ -169,6 +208,11 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
         const b2x = baseCx - perpX * halfW;
         const b2y = baseCy - perpY * halfW;
 
+        // Shorten the bezier curve to end at the arrow base (not the tip)
+        // This eliminates the overlap/gap seam between line and arrow
+        const shortenedPath = `M ${startPt.x} ${startPt.y} Q ${ctrlX} ${ctrlY} ${baseCx} ${baseCy}`;
+
+        // Arrow triangle: tip at endPt, base at b1/b2
         const arrowPath = `M ${endPt.x} ${endPt.y} L ${b1x} ${b1y} L ${b2x} ${b2y} Z`;
 
         // Midpoint of quadratic bezier curve for label positioning
@@ -182,7 +226,7 @@ export function calculateTransitionLines(workflowData, statusPositions, config =
 
         return {
             id: transition.id,
-            path,
+            path: shortenedPath,
             arrowPath,
             name: transition.name,
             label: `${transition.fromStatus} → ${transition.toStatus}`,
@@ -242,9 +286,10 @@ export function createArrowPath(x1, y1, x2, y2, config = VISUALIZATION_CONFIG) {
  * Get SVG viewBox dimensions
  */
 export function getSvgViewBox(sortedStatuses, config = VISUALIZATION_CONFIG) {
-    const statusesPerRow = 4;
+    const statusesPerRow = config.statusesPerRow || 4;
     const maxRow = Math.ceil(sortedStatuses.length / statusesPerRow);
-    const width = config.svgPadding * 2 + 3 * config.horizontalSpacing + config.statusWidth;
+    const cols = Math.min(sortedStatuses.length, statusesPerRow);
+    const width = config.svgPadding * 2 + (cols - 1) * config.horizontalSpacing + config.statusWidth;
     const height = config.svgPadding * 2 + (maxRow - 1) * config.verticalSpacing + config.statusHeight;
     return `0 0 ${width} ${height}`;
 }
@@ -306,6 +351,7 @@ export function clearClicks() {
 
 export default {
     VISUALIZATION_CONFIG,
+    getResponsiveConfig,
     calculatePositions,
     calculateTransitionLines,
     createArrowPath,

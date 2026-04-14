@@ -5,24 +5,52 @@
 
 /* ── Design Tokens ─────────────────────────────────────────────── */
 .workflow-visualizer-container {
-    --primary: #6366f1;
-    --primary-light: #818cf8;
-    --primary-hover: #4f46e5;
-    --primary-bg: rgba(99, 102, 241, 0.08);
-    --accent: #f59e0b;
-    --accent-light: #fbbf24;
-    --danger: #ef4444;
-    --success: #22c55e;
+    /*
+     * COLOR SYSTEM
+     * Primary  → main actions, active transitions, links, highlights
+     * Surface  → cards, panels, modals (white family)
+     * Canvas   → background behind cards (gray, gives cards contrast)
+     * Accent   → pending/draft states only
+     * Semantic → success, danger, info (never decorative)
+     */
 
+    /* Primary: Deep Blue — high contrast, authoritative */
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-hover: #1e3a8a;
+    --primary-rgb: 30, 64, 175;
+    --primary-bg: rgba(var(--primary-rgb), 0.06);
+
+    /* Canvas: the background. Darker than cards to create separation */
+    --canvas: #f1f5f9;
+    --canvas-deep: #e2e8f0;
+
+    /* Accent: Darker amber for pending states. NOT decorative. */
+    --accent: #d97706;
+    --accent-light: #f59e0b;
+    --accent-rgb: 217, 119, 6;
+
+    /* Semantic */
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --danger-text: #991b1b;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --info: var(--primary-light);
+
+    /* Surfaces (cards, panels, modals) */
     --surface: #ffffff;
     --surface-secondary: #f8fafc;
-    --surface-glass: rgba(255, 255, 255, 0.72);
-    --border: #e2e8f0;
-    --border-light: #f1f5f9;
+    --surface-glass: rgba(255, 255, 255, 0.8);
 
+    /* Borders */
+    --border: #cbd5e1;
+    --border-light: #e2e8f0;
+
+    /* Text: 3-tier hierarchy */
     --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
 
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -30,11 +58,11 @@
     --radius-xl: 20px;
     --radius-full: 9999px;
 
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
-    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.1);
+    --shadow-xs: 0 1px 2px rgba(var(--primary-rgb), 0.04);
+    --shadow-sm: 0 2px 6px rgba(var(--primary-rgb), 0.06);
+    --shadow-md: 0 4px 12px rgba(var(--primary-rgb), 0.08);
+    --shadow-lg: 0 12px 28px rgba(var(--primary-rgb), 0.12);
+    --shadow-xl: 0 20px 40px rgba(var(--primary-rgb), 0.14);
 
     /* SVG tuning vars (kept for inline-style bindings) */
     --rect-stroke-width: 1.5;
@@ -48,7 +76,6 @@
 
     /* Root layout */
     width: 100%;
-    background: linear-gradient(160deg, var(--surface-secondary) 0%, var(--border) 100%);
     padding: 24px;
     min-height: 600px;
     display: flex;
@@ -153,27 +180,28 @@
 /* ── Status Nodes ──────────────────────────────────────────────── */
 .status-rectangle-svg {
     fill: url(#statusGradient);
-    stroke: rgba(99, 102, 241, 0.25);
+    stroke: rgba(var(--primary-rgb), 0.18);
     stroke-width: var(--rect-stroke-width);
-    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     cursor: pointer;
     pointer-events: all;
     rx: 10px;
+    transition: filter 0.2s ease-out, opacity 0.2s ease-out;
 }
 
 .status-group { cursor: pointer; }
 
 .status-group:hover .status-rectangle-svg {
-    stroke: rgba(99, 102, 241, 0.6);
-    filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.15));
-    transform: translateY(-2px);
+    stroke: rgba(var(--primary-rgb), 0.5);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), 0.18))
+            drop-shadow(0 2px 12px rgba(var(--primary-rgb), 0.10));
 }
 
 .status-group.clicked .status-rectangle-svg {
     fill: var(--primary);
     stroke: var(--primary-hover);
-    filter: drop-shadow(0 6px 16px rgba(99, 102, 241, 0.35));
-    transform: translateY(-3px) scale(1.03);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 12px rgba(var(--primary-rgb), 0.28));
 }
 
 .status-group.clicked .status-text-svg {
@@ -185,25 +213,17 @@
     font-weight: 600;
     fill: var(--text-primary);
     pointer-events: none;
-    transition: fill 0.2s ease;
     letter-spacing: 0.2px;
 }
 
-/* ── Transition Lines ──────────────────────────────────────────── */
+/* ── Transition Lines + Arrows (atomic unit) ───────────────────── */
 .transition-line {
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.8;
-    transition: all 0.2s ease;
     cursor: pointer;
     stroke: var(--primary);
     stroke-width: var(--line-width);
-}
-
-.transition-line:hover {
-    stroke-width: var(--line-hover-width);
-    opacity: 1;
-    filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.35));
+    transition: stroke-width 0.15s ease-in-out;
 }
 
 .transition-line.pending {
@@ -216,34 +236,38 @@
     to { stroke-dashoffset: -24; }
 }
 
-/* ── Arrows ────────────────────────────────────────────────────── */
 .transition-arrow {
     fill: var(--primary);
-    opacity: 0.85;
-    transition: all 0.2s ease;
     pointer-events: none;
-    transform-box: fill-box;
-    transform-origin: center;
+    transition: fill 0.15s ease-in-out;
 }
 
 .transition-arrow.pending { fill: var(--accent); }
 
-.transition-line-group { cursor: pointer; }
-
-.transition-line-group.active-transition:hover .transition-arrow {
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.45));
-    transform: scale(1.15);
+/* Group hover — line + arrow glow as one object */
+.transition-line-group {
+    cursor: pointer;
+  transition: filter 0.2s ease-out, opacity 0.2s ease-out;
+    opacity: 0.88;
 }
 
-.transition-line-group.pending-transition:hover .transition-arrow {
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.45));
-    transform: scale(1.15);
+.transition-line-group:hover {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(var(--primary-rgb), 0.4));
+}
+
+.transition-line-group:hover .transition-line {
+    stroke-width: var(--line-hover-width);
+}
+
+.transition-line-group.pending-transition:hover {
+    filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.4));
 }
 
 /* ── Start / End Points ────────────────────────────────────────── */
 .transition-start-point {
     opacity: 0;
-    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all 0.32s ease-in-out;
     transform-box: fill-box;
     transform-origin: center;
     fill: var(--surface);
@@ -259,7 +283,7 @@
 .transition-line-group:hover .transition-start-point {
     opacity: 1;
     transform: scale(var(--start-point-hover-scale));
-    filter: drop-shadow(0 3px 6px rgba(99, 102, 241, 0.3));
+    filter: drop-shadow(0 3px 6px rgba(var(--primary-rgb), 0.3));
     fill: var(--primary);
     stroke: var(--surface);
 }
@@ -276,7 +300,8 @@
 .transition-label {
     font-size: 11px;
     font-weight: 600;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
     paint-order: stroke fill;
     stroke: var(--surface-secondary);
     stroke-width: 3.5px;
@@ -284,7 +309,7 @@
     stroke-linejoin: round;
     fill: var(--primary);
     opacity: 0.8;
-    transition: all 0.2s ease;
+    transition: all 0.32s ease-in-out;
 }
 
 .transition-line-group:hover .transition-label {
@@ -307,7 +332,7 @@
     width: var(--detail-panel-width);
     background: var(--surface);
     border-left: 1px solid var(--border);
-    box-shadow: -6px 0 32px rgba(0, 0, 0, 0.08);
+    box-shadow: -6px 0 32px rgba(var(--primary-rgb), 0.1);
     z-index: 1001;
     overflow-y: auto;
     animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -425,7 +450,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(15, 23, 42, 0.35);
+    background-color: rgba(15, 23, 42, 0.5);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     z-index: 999;
@@ -516,7 +541,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.32s ease-in-out;
     color: var(--text-secondary);
 }
 
@@ -560,10 +585,10 @@
 /* ── Errors ────────────────────────────────────────────────────── */
 .error-message {
     padding: 12px 16px;
-    background-color: #fef2f2;
+    background-color: var(--danger-bg);
     border-left: 3px solid var(--danger);
     border-radius: var(--radius-sm);
-    color: #b91c1c;
+    color: var(--danger-text);
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -604,19 +629,398 @@
 }
 
 .status-badge.from {
-    background-color: #eff6ff;
-    color: #2563eb;
-    border: 1px solid #bfdbfe;
+    background-color: rgba(var(--primary-rgb), 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
 .status-badge.to {
-    background-color: #fdf4ff;
-    color: #a855f7;
-    border: 1px solid #e9d5ff;
+    background-color: rgba(var(--primary-rgb), 0.04);
+    color: var(--primary-hover);
+    border: 1px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .arrow {
     color: var(--text-muted);
     font-weight: bold;
     font-size: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤ 1024px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .workflow-visualizer-container {
+        padding: 16px;
+        gap: 10px;
+        --detail-panel-width: 420px;
+    }
+
+    .toolbar {
+        padding: 10px 14px;
+        gap: 12px;
+    }
+
+    .legend-container {
+        gap: 10px;
+    }
+
+    .legend-items {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .panel-header {
+        padding: 16px 20px;
+    }
+
+    .detail-field {
+        padding: 14px 20px;
+    }
+
+    .detail-label {
+        min-width: 130px;
+        font-size: 12px;
+    }
+
+    .detail-value {
+        font-size: 13px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — Small Tablet / Large Phone (≤ 768px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .workflow-visualizer-container {
+        padding: 12px;
+        gap: 8px;
+        min-height: 400px;
+        --detail-panel-width: 100%;
+    }
+
+    /* Toolbar: Stack vertically */
+    .toolbar {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .toolbar-info {
+        font-size: 12px;
+        text-align: center;
+        order: 1;
+    }
+
+    .toolbar lightning-button {
+        order: 0;
+    }
+
+    /* Legend: Compact layout */
+    .legend-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 0;
+    }
+
+    .legend-items {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .legend-item {
+        padding: 4px 10px 4px 6px;
+    }
+
+    .legend-badge {
+        width: 18px;
+        height: 8px;
+    }
+
+    .legend-label {
+        font-size: 11px;
+    }
+
+    /* SVG Canvas: Reduce min-height for smaller screens */
+    .workflow-svg {
+        min-height: 320px;
+    }
+
+    /* Detail Panel: Full-width overlay on tablets/phones */
+    .transition-detail-panel {
+        width: 100%;
+    }
+
+    .panel-header {
+        padding: 14px 16px;
+    }
+
+    .panel-header-title {
+        font-size: 16px;
+        gap: 8px;
+    }
+
+    .panel-header-actions {
+        gap: 6px;
+    }
+
+    /* Detail fields: Stack label + value on smaller screens */
+    .detail-field {
+        flex-direction: column;
+        gap: 6px;
+        padding: 14px 16px;
+        align-items: flex-start;
+    }
+
+    .detail-label {
+        min-width: unset;
+        font-size: 12px;
+    }
+
+    .detail-value {
+        font-size: 13px;
+        width: 100%;
+    }
+
+    /* Modals: Wider on tablets */
+    .modal-container,
+    .transition-modal-content {
+        min-width: 320px;
+        max-width: 90%;
+    }
+
+    .transition-modal-content {
+        width: 94%;
+        max-width: 440px;
+    }
+
+    .modal-header {
+        padding: 18px 16px;
+    }
+
+    .modal-title {
+        font-size: 16px;
+    }
+
+    .transition-modal-title {
+        font-size: 16px;
+        padding: 18px 16px 14px 16px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-footer,
+    .modal-actions {
+        padding: 14px 16px;
+    }
+
+    .modal-input {
+        padding: 0 16px;
+    }
+
+    .modal-body .modal-input {
+        padding: 0;
+    }
+
+    /* Transition info badges */
+    .transition-info {
+        margin: 16px 16px;
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .error-message {
+        margin: 0 16px 16px 16px;
+    }
+
+    .modal-body .error-message {
+        margin: 0 0 16px 0;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile Phone (≤ 480px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .workflow-visualizer-container {
+        padding: 8px;
+        gap: 6px;
+        min-height: 300px;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Toolbar: Tighter */
+    .toolbar {
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .toolbar-info {
+        font-size: 11px;
+    }
+
+    .toolbar-info strong {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    /* Legend: Extra compact */
+    .legend-container {
+        gap: 4px;
+    }
+
+    .legend-title {
+        font-size: 10px;
+    }
+
+    .legend-items {
+        gap: 4px;
+    }
+
+    .legend-item {
+        padding: 3px 8px 3px 5px;
+        gap: 5px;
+    }
+
+    .legend-badge {
+        width: 14px;
+        height: 6px;
+    }
+
+    .legend-label {
+        font-size: 10px;
+    }
+
+    /* SVG Canvas */
+    .workflow-svg {
+        min-height: 240px;
+    }
+
+    /* Detail Panel: Full-screen mobile */
+    .transition-detail-panel {
+        border-left: none;
+        border-radius: 0;
+    }
+
+    .panel-header {
+        padding: 12px;
+    }
+
+    .panel-header-title {
+        font-size: 15px;
+        gap: 6px;
+    }
+
+    .panel-header-actions {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .detail-field {
+        padding: 12px;
+        gap: 4px;
+    }
+
+    .detail-label {
+        font-size: 11px;
+        gap: 6px;
+    }
+
+    .detail-value {
+        font-size: 12px;
+    }
+
+    .id-value {
+        font-size: 10px;
+        padding: 4px 8px;
+        word-break: break-all;
+    }
+
+    .action-buttons {
+        flex-wrap: wrap;
+    }
+
+    /* Modals: Full-width on mobile */
+    .modal-container,
+    .transition-modal-content {
+        min-width: unset;
+        max-width: unset;
+        width: calc(100% - 24px);
+        border-radius: var(--radius-md);
+    }
+
+    .transition-modal-content {
+        width: calc(100% - 24px);
+        max-width: unset;
+    }
+
+    .modal-header {
+        padding: 14px 12px;
+    }
+
+    .modal-title {
+        font-size: 15px;
+    }
+
+    .transition-modal-title {
+        font-size: 15px;
+        padding: 14px 12px 12px 12px;
+    }
+
+    .modal-body {
+        padding: 12px;
+    }
+
+    .modal-footer,
+    .modal-actions {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .modal-input {
+        padding: 0 12px;
+        margin-bottom: 14px;
+    }
+
+    .modal-body .modal-input {
+        padding: 0;
+    }
+
+    /* Transition info: Stack vertically on very small screens */
+    .transition-info {
+        flex-direction: column;
+        margin: 12px;
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .status-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+
+    .arrow {
+        font-size: 16px;
+    }
+
+    .close-button {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+    }
+
+    .error-message {
+        margin: 0 12px 14px 12px;
+        font-size: 12px;
+        padding: 10px 12px;
+    }
+
+    .modal-body .error-message {
+        margin: 0 0 14px 0;
+    }
 }
