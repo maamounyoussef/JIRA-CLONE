@@ -3,7 +3,7 @@
     <fullName>Creator__c</fullName>
     <description>Creator custom user</description>
     <label>Creator</label>
-    <referenceTo>CustomUser__c</referenceTo>
+    <referenceTo>User</referenceTo>
     <relationshipLabel>Created Tickets</relationshipLabel>
     <relationshipName>CreatedTickets</relationshipName>
     <required>false</required>
