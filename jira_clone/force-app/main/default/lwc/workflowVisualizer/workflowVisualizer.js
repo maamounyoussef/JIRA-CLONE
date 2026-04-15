@@ -9,7 +9,7 @@ import {
     getResponsiveConfig,
     toggleClick,
     clearClicks
-} from './dataWorkflowVisualizerUtil.js';
+} from './workflowVisualizerUtil.js';
 import addWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
 import { normalizeWorkflowData } from './data/WorkflowVisualizerRepository.js';
 import { mapWorkflowVisualizer } from './logic/WorkflowVisualizerMapper.js';
