@@ -4,5 +4,6 @@
     <description>Last update timestamp</description>
     <label>Updated At</label>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

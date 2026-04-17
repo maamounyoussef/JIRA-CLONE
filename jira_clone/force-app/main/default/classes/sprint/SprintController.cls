@@ -1,30 +1,68 @@
 /**
  * @description Controller for loading Sprint records for LWC components
+ * Always returns response encapsulated by APIResponse
  */
 public with sharing class SprintController {
 
-    @AuraEnabled(cacheable=true)
-    public static APIResponse loadSprints(String projectId) {
-        try {
-            List<Sprint__c> sprints;
-            if (String.isBlank(projectId)) {
-                sprints = [
-                    SELECT Id, Name, StartDate__c, Duration__c, Goal__c, RecordStatus__c, Project__c
-                    FROM Sprint__c
-                    ORDER BY StartDate__c
-                ];
-            } else {
-                sprints = [
-                    SELECT Id, Name, StartDate__c, Duration__c, Goal__c, RecordStatus__c, Project__c
-                    FROM Sprint__c
-                    WHERE Project__c = :projectId
-                    ORDER BY StartDate__c
-                ];
-            }
-            return new APIResponse(true, 'Sprints loaded successfully', sprints);
-        } catch (Exception ex) {
-            return new APIResponse(false, 'Error loading sprints: ' + ex.getMessage());
-        }
-    }
+	@AuraEnabled
+	public static APIResponse createSprint(String sprintCreateDtoJson) {
+		try {
+			SprintCreateDto dto = (SprintCreateDto) JSON.deserialize(sprintCreateDtoJson, SprintCreateDto.class);
+			Sprint__c created = SprintService.createSprint(dto);
+			return new APIResponse(true, 'Sprint created successfully', created);
+		} catch (SprintException ex) {
+			return new APIResponse(false, ex.getMessage());
+		} catch (Exception ex) {
+			return new APIResponse(false, 'Error creating sprint: ' + ex.getMessage());
+		}
+	}
 
+	@AuraEnabled
+	public static APIResponse updateSprint(String sprintUpdateDtoJson) {
+		try {
+			SprintUpdateDto dto = (SprintUpdateDto) JSON.deserialize(sprintUpdateDtoJson, SprintUpdateDto.class);
+			Sprint__c updated = SprintService.updateSprint(dto);
+			return new APIResponse(true, 'Sprint updated successfully', updated);
+		} catch (SprintException ex) {
+			return new APIResponse(false, ex.getMessage());
+		} catch (Exception ex) {
+			return new APIResponse(false, 'Error updating sprint: ' + ex.getMessage());
+		}
+	}
+
+	@AuraEnabled
+	public static APIResponse completeSprint(String sprintId) {
+		try {
+			SprintService.completeSprint(sprintId);
+			return new APIResponse(true, 'Sprint completed');
+		} catch (SprintException ex) {
+			return new APIResponse(false, ex.getMessage());
+		} catch (Exception ex) {
+			return new APIResponse(false, 'Error completing sprint: ' + ex.getMessage());
+		}
+	}
+
+	@AuraEnabled
+	public static APIResponse deleteSprint(String sprintId) {
+		try {
+			SprintService.deleteSprint(sprintId);
+			return new APIResponse(true, 'Sprint deleted');
+		} catch (SprintException ex) {
+			return new APIResponse(false, ex.getMessage());
+		} catch (Exception ex) {
+			return new APIResponse(false, 'Error deleting sprint: ' + ex.getMessage());
+		}
+	}
+
+	@AuraEnabled
+	public static APIResponse startSprint(String sprintId) {
+		try {
+			SprintService.startSprint(sprintId);
+			return new APIResponse(true, 'Sprint started');
+		} catch (SprintException ex) {
+			return new APIResponse(false, ex.getMessage());
+		} catch (Exception ex) {
+			return new APIResponse(false, 'Error starting sprint: ' + ex.getMessage());
+		}
+	}
 }

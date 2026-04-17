@@ -1,0 +1,750 @@
+
+Page pre condition Flow: 
+	- user must choosed the project work on.
+	- System will store the project id in the local storage.
+
+INFORMATION : WHEN WE HAVE A REQUEST THAT SET THE PROJECT ID THAT IS MEAN IT WILL BE GET  FROM THE LOCAL STORAGE.
+	
+	
+Manage BackLogue Page :
+UI : in this page we have 2  Container : 
+	- one for work container : it can contain many sprint Container 
+		* the sprint container can contain many ticket container.
+	- one for Backlog: 
+		* backlogue can contain many ticket container.
+		
+	a ticket container can contain many  sub ticket container
+ 
+Request for this page : 
+	- Input : project Id
+	- Output : 
+	{
+		tickets: // only active ticket for this project
+		[
+			{
+				name: <name value>,
+				summary: <summary value>,
+				current_state: <current status id>,
+				priority: <priority value> , 
+				story_point: <story point value>, 
+				assigned_to: <assigned to id >,
+				epic_pather : <epic pather id>,
+				sprint : <sprint id>
+			},
+			...
+		]
+		
+		sprints : //only  sprint for the current project and active 
+		[
+			{
+				id , 
+				name ,
+				start_date,
+				end_date,// this is calculated based on start date + duration 
+				goal , 	
+			},
+			...
+		],
+		
+		status : // only  status for the  current project
+		[
+			{
+				id , 
+				name
+			},
+			...
+		],
+		
+		members : // only member for the current project
+		[
+			{
+				user_id : ,
+				name : 
+			},
+			...
+		],
+		
+		epics : // only epics for the current project
+		[
+			{
+				id ,
+				name 
+			},
+			...
+		]
+	}
+Front End Flow : 
+	- System will create the 2 main container 
+	- System will create a Ticket container for each ticket 
+	- System will validate if the sprint is null , so it will place ticket container that encapsulate this ticket in backlogue container else it will place in the right sprint container.
+		
+
+
+Display : 
+	- The system should display all non-completed sprints for this project (active or end ? )
+		* The system should display all ticket container for this sprint 
+	
+	
+	What is  sprint ? 
+			A project can have {0,many} sprint.
+	
+			The Sprint have : 
+				- start time 
+				- end time
+				- name 
+				- goal (description)
+				- record_status : (future, complete , delete , in_progress)
+				- PROJECT_ID RELATIONSHIP
+			The sprint is complete when: 
+				- user manually click complete 
+				- achieve end time 
+			
+			
+		What is ticket container ? 
+			Just a display way for the ticket.
+			a ticket container show a button to add an epic for this ticket if it was not added else it show the parent epic.
+			a ticket container show a arrow button that show all sub task container when clicked.
+			a ticket container show the title , summary , ticket type Name , current state name , story point , priority, the assigned member for this ticket.
+			a ticket container show the  epic name pather only if it has  a epic pather else it show a button to add a epic.
+			a ticket container show a combo box so it was selected.
+			a ticket container show a edit button right to summary to  update it. 
+			>> so it was not an entity.
+		
+
+		What is a sub task container ? 
+			Just a display way for the sub task.
+			a sub task container show the title , summary , current state name , story point , priority, the assigned member for this ticket.
+			a sub task container show a combo box so it was selected.
+			a sub task container show a edit button right to summary to  update it. 
+			>> so it was not an entity.
+		
+	- The System should display a Backlog container.
+		A Backlog Container : 
+			- Display all ticket container for the ticket that does added to a sprint.
+			- Display a create button to create a new sprint. 
+			- Display a create button to create a new ticket.
+			- Display a comboBox to select all ticket container.
+			
+	End Display.
+
+
+	Actions : 
+		00 - The System should allow user to delete all tickets. 
+	
+		related to Ticket Container and sub task container part : 
+			01 - The System should allow user to delete a ticket.
+			02 - The System should allow user to delete a sub Task. 
+			03 - The System should allow user to update priority  for ticket. 
+			05 - The System should allow user to update summary for a ticket.
+			06 - The System should allow user to update summary for a sub task. 
+			07 - The System should allow user to assign a ticket to a project member. 
+			08 - The System should allow user to assign a sub task  to a project member. 
+			09 - The System should allow user to update the state of ticket.
+	
+		BackLogue part : 
+			11 - The System should allow user to create a Ticket.
+			12 - The System should allow user to create a sub task. 
+			13 - The System should allow user to create a new sprint.
+			
+		Scrum Sprint part : 
+			11 - The System should allow user to create a Ticket.(repeated)
+			12 - The System should allow user to create a sub task.(repeated) 
+			15 - The System should allow user to update sprint data.
+			14 - The System should allow user to complete sprint.
+			16 - The System should allow user to delete sprint.
+			17 - The System should allow user to start sprint.
+		
+
+	
+	Actions - 00 : 
+		Name : Delete Tickets
+		Pre Condition : user should already choosed all ticket containers by clicking on the combo box.
+		Main : 
+			00.0.01- System should display a bulk bar that show the number of selected items and a delete all button.
+			00.0.02- User should click on delete all.
+			00.0.03- System should close this bulk bar.
+		Second Main Flow :
+			00.1.00- user deselect all the ticket containers.
+			00.1.02- System should close the bulk bar.
+		Post Condition :
+			- success: 
+				- System should update the ticket  record_status to delete.
+			- failed: 
+				- System should show a error message.
+		
+		00.0.02-request format : 
+			Name : Delete Tickets
+			Input : 
+			Body : 
+			{
+				tickets_id : [<>,<>,<> ...]
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System Validation : 
+			- Validate if tickets exist.
+		
+	
+			
+	Actions - 01 : 
+		Name : delete ticket
+		Pre Condition : user should already choosed the ticket container by clicking on the combo box.
+		Main : 
+			01.1- User should click on ellipsed point of ticket container.
+			01.2- The system should show the ellipsed point menu.
+			01.3- User should choose the delete 
+			01.4- The System should show a confirmation dialogue pop up.
+			01.5- User should agree.
+		Second Main Flow :
+			- user click close 
+			- system close the confirmation dialogue.
+		Post Condition :
+			- success: 
+				-> System update the record_status for the ticket to delete
+				-> System should close this component.
+			- failed: 
+				-> System should still in the  same component and show error message.
+		
+		01.3-request format : 
+			Name : Delete Ticket
+			Input : ticket id
+			Body : 
+			{}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System Validation : 
+			- validate if ticket exist.
+			
+	Actions - 02 : 
+		Name : Delete sub task
+		Pre Condition : user expanded the section of the target ticket.
+		Main : 
+			02.01- user choose the sub task to delete from the expanded section.
+			02.02- user click on the elipsed points and click delete.
+		Second Main Flow :
+		Post Condition :
+			- success: 
+			- failed: 
+			
+		pre-condition Request format : 
+			Flow : System will load only active sub task
+			Name : load sub task
+			Input : 
+			Body : 
+			{
+				ticket id 
+			}
+			Response : 
+			{
+				success: ,
+				message: ,
+				data: ,
+			}
+		System Validation: 
+			- check if ticket exist
+		
+		02.02-request format : 
+			Name : delete sub task
+			Input : sub task id
+			Body : 
+			{}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System Validation : 
+			- validate if  sub task  exist
+			
+			
+	Actions - 03 : 
+		Name : update priority  for a ticket.
+		Pre Condition : 
+		Main : 
+			03.00- User click the input field  priority for the target ticket.
+			03.01- System show 2 button X , CheckMark.
+			03.02- User click on check mark after update the value.
+		Second Main Flow :
+			- User click on check mark or  blur outside.
+			- System will hide the buttons and nothing change.
+		Post Condition :
+			- success: 
+				- System update the priority value.
+				- System hide the buttons.
+			- failed: 
+				- System show a error message.
+				- System hide the buttons.
+			
+		
+		03.02 - request format : 
+			Name : update ticket priority
+			Input : 
+			Body : 
+			{
+				ticket_id : <ticket id>,
+				priority: <priority value>
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System Validation : system validate if the ticket exist.
+			
+			
+
+	Actions - 05 : 
+		Name : update summary  for a ticket.
+		Pre Condition : 
+		Main : 
+			05.01 - User click the edit field icon for the target ticket.
+			05.02 - System show 2 button X , CheckMark and focus on the input.
+			05.03 - User click on check mark after update the value.
+		Second Main Flow :
+			- User click on check mark or  blur outside.
+			- System will hide the buttons and nothing change.
+		Post Condition :
+			- success: 
+				- System update the summary value.
+				- System hide the buttons.
+			- failed: 
+				- System show a error message.
+				- System hide the buttons.
+			
+		
+		05.03- request format : 
+			Name : update ticket priority
+			Input : 
+			Body : 
+			{
+				ticket_id : <ticket id>
+				summary: <summary value>
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+			
+		System Validation: 
+			- check if the ticket exist.
+			
+			
+	Actions - 06 : 
+		Name : update summary  for a sub task.
+		Pre Condition : user expanded the section of the target ticket.
+		Main : 
+			06.00 - User click the edit field icon for the target sub task.
+			06.01 - System show 2 button X , CheckMark and focus on the input.
+			06.02 - User click on check mark after update the value.
+		Second Main Flow :
+			- User click on check mark or  blur outside.
+			- System will hide the buttons and nothing change.
+		Post Condition :
+			- success: 
+				- System update the summary value for the sub task.
+				- System hide the buttons.
+			- failed: 
+				- System show a error message.
+				- System hide the buttons.
+			
+		pre-condition Request format : 
+			Flow : System will load only active sub task
+			Name : load sub task
+			Input : 
+			Body : 
+			{
+				ticket id 
+			}
+			Response : 
+			{
+				success: ,
+				message: ,
+				data: ,
+			}
+		System Validation: 
+			- check if ticket exist
+		
+		06.02- request format : 
+			Name : update ticket priority
+			Input : 
+			Body : 
+			{
+				subtask_id : <sub task id>
+				summary: <summary value>
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+			
+		System Validation: 
+			- check if sub task exist.		
+
+
+	Actions - 07 : 
+		Name : Assign a ticket to a project member.
+		Pre Condition :
+		Main : 
+			07.01 - User click on the assigne picker in the ticket container.
+			07.02 - System show all member for the current project  in member picker drop down.
+			07.03 - User should choose a member for assignee.
+			07.04 - System close the drop down.
+		Second Main Flow :
+			- User blur on the drop down so system close it.
+		Post Condition :
+			- success: 
+				- System update the assigne field value for that ticket.
+			- failed: 
+				- System show error message.
+				
+				
+		07.01- request format : // can be replaced by get from the cacheinstead of  send the request
+			Name : get Project Member
+			Input : project Id
+			Body: {}
+			Response : 
+			{
+				success: ,
+				message: ,
+				data: [{<project member id >, <project member Name>} , {...},...,{...} ],
+			}
+		System validation: empty. 
+		
+		07.03 -request format : 
+			Name : update ticket assigne
+			Input :  
+			Body : 
+			{
+				<ticket id>,
+				<member id>,
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System Validation: 
+			- check if ticket exist.		
+
+
+	Actions - 08 : 
+		Name : Assign a sub task to a member.
+		Pre Condition :user expanded the section of the target ticket.
+		Main : 
+			08.01 - User click on the assigne picker in the sub task container.
+			08.02 - System show all member for the current project in member picker drop down.
+			08.03 - User should choose a member for assignee.
+			08.04 - System close the drop down.
+		Second Main Flow :
+			- User blur on the drop down so system close it.
+		Post Condition :
+			- success: 
+				- System update the assigne field value for that sub task.
+			- failed: 
+				- System show error message.
+				
+		pre-condition Request format : 
+			Flow : System will load only active sub task
+			Name : load sub task
+			Input : 
+			Body : 
+			{
+				ticket id 
+			}
+			Response : 
+			{
+				success: ,
+				message: ,
+				data: ,
+			}
+		System Validation: 
+			- check if ticket exist		
+		
+		07.01- request format : 
+			Name : get Project Member
+			Input : project Id
+			Body: {}
+			Response : 
+			{
+				success: ,
+				message: ,
+				data: [{<project member id >, <project member Name>} , {...},...,{...} ],
+			}
+		System validation: empty.
+		
+		request format : 
+			Name : update sub task assigne
+			Input : sub task id 
+			Body : 
+			{
+				<sub task id>,
+				<member id>,
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+			
+		System Validation: 
+			- check if sub task exist.
+
+
+	Actions - 09 : 
+		Name : UPDATE TICKET CURRENT State
+		Pre Condition : 
+		Main : 
+			09.01 - User click the combox that show the current State Name and update to new value.
+		Second Main Flow :
+		Post Condition :
+			- success: 
+				- System update the ticket current state to the choosed one. 
+			- failed: 
+				- Show a error message
+		
+		09.01 - request format : 
+			Name : Update Ticket State
+			Input : 
+			Body : 
+			{
+				ticket_id : <ticket id>
+				current_state : <state id>
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+			
+		System Validation : check if the ticket exist.
+			
+			
+	Actions - 11 : 
+		Name : Create Ticket
+		Pre Condition : 
+		Main : 
+			11.01 - User click on the create ticket button 
+			11.02 - System should show a Ticket modal.
+			11.03 - user fill data : (ticket name , summary , description , story point , ticket type, assigned to ) and click create.
+			11.04 - System set the createdbY (it was the authenticated user and should be a member for the current project) -- development detail --
+			11.05 - System choose the start state automatically. IGNORED FOR NOW 
+		Second Main Flow :
+			- USER CLICK ON CLOSE BUTTON SO THE MODAL IS CLOSED.
+		Post Condition :
+			- success: 
+				- SYSTEM SAVE A NEW TICKET
+			- failed: 
+				- Show a error message
+		11.03 - request format : 
+			Name : Create Ticket
+			Input :
+			Body : 
+			{
+				name : <ticket name value>,
+				summary : <summary value>,
+				description : <description value>,
+				story_point : <story point value>,
+				ticket_type : <ticket type id> : required,
+				assigned_to : <member id> IGNORED FOR NOW, 
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System validation : 
+			- system validate if ticket type id exist.
+			- if assignee is set : check if the member assignee is exist for this project.
+	
+	
+	Actions - 13 : 
+		Name : Create Sprint
+		Pre Condition : 
+		Main : 
+			13.00 - User click on create Sprint.
+			13.01 - System should show a sprint modal. 
+			13.02 - User fill attribute : name ,duration, start date , end date , goal.(all is required)
+			13.03 - User click create.
+		Second Main Flow :
+			- User click on close button.
+			- System close the modal
+		Post Condition :
+			- success: 
+				- System will add a new sprint with record_status future .
+				- System will close the modal.
+			- failed: 
+				- Show a error message
+		
+		13.03- request format : 
+			Name : Create Ticket
+			Input :
+			Body : 
+			{
+				name : <name value>,
+				duration: <duration value>, 
+				start_date: <start date value> , 
+				end_date: <end date value> , 
+				goal: <goal value>,
+				project_id: <>
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System validation : 
+			- system validateif project exist
+			
+			
+	Actions - 14 : 
+		Name : complete Sprint
+		Pre Condition : 
+		Main : 
+			14.01 - user click on complete button for the targeted sprint.
+			14.02 - System show a confirmation dialogue.
+			14.03 - User confirm.
+		Second Main Flow :
+			- User click on close button.
+			- System close the modal
+		Post Condition :
+			- success: 
+				- System will update  sprint record_status to completed.
+				- System will close the modal.
+			- failed: 
+				- Show a error message
+		14.03 - request format : 
+			Name : complete sprint 
+			Input :
+			Body : 
+			{
+				sprint_id : <> : required
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System validation : 
+			- validate if sprint exist.
+
+			
+			
+	Actions - 15 : 
+		Name : update Sprint
+		Pre Condition : 
+		Main : 
+			15.01 - User click on edit button on the target sprint.
+			15.02 - System should show a sprint modal. 
+			15.03 - User can update  : name or duration or start date or end date or goal.
+			15.04 - User click update.
+		Second Main Flow :
+			- User click on close button.
+			- System close the modal
+		Post Condition :
+			- success: 
+				- System will update the sprint.
+				- System will close the modal.
+			- failed: 
+				- Show an error message
+		15.04 - request format : 
+			Name : update sprint
+			Input :
+			Body : 
+			{
+				sprint_id : <> : required
+				.. field updated with value 
+			}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System validation : 
+			- validate if sprint exist.
+			
+			
+			
+	Actions - 16 : 
+		Name : delete Sprint
+		Pre Condition : 
+		Main : 
+			16.01 - user click on the elipsed dot then click on delete .
+			16.02 - System should display a confirmation dialogue.
+			16.03 - User should confirm
+		Second Main Flow :
+			- user close the confirmation dialogue.
+		
+		Post Condition :
+			- success: 
+				- sprint record_status is updated to delete.
+			- failed: 
+				- show error message.
+		6.03 - request format : 
+			Name : delete sprint
+			Input : sprint_id : <> : required
+			Body : 
+			{}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System validation : 
+			- validate if sprint exist.
+			
+			
+	Actions - 17 : 
+		Name : start sprint 
+		Pre Condition : 
+		Main : 
+			17.01 - User click on start sprint button for the  target sprint.
+			17.02 - System show a confirmation dialogue.
+			17.03 - User should confirm.
+			17.04 - System close the dialogue
+		Second Main Flow : 
+			- User close the dialogue.
+		Post Condition : 
+			- success: 
+				- delete the sprint component from the current page.
+				
+			- failed: 
+				- show a error message 
+				
+		17.03- request format : 
+			Name : start sprint
+			Input :sprint_id : <> : required
+			Body : 
+			{}
+			Response : 
+			{
+				success: , 
+				message: , 
+				data: ,
+			}
+		System validation : 
+			- validate if sprint exist.
+
+
+	When i say optional i mean for dto validation in backEnd not in the database field.
