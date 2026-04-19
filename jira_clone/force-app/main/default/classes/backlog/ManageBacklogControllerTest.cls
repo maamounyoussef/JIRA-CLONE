@@ -6,79 +6,110 @@ public class ManageBacklogControllerTest {
 
     @testSetup
     static void setupTestData() {
-        Project__c project = new Project__c(Name = 'MBP Project');
-        insert project;
+        // Create 3 projects
+        Project__c p1 = new Project__c(Name = 'Project 1');
+        Project__c p2 = new Project__c(Name = 'Project 2');
+        Project__c p3 = new Project__c(Name = 'Project 3');
+        insert new List<Project__c>{p1, p2, p3};
 
-        // Statuses (To Do, In Progress, Done)
-        Status__c stTodo = new Status__c(Name = 'To Do', Project__c = project.Id);
-        Status__c stInProgress = new Status__c(Name = 'In Progress', Project__c = project.Id);
-        Status__c stDone = new Status__c(Name = 'Done', Project__c = project.Id);
+        // Statuses for project 1: Todo, In Progress, Done
+        Status__c stTodo = new Status__c(Name = 'Todo', Project__c = p1.Id);
+        Status__c stInProgress = new Status__c(Name = 'In Progress', Project__c = p1.Id);
+        Status__c stDone = new Status__c(Name = 'Done', Project__c = p1.Id);
         insert new List<Status__c>{stTodo, stInProgress, stDone};
-        // keep `st` reference for compatibility with existing code (use To Do)
-        Status__c st = stTodo;
 
-        // Project member
-        ProjectMember__c pm = new ProjectMember__c(Name = 'Member One', Project__c = project.Id);
-        insert pm;
+        // Project members: 2 per project
+        List<ProjectMember__c> members = new List<ProjectMember__c>{
+            new ProjectMember__c(Name = 'P1 Member 1', Project__c = p1.Id),
+            new ProjectMember__c(Name = 'P1 Member 2', Project__c = p1.Id),
+            new ProjectMember__c(Name = 'P2 Member 1', Project__c = p2.Id),
+            new ProjectMember__c(Name = 'P2 Member 2', Project__c = p2.Id),
+            new ProjectMember__c(Name = 'P3 Member 1', Project__c = p3.Id),
+            new ProjectMember__c(Name = 'P3 Member 2', Project__c = p3.Id)
+        };
+        insert members;
 
-        // Epic (Summary__c is required)
-        Epic__c e = new Epic__c(Name = 'EP-1', Project__c = project.Id, Summary__c = 'Epic summary');
-        insert e;
+        // Epic in project 1 (include 2 tickets later)
+        Epic__c epic = new Epic__c(Name = 'EP-1', Project__c = p1.Id, Summary__c = 'Epic summary');
+        insert epic;
 
-        // Sprint
-        Sprint__c sp = new Sprint__c(
-            Name = 'Sprint 1',
-            Project__c = project.Id,
-            StartDate__c = Date.today(),
-            Duration__c = 7,
-            RecordStatus__c = 'future'
-        );
+        // Sprint in project 1
+        Sprint__c sp = new Sprint__c(Name = 'Sprint 1', Project__c = p1.Id, StartDate__c = Date.today(), Duration__c = 7, RecordStatus__c = 'future');
         insert sp;
 
-        // Workflow for ticket types (required by TicketType__c)
-        Workflow__c wf = new Workflow__c(Name = 'Default WF', Project__c = project.Id);
+        // Workflow and TicketTypes for project 1
+        Workflow__c wf = new Workflow__c(Name = 'Default WF', Project__c = p1.Id);
         insert wf;
 
-        // Ticket Type (requires Workflow__c)
-        TicketType__c tt = new TicketType__c(Name = 'Bug', Project__c = project.Id, Workflow__c = wf.Id);
-        insert tt;
+        TicketType__c ttBug = new TicketType__c(Name = 'Bug', Project__c = p1.Id, Workflow__c = wf.Id);
+        TicketType__c ttTask = new TicketType__c(Name = 'Task', Project__c = p1.Id, Workflow__c = wf.Id);
+        TicketType__c ttStory = new TicketType__c(Name = 'User Story', Project__c = p1.Id, Workflow__c = wf.Id);
+        insert new List<TicketType__c>{ttBug, ttTask, ttStory};
 
-        // Create multiple Ticket__c records manually so tests have sample data
-        List<Ticket__c> ticketsToInsert = new List<Ticket__c>{
-            new Ticket__c(
-                Name = 'TCK-1',
-                Summary__c = 'Sample summary 1',
-                Ticket_Type__c = tt.Id,
-                Sprint__c = sp.Id,
-                Epic__c = e.Id,
-                AssignedTo__c = pm.Id,
-                CurrentState__c = st.Id,
-                RecordStatus__c = 'active'
-            ),
-            new Ticket__c(
-                Name = 'TCK-2',
-                Summary__c = 'Sample summary 2',
-                Ticket_Type__c = tt.Id,
-                Sprint__c = sp.Id,
-                Epic__c = e.Id,
-                AssignedTo__c = pm.Id,
-                CurrentState__c = st.Id,
-                RecordStatus__c = 'active'
+        // Create multiple tickets: 5 in project1, 1 in project2 (total 6)
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+        List<String> ticketNames = new List<String>{'TCK-1','TCK-2','TCK-3','TCK-4','TCK-5','TCK-6'};
+        if (gd.containsKey('Ticket__c')) {
+            Schema.SObjectType ttype = gd.get('Ticket__c');
+            Map<String, Schema.SObjectField> tfields = ttype.getDescribe().fields.getMap();
 
-            ),
-            new Ticket__c(
-                Name = 'TCK-3',
-                Summary__c = 'Sample summary 3',
-                Ticket_Type__c = tt.Id,
-                Sprint__c = sp.Id,
-                Epic__c = e.Id,
-                AssignedTo__c = pm.Id,
-                CurrentState__c = st.Id,
-                RecordStatus__c = 'active'
+            List<SObject> toInsert = new List<SObject>();
 
-            )
-        };
-        insert ticketsToInsert;
+            // specs: Name, Summary, TicketTypeId, ProjectId
+            List<Map<String, Object>> specs = new List<Map<String, Object>>{
+                new Map<String,Object>{'Name' => 'TCK-1', 'Summary' => 'Ticket 1', 'TypeId' => ttBug.Id, 'ProjectId' => p1.Id},
+                new Map<String,Object>{'Name' => 'TCK-2', 'Summary' => 'Ticket 2', 'TypeId' => ttTask.Id, 'ProjectId' => p1.Id},
+                new Map<String,Object>{'Name' => 'TCK-3', 'Summary' => 'Ticket 3', 'TypeId' => ttStory.Id, 'ProjectId' => p1.Id},
+                new Map<String,Object>{'Name' => 'TCK-4', 'Summary' => 'Ticket 4', 'TypeId' => ttBug.Id, 'ProjectId' => p1.Id},
+                new Map<String,Object>{'Name' => 'TCK-5', 'Summary' => 'Ticket 5', 'TypeId' => ttTask.Id, 'ProjectId' => p1.Id},
+                new Map<String,Object>{'Name' => 'TCK-6', 'Summary' => 'Ticket 6', 'TypeId' => ttBug.Id, 'ProjectId' => p2.Id}
+            };
+
+            for (Integer i = 0; i < specs.size(); i++) {
+                Map<String,Object> s = specs[i];
+                SObject t = ttype.newSObject();
+                if (tfields.containsKey('Name')) t.put('Name', s.get('Name'));
+                if (tfields.containsKey('Summary__c')) t.put('Summary__c', s.get('Summary'));
+                // set ticket type field (support both variants)
+                if (tfields.containsKey('Ticket_Type__c')) t.put('Ticket_Type__c', s.get('TypeId'));
+                if (tfields.containsKey('TicketType__c')) t.put('TicketType__c', s.get('TypeId'));
+                // set project on ticket if field exists
+                if (tfields.containsKey('Project__c')) t.put('Project__c', s.get('ProjectId'));
+                // set default state to Todo if present
+                if (tfields.containsKey('CurrentState__c')) t.put('CurrentState__c', stTodo.Id);
+                else if (tfields.containsKey('Current_State__c')) t.put('Current_State__c', stTodo.Id);
+                toInsert.add(t);
+            }
+            insert toInsert;
+
+            // Link epic to exactly two project1 tickets (TCK-1 and TCK-2)
+            List<Ticket__c> created = [SELECT Id, Name FROM Ticket__c WHERE Name IN :ticketNames];
+            List<EpicLink__c> links = new List<EpicLink__c>();
+            for (Ticket__c ct : created) {
+                if (ct.Name == 'TCK-1' || ct.Name == 'TCK-2') {
+                    links.add(new EpicLink__c(Epic__c = epic.Id, Ticket__c = ct.Id));
+                }
+            }
+            if (!links.isEmpty()) insert links;
+
+            // Create multiple subtasks for a ticket of type Task (use TCK-2 if present)
+            List<Ticket__c> taskFound = [SELECT Id FROM Ticket__c WHERE Name = 'TCK-2' LIMIT 1];
+            if (!taskFound.isEmpty() && gd.containsKey('Subtask__c')) {
+                Id taskTicketId = taskFound[0].Id;
+                Schema.SObjectType stype = gd.get('Subtask__c');
+                Map<String, Schema.SObjectField> sfields = stype.getDescribe().fields.getMap();
+                List<SObject> subs = new List<SObject>();
+                for (Integer k = 1; k <= 3; k++) {
+                    SObject sub = stype.newSObject();
+                    if (sfields.containsKey('Name')) sub.put('Name', 'Subtask ' + k);
+                    if (sfields.containsKey('Summary__c')) sub.put('Summary__c', 'Subtask summary ' + k);
+                    if (sfields.containsKey('Ticket__c')) sub.put('Ticket__c', taskTicketId);
+                    if (sfields.containsKey('CurrentState__c')) sub.put('CurrentState__c', stTodo.Id);
+                    subs.add(sub);
+                }
+                if (!subs.isEmpty()) insert subs;
+            }
+        }
     }
 
     @isTest
@@ -98,7 +129,7 @@ public class ManageBacklogControllerTest {
         System.assert(data.containsKey('members'));
         System.assert(data.containsKey('epics'));
 
-        List<Sprint__c> sprints = (List<Sprint__c>)data.get('sprints');
+        List<Object> sprints = (List<Object>)data.get('sprints');
         System.assert(sprints.size() >= 1, 'Expect at least one sprint');
     }
 
@@ -118,5 +149,4 @@ public class ManageBacklogControllerTest {
         Test.stopTest();
         System.assertEquals(false, resp.success);
     }
-
 }

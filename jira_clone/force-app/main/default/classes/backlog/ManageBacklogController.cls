@@ -14,10 +14,10 @@ public with sharing class ManageBacklogController {
 
             List<Ticket__c> tickets = TicketService.loadTickets(projectId);
             List<Sprint__c> sprints = SprintService.loadSprints(projectId);
-            List<Status__c> statuses = StatusService.loadStatuses(projectId);
+            List<Status__c> statuses = LoadStatusesUseCase.execute(projectId);
             // load members directly
             List<ProjectMember__c> members = [SELECT Id, Name, User__c, User__r.Name FROM ProjectMember__c WHERE Project__c = :projectId ORDER BY Name];
-            List<Epic__c> epics = EpicService.loadEpics(projectId);
+            List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
 
             Map<String, Object> data = new Map<String, Object>{
                 'tickets' => tickets,

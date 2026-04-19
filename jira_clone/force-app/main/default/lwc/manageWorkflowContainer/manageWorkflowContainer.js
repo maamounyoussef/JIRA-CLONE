@@ -1,6 +1,6 @@
 import { LightningElement, track } from 'lwc';
 import getTicketTypeById from '@salesforce/apex/TicketTypeController.getTicketTypeById';
-import getWorkflow from '@salesforce/apex/WorkflowController.getWorkflow';
+import getWorkflow from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
 
 export default class ManageWorkflowContainer extends LightningElement {
     @track showForm = true;

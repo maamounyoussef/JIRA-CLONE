@@ -5,10 +5,10 @@
 
 // Example Apex import (commented):
 // import fetchWorkflowApex from '@salesforce/apex/WorkflowController.fetchWorkflow';
-import createStatusApex from '@salesforce/apex/StatusController.createStatus';
-import getWorkflowTransitionByIdApex from '@salesforce/apex/WorkflowTransitionController.getWorkflowTransitionById';
-import activateWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.activateWorkflowTransition';
-import deleteWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.deleteWorkflowTransition';
+import createStatusApex from '@salesforce/apex/ManageWorkflowPageController.createStatus';
+import getWorkflowTransitionByIdApex from '@salesforce/apex/ManageWorkflowPageController.getWorkflowTransitionById';
+import activateWorkflowTransitionApex from '@salesforce/apex/ManageWorkflowPageController.activateWorkflowTransition';
+import deleteWorkflowTransitionApex from '@salesforce/apex/ManageWorkflowPageController.deleteWorkflowTransition';
 import { workflowVisualizerStatusFromApex, workflowVisualizerTransitionFromApex } from './WorkflowVisualizerDTO.js';
 
 /**
@@ -59,7 +59,7 @@ export async function createStatus({ name, projectId } = {}) {
     }
 
     try {
-        // Call Apex controller. StatusController.createStatus returns an APIResponse-like object
+        // Call Apex controller. ManageWorkflowPageController.createStatus returns an APIResponse-like object
         const result = await createStatusApex({ name, projectId });
         return result;
     } catch (err) {
