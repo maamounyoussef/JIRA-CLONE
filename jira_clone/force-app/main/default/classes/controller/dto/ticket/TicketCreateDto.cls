@@ -34,6 +34,18 @@ public with sharing class TicketCreateDto {
      * @param currentStateId Current status ID (required)
      */
     public TicketCreateDto(String name, String summary, String ticketTypeId, String currentStateId) {
+        if (String.isBlank(name)) {
+            throw new IllegalArgumentException('Ticket name is required');
+        }
+        if (String.isBlank(summary)) {
+            throw new IllegalArgumentException('Ticket summary is required');
+        }
+        if (String.isBlank(ticketTypeId)) {
+            throw new IllegalArgumentException('Ticket type ID is required');
+        }
+        if (String.isBlank(currentStateId)) {
+            throw new IllegalArgumentException('Current state ID is required');
+        }
         this.name = name;
         this.summary = summary;
         this.ticketTypeId = ticketTypeId;
@@ -65,6 +77,18 @@ public with sharing class TicketCreateDto {
         String sprintId,
         String priority
     ) {
+        if (String.isBlank(name)) {
+            throw new IllegalArgumentException('Ticket name is required');
+        }
+        if (String.isBlank(summary)) {
+            throw new IllegalArgumentException('Ticket summary is required');
+        }
+        if (String.isBlank(ticketTypeId)) {
+            throw new IllegalArgumentException('Ticket type ID is required');
+        }
+        if (String.isBlank(currentStateId)) {
+            throw new IllegalArgumentException('Current state ID is required');
+        }
         this.name = name;
         this.summary = summary;
         this.ticketTypeId = ticketTypeId;

@@ -59,20 +59,6 @@ public with sharing class ProjectRepository {
     }
     
     /**
-     * @description Get all statuses for a project
-     * @param projectId - The Project__c record Id
-     * @return List of Status__c records
-     */
-    public static List<Status__c> getProjectStatuses(String projectId) {
-        return [
-            SELECT Id, Name, Project__c 
-            FROM Status__c 
-            WHERE Project__c = :projectId
-            ORDER BY Name ASC
-        ];
-    }
-    
-    /**
      * @description Create a new project
      * @param name - The project name
      * @return The created Project__c record

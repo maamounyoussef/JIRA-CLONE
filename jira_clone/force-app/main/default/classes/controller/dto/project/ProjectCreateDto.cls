@@ -11,6 +11,9 @@ public class ProjectCreateDto {
     }
     
     public ProjectCreateDto(String name) {
+        if (String.isBlank(name)) {
+            throw new IllegalArgumentException('Project name is required');
+        }
         this.name = name;
     }
 }

@@ -25,9 +25,8 @@ public with sharing class CreateEpicUseCase {
                 throw new EpicException('projectId is required');
             }
             
-            // Validate project exists
-            ProjectRepository.getProjectById(dto.projectId);
-            
+            ProjectValidator.exists(dto.projectId);
+
             // Map DTO to domain object
             Epic__c epic = EpicMapper.mapCreateEpicDtoToDomain(dto);
             

@@ -29,6 +29,12 @@ public with sharing class SubtaskCreateDto {
      * @param ticketId Ticket ID (required)
      */
     public SubtaskCreateDto(String summary, String ticketId) {
+        if (String.isBlank(summary)) {
+            throw new IllegalArgumentException('Subtask summary is required');
+        }
+        if (String.isBlank(ticketId)) {
+            throw new IllegalArgumentException('Ticket ID is required');
+        }
         this.summary = summary;
         this.ticketId = ticketId;
     }
@@ -52,6 +58,12 @@ public with sharing class SubtaskCreateDto {
         Integer storyPoint,
         DateTime startDate
     ) {
+        if (String.isBlank(summary)) {
+            throw new IllegalArgumentException('Subtask summary is required');
+        }
+        if (String.isBlank(ticketId)) {
+            throw new IllegalArgumentException('Ticket ID is required');
+        }
         this.summary = summary;
         this.ticketId = ticketId;
         this.description = description;

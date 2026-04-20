@@ -33,7 +33,7 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
-            List<Status__c> statuses = GetProjectStatusesUseCase.execute(projectId);
+            List<Status__c> statuses = GetStatusesByProjectUseCase.execute(projectId);
             return new APIResponse(true, 'Project statuses retrieved successfully', statuses);
         } catch (WorkflowException ex) {
             return new APIResponse(false, ex.getMessage());

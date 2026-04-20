@@ -15,6 +15,7 @@ public with sharing class GetEpicsByProjectUseCase {
             if (String.isBlank(projectId)) {
                 throw new EpicException('projectId is required');
             }
+            ProjectValidator.exists(projectId);
             
             return EpicRepository.findEpicsByProject(projectId);
         } catch (EpicException ex) {

@@ -11,14 +11,6 @@ public class CreateProjectUseCase {
      */
     public static Project__c execute(ProjectCreateDto dto) {
         try {
-            if (dto == null) {
-                throw new ProjectException('ProjectCreateDto is required');
-            }
-            
-            if (String.isBlank(dto.name)) {
-                throw new ProjectException('Project Name is required');
-            }
-            
             return ProjectRepository.createProject(dto.name);
         } catch (ProjectException ex) {
             throw ex;

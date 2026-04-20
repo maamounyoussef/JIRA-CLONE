@@ -29,6 +29,15 @@ public with sharing class EpicCreateDto {
      * @param projectId Project ID (required)
      */
     public EpicCreateDto(String name, String summary, String projectId) {
+        if (String.isBlank(name)) {
+            throw new IllegalArgumentException('Epic name is required');
+        }
+        if (String.isBlank(summary)) {
+            throw new IllegalArgumentException('Epic summary is required');
+        }
+        if (String.isBlank(projectId)) {
+            throw new IllegalArgumentException('Project ID is required');
+        }
         this.name = name;
         this.summary = summary;
         this.projectId = projectId;
@@ -51,6 +60,15 @@ public with sharing class EpicCreateDto {
         DateTime startDate,
         DateTime endDate
     ) {
+        if (String.isBlank(name)) {
+            throw new IllegalArgumentException('Epic name is required');
+        }
+        if (String.isBlank(summary)) {
+            throw new IllegalArgumentException('Epic summary is required');
+        }
+        if (String.isBlank(projectId)) {
+            throw new IllegalArgumentException('Project ID is required');
+        }
         this.name = name;
         this.summary = summary;
         this.projectId = projectId;

@@ -11,10 +11,6 @@ public class GetProjectByNameUseCase {
      */
     public static Project__c execute(String projectName) {
         try {
-            if (String.isBlank(projectName)) {
-                throw new ProjectException('Project Name is required');
-            }
-            
             return ProjectRepository.getProjectByName(projectName);
         } catch (ProjectException ex) {
             throw ex;
