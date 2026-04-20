@@ -16,10 +16,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getWorkflow(String workflowId) {
         try {
-            WorkflowConfigDTO config = GetWorkflowUseCase.execute(workflowId);
+            WorkflowConfigDTO config = WorkflowService.getWorkflow(workflowId);
             return new APIResponse(true, 'Workflow retrieved successfully', config);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving workflow: ' + ex.getMessage());
         }
@@ -33,10 +31,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
-            List<Status__c> statuses = GetStatusesByProjectUseCase.execute(projectId);
+            List<Status__c> statuses = StatusService.getStatusesByProjectWithValidation(projectId);
             return new APIResponse(true, 'Project statuses retrieved successfully', statuses);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving project statuses: ' + ex.getMessage());
         }
@@ -49,11 +45,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadWorkflows() {
         try {
-            List<Workflow__c> workflows = LoadWorkflowsUseCase.execute();
+            List<Workflow__c> workflows = WorkflowService.loadWorkflows();
             return new APIResponse(true, 'Workflows loaded successfully', workflows);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error loading workflows: ' + ex.getMessage());
         }
     }
@@ -67,10 +61,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse createWorkflow(String name, String projectId) {
         try {
-            Workflow__c workflow = CreateWorkflowUseCase.execute(name, projectId);
+            Workflow__c workflow = WorkflowService.createWorkflowWithValidation(name, projectId);
             return new APIResponse(true, 'Workflow created successfully', workflow);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating workflow: ' + ex.getMessage());
         }
@@ -86,13 +78,11 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse updateWorkflow(String workflowId) {
         try {
-            UpdateWorkflowUseCase.execute(workflowId);
+            WorkflowService.updateWorkflow(workflowId);
             return new APIResponse(
                 true, 
                 'Workflow updated successfully. All pending transitions and validation rules activated.'
             );
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating workflow: ' + ex.getMessage());
         }
@@ -108,10 +98,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
-            TicketType__c ticketType = GetTicketTypeByIdUseCase.execute(ticketTypeId);
+            TicketType__c ticketType = TicketTypeService.getTicketTypeByIdWithValidation(ticketTypeId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
-        } catch (TicketTypeException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
@@ -127,11 +115,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadStatuses(String projectId) {
         try {
-            List<Status__c> statuses = LoadStatusesUseCase.execute(projectId);
+            List<Status__c> statuses = StatusService.loadStatuses(projectId);
             return new APIResponse(true, 'Statuses loaded successfully', statuses);
-        } catch (StatusException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             return new APIResponse(false, 'Error loading statuses: ' + ex.getMessage());
         }
     }
@@ -145,11 +131,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse createStatus(String name, String projectId) {
         try {
-            Status__c status = CreateStatusUseCase.execute(name, projectId);
+            Status__c status = StatusService.createStatusWithValidation(name, projectId);
             return new APIResponse(true, 'Status created successfully', status);
-        } catch (StatusException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error creating status: ' + ex.getMessage());
         }
     }
@@ -164,10 +148,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadTransitions(String workflowId) {
         try {
-            List<WorkflowTransition__c> transitions = LoadWorkflowTransitionsUseCase.execute(workflowId);
+            List<WorkflowTransition__c> transitions = WorkflowService.loadWorkflowTransitions(workflowId);
             return new APIResponse(true, 'Workflow Transitions loaded successfully', transitions);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading workflow transitions: ' + ex.getMessage());
         }
@@ -181,10 +163,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getWorkflowTransitionById(String transitionId) {
         try {
-            WorkflowTransition__c transition = GetWorkflowTransitionByIdUseCase.execute(transitionId);
+            WorkflowTransition__c transition = WorkflowService.getWorkflowTransitionByIdWithValidation(transitionId);
             return new APIResponse(true, 'Workflow Transition retrieved successfully', transition);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving workflow transition: ' + ex.getMessage());
         }
@@ -202,10 +182,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse createTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
         try {
-            WorkflowTransition__c transition = CreateWorkflowTransitionUseCase.execute(name, workflowId, fromStatusId, toStatusId, recordStatus);
+            WorkflowTransition__c transition = WorkflowService.createWorkflowTransition(name, workflowId, fromStatusId, toStatusId, recordStatus);
             return new APIResponse(true, 'Workflow Transition created successfully', transition);
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating workflow transition: ' + ex.getMessage());
         }
@@ -227,15 +205,13 @@ public with sharing class ManageWorkflowPageController {
         String toStatusId
     ) {
         try {
-            WorkflowTransition__c transition = AddWorkflowTransitionUseCase.execute(workflowId, name, fromStatusId, toStatusId);
+            WorkflowTransition__c transition = WorkflowService.addWorkflowTransition(workflowId, name, fromStatusId, toStatusId);
             return new APIResponse(
                 true, 
                 'Workflow Transition created successfully with pending status',
                 transition
             );
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             return new APIResponse(false, 'Error adding workflow transition: ' + ex.getMessage());
         }
     }
@@ -248,10 +224,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse activateWorkflowTransition(String workflowTransitionId) {
         try {
-            ActivateWorkflowTransitionUseCase.execute(workflowTransitionId);
+            WorkflowService.activateWorkflowTransition(workflowTransitionId);
             return new APIResponse(true, 'Workflow Transition activated successfully');
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error activating workflow transition: ' + ex.getMessage());
         }
@@ -265,10 +239,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse deleteWorkflowTransition(String workflowTransitionId) {
         try {
-            DeleteWorkflowTransitionUseCase.execute(workflowTransitionId);
+            WorkflowService.deleteWorkflowTransition(workflowTransitionId);
             return new APIResponse(true, 'Workflow Transition deleted successfully');
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting workflow transition: ' + ex.getMessage());
         }
@@ -291,14 +263,12 @@ public with sharing class ManageWorkflowPageController {
         String validationType
     ) {
         try {
-            ValidationRule__c rule = AddValidationRuleUseCase.execute(workflowTransitionId, ticketField, validationType);
+            ValidationRule__c rule = WorkflowService.addValidationRule(workflowTransitionId, ticketField, validationType);
             return new APIResponse(
                 true, 
                 'Validation Rule created successfully with pending status',
                 rule
             );
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error adding validation rule: ' + ex.getMessage());
         }
@@ -312,10 +282,8 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse deleteValidationRule(String validationRuleId) {
         try {
-            DeleteValidationRuleUseCase.execute(validationRuleId);
+            WorkflowService.deleteValidationRule(validationRuleId);
             return new APIResponse(true, 'Validation Rule deleted successfully');
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting validation rule: ' + ex.getMessage());
         }
@@ -330,11 +298,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse activateValidationRule(String validationRuleId) {
         try {
-            ActivateValidationRuleUseCase.execute(validationRuleId);
+            WorkflowService.activateValidationRule(validationRuleId);
             return new APIResponse(true, 'Validation Rule activated successfully');
-        } catch (WorkflowException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             return new APIResponse(false, 'Error activating validation rule: ' + ex.getMessage());
         }
     }

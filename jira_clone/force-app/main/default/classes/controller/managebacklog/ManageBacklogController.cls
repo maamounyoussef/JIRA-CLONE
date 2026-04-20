@@ -10,14 +10,14 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
             // Ensure project exists
-            ProjectRepository.getProjectById(projectId);
+            ProjectService.getProjectById(projectId);
 
-            List<Ticket__c> tickets = LoadTicketsUseCase.execute(projectId);
-            List<Sprint__c> sprints = LoadSprintsUseCase.execute(projectId);
-            List<Status__c> statuses = LoadStatusesUseCase.execute(projectId);
-            List<TicketType__c> ticketTypes = LoadTicketTypesUseCase.execute(projectId);
-            List<ProjectMember__c> members = LoadProjectMembersUseCase.execute(projectId);
-            List<Epic__c> epics = GetEpicsByProjectUseCase.execute(projectId);
+            List<Ticket__c> tickets = TicketService.loadTickets(projectId);
+            List<Sprint__c> sprints = SprintService.loadSprints(projectId);
+            List<Status__c> statuses = StatusService.loadStatuses(projectId);
+            List<TicketType__c> ticketTypes = TicketTypeService.loadTicketTypes(projectId);
+            List<ProjectMember__c> members = ProjectMemberService.loadProjectMembers(projectId);
+            List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
 
             Map<String, Object> data = new Map<String, Object>{
                 'tickets' => tickets,
@@ -29,14 +29,6 @@ public with sharing class ManageBacklogController {
             };
 
             return new APIResponse(true, 'Backlog data loaded', data);
-        } catch (ProjectException pex) {
-            return new APIResponse(false, 'Invalid project: ' + pex.getMessage());
-        } catch (TicketException tex) {
-            return new APIResponse(false, tex.getMessage());
-        } catch (SprintException sex) {
-            return new APIResponse(false, sex.getMessage());
-        } catch (TicketTypeException ttex) {
-            return new APIResponse(false, ttex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading backlog data: ' + ex.getMessage());
         }
@@ -47,10 +39,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadProjects() {
         try {
-            List<Project__c> projects = LoadProjectsUseCase.execute();
+            List<Project__c> projects = ProjectService.loadProjects();
             return new APIResponse(true, 'Projects loaded successfully', projects);
-        } catch (ProjectException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading projects: ' + ex.getMessage());
         }
@@ -59,10 +49,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectByName(String projectName) {
         try {
-            Project__c project = GetProjectByNameUseCase.execute(projectName);
+            Project__c project = ProjectService.getProjectByNameWithValidation(projectName);
             return new APIResponse(true, 'Project retrieved successfully', project);
-        } catch (ProjectException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving project: ' + ex.getMessage());
         }
@@ -71,23 +59,21 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
-            List<Status__c> statuses = GetStatusesByProjectUseCase.execute(projectId);
+            List<Status__c> statuses = StatusService.getStatusesByProjectWithValidation(projectId);
             return new APIResponse(true, 'Project statuses retrieved successfully', statuses);
-        } catch (ProjectException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving project statuses: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse createProject(String projectCreateDtoJson) {
+    public static APIResponse createProject(String name) {
         try {
-            ProjectCreateDto dto = (ProjectCreateDto) JSON.deserialize(projectCreateDtoJson, ProjectCreateDto.class);
-            Project__c created = CreateProjectUseCase.execute(dto.name);
+            if (String.isBlank(name)) {
+                return new APIResponse(false, 'name is required');
+            }
+            Project__c created = ProjectService.createProject(name);
             return new APIResponse(true, 'Project created successfully', created);
-        } catch (ProjectException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating project: ' + ex.getMessage());
         }
@@ -98,10 +84,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getEpicsByProject(String projectId) {
         try {
-            List<Epic__c> epics = GetEpicsByProjectUseCase.execute(projectId);
+            List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
             return new APIResponse(true, 'Epics retrieved successfully', epics);
-        } catch (EpicException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving epics: ' + ex.getMessage());
         }
@@ -110,70 +94,92 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getEpicById(String epicId) {
         try {
-            Epic__c epic = GetEpicByIdUseCase.execute(epicId);
+            Epic__c epic = EpicService.getEpicById(epicId);
             return new APIResponse(true, 'Epic retrieved successfully', epic);
-        } catch (EpicException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving epic: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse createEpic(String epicCreateDtoJson) {
+    public static APIResponse createEpic(String name, String summary, String projectId, String description, DateTime startDate, DateTime endDate) {
         try {
-            EpicCreateDto dto = (EpicCreateDto) JSON.deserialize(epicCreateDtoJson, EpicCreateDto.class);
-            Epic__c epic = EpicMapper.mapCreateEpicDtoToDomain(dto);
-            Epic__c created = CreateEpicUseCase.execute(epic);
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            Epic__c epic = new Epic__c();
+            epic.Name = name;
+            epic.Summary__c = summary;
+            epic.Project__c = projectId;
+            if (String.isNotBlank(description)) epic.Description__c = description;
+            if (startDate != null) epic.StartDate__c = startDate;
+            if (endDate != null) epic.EndDate__c = endDate;
+
+            Epic__c created = EpicService.createEpic(epic);
             return new APIResponse(true, 'Epic created successfully', created);
-        } catch (EpicException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating epic: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse updateEpic(String epicUpdateDtoJson) {
+    public static APIResponse updateEpic(String epicId, String name, String summary, String description, DateTime startDate, DateTime endDate) {
         try {
-            EpicUpdateDto dto = (EpicUpdateDto) JSON.deserialize(epicUpdateDtoJson, EpicUpdateDto.class);
-            Epic__c existing = GetEpicByIdUseCase.execute(dto.epicId);
-            if (existing == null) throw new EpicException('Epic not found: ' + dto.epicId);
-            Epic__c epic = EpicMapper.mapUpdateEpicDtoToDomain(dto, existing);
-            Epic__c updated = UpdateEpicUseCase.execute(epic);
+            if (String.isBlank(epicId)) return new APIResponse(false, 'epicId is required');
+
+            Epic__c existing = EpicService.findEpicById(epicId);
+            if (existing == null) return new APIResponse(false, 'Epic not found: ' + epicId);
+
+            if (String.isNotBlank(name)) existing.Name = name;
+            if (String.isNotBlank(summary)) existing.Summary__c = summary;
+            if (String.isNotBlank(description)) existing.Description__c = description;
+            if (startDate != null) existing.StartDate__c = startDate;
+            if (endDate != null) existing.EndDate__c = endDate;
+
+            Epic__c updated = EpicService.updateEpic(existing);
             return new APIResponse(true, 'Epic updated successfully', updated);
-        } catch (EpicException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating epic: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse createSprint(String sprintCreateDtoJson) {
+    public static APIResponse createSprint(String name, Integer duration, Date startDate, String goal, String projectId) {
         try {
-            SprintCreateDto dto = (SprintCreateDto) JSON.deserialize(sprintCreateDtoJson, SprintCreateDto.class);
-            Sprint__c sprint = SprintMapper.mapCreateSprintDtoToDomain(dto);
-            Sprint__c created = CreateSprintUseCase.execute(sprint);
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            Sprint__c sprint = new Sprint__c();
+            sprint.Name = name;
+            sprint.Project__c = projectId;
+            sprint.Duration__c = duration;
+            sprint.StartDate__c = startDate;
+            sprint.Goal__c = goal;
+            sprint.RecordStatus__c = 'future';
+
+            Sprint__c created = SprintService.createSprint(sprint);
             return new APIResponse(true, 'Sprint created successfully', created);
-        } catch (SprintException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating sprint: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse updateSprint(String sprintUpdateDtoJson) {
+    public static APIResponse updateSprint(String sprintId, String name, Integer duration, Date startDate, String goal) {
         try {
-            SprintUpdateDto dto = (SprintUpdateDto) JSON.deserialize(sprintUpdateDtoJson, SprintUpdateDto.class);
-            Sprint__c existing = SprintRepository.findSprintById(dto.sprintId);
-            if (existing == null) throw new SprintException('Sprint not found');
-            Sprint__c sprint = SprintMapper.mapUpdateSprintDtoToDomain(dto, existing);
-            Sprint__c updated = UpdateSprintUseCase.execute(sprint);
+            if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
+
+            Sprint__c existing = SprintService.findSprintById(sprintId);
+            if (existing == null) return new APIResponse(false, 'Sprint not found');
+
+            if (String.isNotBlank(name)) existing.Name = name;
+            if (duration != null) existing.Duration__c = duration;
+            if (startDate != null) existing.StartDate__c = startDate;
+            if (String.isNotBlank(goal)) existing.Goal__c = goal;
+
+            Sprint__c updated = SprintService.updateSprint(existing);
             return new APIResponse(true, 'Sprint updated successfully', updated);
-        } catch (SprintException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating sprint: ' + ex.getMessage());
         }
@@ -182,10 +188,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse completeSprint(String sprintId) {
         try {
-            CompleteSprintUseCase.execute(sprintId);
+            SprintService.completeSprint(sprintId);
             return new APIResponse(true, 'Sprint completed');
-        } catch (SprintException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error completing sprint: ' + ex.getMessage());
         }
@@ -194,7 +198,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSprint(String sprintId) {
         try {
-            DeleteSprintUseCase.execute(sprintId);
+            SprintService.deleteSprint(sprintId);
             return new APIResponse(true, 'Sprint deleted');
         } catch (SprintException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -206,10 +210,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse startSprint(String sprintId) {
         try {
-            StartSprintUseCase.execute(sprintId);
+            SprintService.startSprint(sprintId);
             return new APIResponse(true, 'Sprint started');
-        } catch (SprintException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error starting sprint: ' + ex.getMessage());
         }
@@ -218,11 +220,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadTicketTypes(String projectId) {
         try {
-            List<TicketType__c> ticketTypes = LoadTicketTypesUseCase.execute(projectId);
+            List<TicketType__c> ticketTypes = TicketTypeService.loadTicketTypes(projectId);
             return new APIResponse(true, 'Ticket Types loaded successfully', ticketTypes);
-        } catch (TicketTypeException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             return new APIResponse(false, 'Error loading ticket types: ' + ex.getMessage());
         }
     }
@@ -230,11 +230,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
-            TicketType__c ticketType = GetTicketTypeByIdUseCase.execute(ticketTypeId);
+            TicketType__c ticketType = TicketTypeService.getTicketTypeByIdWithValidation(ticketTypeId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
-        } catch (TicketTypeException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
     }
@@ -242,54 +240,70 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeByName(String ticketTypeName, String projectId) {
         try {
-            TicketType__c ticketType = GetTicketTypeByNameUseCase.execute(ticketTypeName, projectId);
+            TicketType__c ticketType = TicketTypeService.getTicketTypeByNameWithValidation(ticketTypeName, projectId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
-        } catch (TicketTypeException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse createTicketType(String ticketTypeCreateDtoJson) {
+    public static APIResponse createTicketType(String name, String description, String iconUrl, String workflowId, String projectId) {
         try {
-            TicketTypeCreateDto dto = (TicketTypeCreateDto) JSON.deserialize(ticketTypeCreateDtoJson, TicketTypeCreateDto.class);
-            TicketType__c created = CreateTicketTypeUseCase.execute(dto.name, dto.description, dto.iconUrl, dto.workflowId, dto.projectId);
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            TicketType__c created = TicketTypeService.createTicketType(name, description, iconUrl, workflowId, projectId);
             return new APIResponse(true, 'Ticket Type created successfully', created);
-        } catch (TicketTypeException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating ticket type: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse createTicket(String ticketCreateDtoJson) {
+    public static APIResponse createTicket(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String sprintId, String priority) {
         try {
-            TicketCreateDto dto = (TicketCreateDto) JSON.deserialize(ticketCreateDtoJson, TicketCreateDto.class);
-            Ticket__c ticket = TicketMapper.mapCreateTicketDtoToDomain(dto);
-            Ticket__c created = CreateTicketUseCase.execute(ticket);
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
+            if (String.isBlank(currentStateId)) return new APIResponse(false, 'currentStateId is required');
+
+            Ticket__c ticket = new Ticket__c();
+            ticket.Name = name;
+            ticket.Summary__c = summary;
+            ticket.Ticket_Type__c = ticketTypeId;
+            ticket.CurrentState__c = currentStateId;
+            if (String.isNotBlank(description)) ticket.Description__c = description;
+            if (storyPoint != null) ticket.StoryPoint__c = storyPoint;
+            if (String.isNotBlank(assignedToId)) ticket.AssignedTo__c = assignedToId;
+            if (String.isNotBlank(epicId)) ticket.Epic__c = epicId;
+            if (String.isNotBlank(sprintId)) ticket.Sprint__c = sprintId;
+            if (String.isNotBlank(priority)) ticket.Priority__c = priority;
+
+            Ticket__c created = TicketService.createTicket(ticket);
             return new APIResponse(true, 'Ticket created successfully', created);
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating ticket: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse updateTicket(String ticketUpdateDtoJson) {
+    public static APIResponse updateTicket(String ticketId, String summary, String description, Integer storyPoint, String priority, String assignedToId, String currentStateId) {
         try {
-            TicketUpdateDto dto = (TicketUpdateDto) JSON.deserialize(ticketUpdateDtoJson, TicketUpdateDto.class);
-            if (dto == null) throw new TicketException('dto is required');
-            Ticket__c existing = GetTicketByIdUseCase.execute(dto.ticketId);
-            if (existing == null) throw new TicketException('Ticket not found: ' + dto.ticketId);
-            Ticket__c ticket = TicketMapper.mapUpdateTicketDtoToDomain(dto, existing);
-            Ticket__c updated = UpdateTicketUseCase.execute(ticket);
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+
+            Ticket__c existing = TicketService.findTicketById(ticketId);
+            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+
+            if (String.isNotBlank(summary)) existing.Summary__c = summary;
+            if (String.isNotBlank(description)) existing.Description__c = description;
+            if (storyPoint != null) existing.StoryPoint__c = storyPoint;
+            if (String.isNotBlank(priority)) existing.Priority__c = priority;
+            if (String.isNotBlank(assignedToId)) existing.AssignedTo__c = assignedToId;
+            if (String.isNotBlank(currentStateId)) existing.CurrentState__c = currentStateId;
+
+            Ticket__c updated = TicketService.updateTicket(existing);
             return new APIResponse(true, 'Ticket updated', updated);
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket: ' + ex.getMessage());
         }
@@ -298,7 +312,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateTicketSummary(String ticketId, String summary) {
         try {
-            Ticket__c updated = UpdateTicketSummaryUseCase.execute(ticketId, summary);
+            Ticket__c updated = TicketService.updateTicketSummary(ticketId, summary);
             return new APIResponse(true, 'Ticket summary updated', updated);
         } catch (TicketException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -310,11 +324,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateTicketPriority(String ticketId, String priority) {
         try {
-            Ticket__c updated = UpdateTicketPriorityUseCase.execute(ticketId, priority);
+            Ticket__c updated = TicketService.updateTicketPriority(ticketId, priority);
             return new APIResponse(true, 'Ticket priority updated', updated);
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket priority: ' + ex.getMessage());
         }
     }
@@ -322,7 +334,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse assignTicket(String ticketId, String memberId) {
         try {
-            Ticket__c updated = AssignTicketUseCase.execute(ticketId, memberId);
+            Ticket__c updated = TicketService.assignTicket(ticketId, memberId);
             return new APIResponse(true, 'Ticket assignee updated', updated);
         } catch (TicketException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -334,10 +346,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateTicketState(String ticketId, String stateId) {
         try {
-            Ticket__c updated = UpdateTicketStateUseCase.execute(ticketId, stateId);
+            Ticket__c updated = TicketService.updateTicketState(ticketId, stateId);
             return new APIResponse(true, 'Ticket state updated', updated);
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket state: ' + ex.getMessage());
         }
@@ -346,7 +356,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteTicket(String ticketId) {
         try {
-            DeleteTicketsUseCase.execute(new List<String>{ticketId});
+            TicketService.deleteTickets(new List<String>{ticketId});
             return new APIResponse(true, 'Ticket deleted');
         } catch (TicketException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -358,11 +368,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteTickets(List<String> ticketIds) {
         try {
-            DeleteTicketsUseCase.execute(ticketIds);
+            TicketService.deleteTickets(ticketIds);
             return new APIResponse(true, 'Tickets deleted');
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error deleting tickets: ' + ex.getMessage());
         }
     }
@@ -370,7 +378,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadSubtasks(String ticketId) {
         try {
-            List<Subtask__c> subs = LoadSubtasksByTicketUseCase.execute(ticketId);
+            List<Subtask__c> subs = SubtaskService.getSubtasksByTicket(ticketId);
             return new APIResponse(true, 'Subtasks loaded', subs);
         } catch (SubtaskException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -382,14 +390,22 @@ public with sharing class ManageBacklogController {
     // ========== Subtask Controller Actions ==========
 
     @AuraEnabled
-    public static APIResponse createSubtask(String subtaskCreateDtoJson) {
+    public static APIResponse createSubtask(String summary, String ticketId, String description, String assigneeId, String currentStateId, Integer storyPoint, DateTime startDate) {
         try {
-            SubtaskCreateDto dto = (SubtaskCreateDto) JSON.deserialize(subtaskCreateDtoJson, SubtaskCreateDto.class);
-            Subtask__c subtask = SubtaskMapper.mapCreateSubtaskDtoToDomain(dto);
-            Subtask__c created = CreateSubtaskUseCase.execute(subtask);
+            if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+
+            Subtask__c subtask = new Subtask__c();
+            subtask.Summary__c = summary;
+            subtask.Ticket__c = ticketId;
+            if (String.isNotBlank(description)) subtask.Description__c = description;
+            if (String.isNotBlank(assigneeId)) subtask.Assignee__c = assigneeId;
+            if (String.isNotBlank(currentStateId)) subtask.CurrentState__c = currentStateId;
+            if (storyPoint != null) subtask.StoryPoint__c = storyPoint;
+            if (startDate != null) subtask.StartDate__c = startDate;
+
+            Subtask__c created = SubtaskService.createSubtask(subtask);
             return new APIResponse(true, 'Subtask created', created);
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating subtask: ' + ex.getMessage());
         }
@@ -398,27 +414,29 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateSubtaskSummary(String subtaskId, String summary) {
         try {
-            Subtask__c updated = UpdateSubtaskSummaryUseCase.execute(subtaskId, summary);
+            Subtask__c updated = SubtaskService.updateSubtaskSummary(subtaskId, summary);
             return new APIResponse(true, 'Subtask summary updated', updated);
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error updating subtask summary: ' + ex.getMessage());
         }
     }
 
     @AuraEnabled
-    public static APIResponse updateSubtask(String subtaskUpdateDtoJson) {
+    public static APIResponse updateSubtask(String subtaskId, String summary, String description, String assigneeId, String currentStateId, Integer storyPoint) {
         try {
-            SubtaskUpdateDto dto = (SubtaskUpdateDto) JSON.deserialize(subtaskUpdateDtoJson, SubtaskUpdateDto.class);
-            if (dto == null) throw new SubtaskException('dto is required');
-            Subtask__c existing = SubtaskRepository.findSubtaskById(dto.subtaskId);
-            if (existing == null) throw new SubtaskException('Subtask not found: ' + dto.subtaskId);
-            Subtask__c subtask = SubtaskMapper.mapUpdateSubtaskDtoToDomain(dto, existing);
-            Subtask__c updated = UpdateSubtaskUseCase.execute(subtask);
+            if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
+
+            Subtask__c existing = SubtaskService.findSubtaskById(subtaskId);
+            if (existing == null) return new APIResponse(false, 'Subtask not found: ' + subtaskId);
+
+            if (String.isNotBlank(summary)) existing.Summary__c = summary;
+            if (String.isNotBlank(description)) existing.Description__c = description;
+            if (String.isNotBlank(assigneeId)) existing.Assignee__c = assigneeId;
+            if (String.isNotBlank(currentStateId)) existing.CurrentState__c = currentStateId;
+            if (storyPoint != null) existing.StoryPoint__c = storyPoint;
+
+            Subtask__c updated = SubtaskService.updateSubtask(existing);
             return new APIResponse(true, 'Subtask updated', updated);
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating subtask: ' + ex.getMessage());
         }
@@ -427,10 +445,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse assignSubtask(String subtaskId, String memberId) {
         try {
-            Subtask__c updated = AssignSubtaskUseCase.execute(subtaskId, memberId);
+            Subtask__c updated = SubtaskService.assignSubtask(subtaskId, memberId);
             return new APIResponse(true, 'Subtask assignee updated', updated);
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error assigning subtask: ' + ex.getMessage());
         }
@@ -439,7 +455,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSubtask(String subtaskId) {
         try {
-            DeleteSubtasksUseCase.execute(new List<String>{subtaskId});
+            SubtaskService.deleteSubtasks(new List<String>{subtaskId});
             return new APIResponse(true, 'Subtask deleted');
         } catch (SubtaskException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -451,11 +467,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSubtasks(List<String> subtaskIds) {
         try {
-            DeleteSubtasksUseCase.execute(subtaskIds);
+            SubtaskService.deleteSubtasks(subtaskIds);
             return new APIResponse(true, 'Subtasks deleted');
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
-        } catch (Exception ex) {
+        }  catch (Exception ex) {
             return new APIResponse(false, 'Error deleting subtasks: ' + ex.getMessage());
         }
     }
@@ -463,13 +477,13 @@ public with sharing class ManageBacklogController {
     // ========== Project Member Actions ==========
 
     @AuraEnabled
-    public static APIResponse createMember(String memberCreateDtoJson) {
+    public static APIResponse createMember(String userId, String projectId, String recordStatus) {
         try {
-            ProjectMemberCreateDto dto = (ProjectMemberCreateDto) JSON.deserialize(memberCreateDtoJson, ProjectMemberCreateDto.class);
-            ProjectMember__c created = CreateProjectMemberUseCase.execute(dto.userId, dto.projectId, dto.recordStatus);
+            if (String.isBlank(userId)) return new APIResponse(false, 'userId is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            ProjectMember__c created = ProjectMemberService.createMember(userId, projectId, recordStatus);
             return new APIResponse(true, 'Project member created successfully', created);
-        } catch (ProjectMemberException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating project member: ' + ex.getMessage());
         }
@@ -478,10 +492,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadMembers(String projectId) {
         try {
-            List<ProjectMember__c> members = LoadProjectMembersUseCase.execute(projectId);
+            List<ProjectMember__c> members = ProjectMemberService.loadProjectMembers(projectId);
             return new APIResponse(true, 'Project members loaded successfully', members);
-        } catch (ProjectMemberException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading project members: ' + ex.getMessage());
         }
@@ -492,10 +504,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadUsers() {
         try {
-            List<User> users = LoadUsersUseCase.execute();
+            List<User> users = UserService.loadUsers();
             return new APIResponse(true, 'Users loaded successfully', users);
-        } catch (UserException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading users: ' + ex.getMessage());
         }

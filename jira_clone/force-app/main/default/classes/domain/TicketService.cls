@@ -1,0 +1,201 @@
+/**
+ * @description Service class for Ticket operations
+ * Consolidates all usecases and repository methods for Ticket domain
+ */
+public with sharing class TicketService {
+    
+    // Repository methods
+    public static List<Ticket__c> getTicketsByProject(String projectId) {
+        try {
+            List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :projectId];
+            if (types.isEmpty()) return new List<Ticket__c>();
+            List<Id> typeIds = new List<Id>();
+            for (TicketType__c t : types) typeIds.add(t.Id);
+            return [
+                SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
+                       AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
+                       StartDate__c, EndDate__c
+                FROM Ticket__c
+                WHERE Ticket_Type__c IN :typeIds
+                ORDER BY CreatedDate DESC
+            ];
+        } catch (Exception ex) {
+            throw new Exception('Error querying tickets: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c findTicketById(String ticketId) {
+        try {
+            List<Ticket__c> res = [
+                SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
+                       AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
+                       StartDate__c, EndDate__c
+                FROM Ticket__c
+                WHERE Id = :ticketId
+                LIMIT 1
+            ];
+            return res.isEmpty() ? null : res[0];
+        } catch (Exception ex) {
+            throw new Exception('Error retrieving ticket: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c createTicket(Ticket__c ticket) {
+        try {
+            insert ticket;
+            return ticket;
+        } catch (DmlException dex) {
+            throw new Exception('DML error creating ticket: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new Exception('Error creating ticket: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c updateTicket(Ticket__c ticket) {
+        try {
+            update ticket;
+            return ticket;
+        } catch (DmlException dex) {
+            throw new Exception('DML error updating ticket: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new Exception('Error updating ticket: ' + ex.getMessage());
+        }
+    }
+
+    public static void deleteTicketsByIds(List<String> ids) {
+        try {
+            List<Ticket__c> found = [SELECT Id, RecordStatus__c FROM Ticket__c WHERE Id IN :ids];
+            if (!found.isEmpty()) {
+                for (Ticket__c t : found) t.RecordStatus__c = 'delete';
+                update found;
+            }
+        } catch (DmlException dex) {
+            throw new Exception('DML error deleting tickets: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new Exception('Error deleting tickets: ' + ex.getMessage());
+        }
+    }
+    
+    // Use case methods
+    public static Ticket__c assignTicket(String ticketId, String memberId) {
+        try {
+            if (String.isBlank(ticketId)) throw new Exception('ticketId is required');
+            if (String.isBlank(memberId)) throw new Exception('memberId is required');
+
+            Ticket__c existing = findTicketById(ticketId);
+            if (existing == null) throw new Exception('Ticket not found: ' + ticketId);
+
+            existing.AssignedTo__c = memberId;
+            return updateTicket(existing);
+        } catch (Exception ex) {
+            throw new Exception('Error assigning ticket: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c createTicketWithValidation(Ticket__c ticket) {
+        try {
+            if (ticket == null) throw new Exception('Ticket is required');
+            if (String.isBlank(ticket.TicketType__c)) throw new Exception('ticket_type is required');
+            if (String.isBlank(ticket.Name)) throw new Exception('name is required');
+            if (String.isBlank(ticket.CurrentState__c)) throw new Exception('current_state is required');
+
+            TicketType__c tt = [SELECT Id FROM TicketType__c WHERE Id = :ticket.TicketType__c LIMIT 1];
+            if (tt == null) throw new Exception('Invalid ticket type');
+
+            Status__c status = [SELECT Id FROM Status__c WHERE Id = :ticket.CurrentState__c LIMIT 1];
+            if (status == null) throw new Exception('Invalid status');
+
+            return createTicket(ticket);
+        } catch (Exception ex) {
+            throw new Exception('Error creating ticket: ' + ex.getMessage());
+        }
+    }
+
+    public static void deleteTickets(List<String> ticketIds) {
+        try {
+            if (ticketIds == null || ticketIds.isEmpty()) throw new Exception('ticketIds are required');
+            deleteTicketsByIds(ticketIds);
+        } catch (Exception ex) {
+            throw new Exception('Error deleting tickets: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c getTicketById(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) throw new Exception('ticketId is required');
+            return findTicketById(ticketId);
+        } catch (Exception ex) {
+            throw new Exception('Error retrieving ticket: ' + ex.getMessage());
+        }
+    }
+
+    public static List<Ticket__c> loadTickets(String projectId) {
+        try {
+            if (String.isBlank(projectId)) throw new Exception('projectId is required');
+            ProjectService.getProjectById(projectId);
+            return getTicketsByProject(projectId);
+        } catch (Exception ex) {
+            throw new Exception('Error loading tickets: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c updateTicketPriority(String ticketId, String priority) {
+        try {
+            if (String.isBlank(ticketId)) throw new Exception('ticketId is required');
+            if (priority == null) throw new Exception('priority is required');
+
+            Ticket__c existing = findTicketById(ticketId);
+            if (existing == null) throw new Exception('Ticket not found: ' + ticketId);
+
+            existing.Priority__c = priority;
+            return updateTicket(existing);
+        } catch (Exception ex) {
+            throw new Exception('Error updating ticket priority: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c updateTicketState(String ticketId, String stateId) {
+        try {
+            if (String.isBlank(ticketId)) throw new Exception('ticketId is required');
+            if (String.isBlank(stateId)) throw new Exception('stateId is required');
+
+            Ticket__c existing = findTicketById(ticketId);
+            if (existing == null) throw new Exception('Ticket not found: ' + ticketId);
+
+            existing.CurrentState__c = stateId;
+            return updateTicket(existing);
+        } catch (Exception ex) {
+            throw new Exception('Error updating ticket state: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c updateTicketSummary(String ticketId, String summary) {
+        try {
+            if (String.isBlank(ticketId)) throw new Exception('ticketId is required');
+            if (summary == null) throw new Exception('summary is required');
+
+            Ticket__c existing = findTicketById(ticketId);
+            if (existing == null) throw new Exception('Ticket not found: ' + ticketId);
+
+            existing.Summary__c = summary;
+            return updateTicket(existing);
+        } catch (Exception ex) {
+            throw new Exception('Error updating ticket summary: ' + ex.getMessage());
+        }
+    }
+
+    public static Ticket__c updateTicketWithValidation(Ticket__c ticket) {
+        try {
+            if (ticket == null) throw new Exception('ticket is required');
+            if (String.isBlank(ticket.Id)) throw new Exception('ticketId is required');
+            if (String.isBlank(ticket.Name)) throw new Exception('name is required');
+
+            Ticket__c existing = findTicketById(ticket.Id);
+            if (existing == null) throw new Exception('Ticket not found: ' + ticket.Id);
+
+            return updateTicket(ticket);
+        } catch (Exception ex) {
+            throw new Exception('Error updating ticket: ' + ex.getMessage());
+        }
+    }
+}
