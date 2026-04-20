@@ -10,7 +10,7 @@ import {
     toggleClick,
     clearClicks
 } from './workflowVisualizerUtil.js';
-import addWorkflowTransitionApex from '@salesforce/apex/WorkflowTransitionController.addWorkflowTransition';
+import addWorkflowTransitionApex from '@salesforce/apex/ManageWorkflowPageController.addWorkflowTransition';
 import { normalizeWorkflowData } from './data/WorkflowVisualizerRepository.js';
 import { mapWorkflowVisualizer } from './logic/WorkflowVisualizerMapper.js';
 import { validateWorkflowVisualizerStatusName, createWorkflowVisualizerStatus, validateWorkflowVisualizerTransition, processWorkflowVisualizerData, fetchTransitionDetail, activateWorkflowTransition, deleteWorkflowTransition } from './logic/WorkflowVisualizerService.js';

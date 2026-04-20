@@ -1,6 +1,7 @@
 import { LightningElement, track } from 'lwc';
-import loadUsers from '@salesforce/apex/UserController.loadUsers';
-import createMember from '@salesforce/apex/ProjectMemberController.createMember';
+import loadUsers from '@salesforce/apex/ManageBacklogController.loadUsers';
+import loadProjects from '@salesforce/apex/ManageBacklogController.loadProjects';
+import createMember from '@salesforce/apex/ManageBacklogController.createMember';
 
 export default class DataProjectMember extends LightningElement {
     @track newMember = {

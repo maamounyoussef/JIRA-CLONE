@@ -1,5 +1,5 @@
 import { LightningElement, track } from 'lwc';
-import createProject from '@salesforce/apex/ProjectController.createProject';
+import createProject from '@salesforce/apex/ManageBacklogController.createProject';
 
 export default class DataProject extends LightningElement {
     @track newProject = {
