@@ -6,29 +6,26 @@ public with sharing class CreateEpicUseCase {
     
     /**
      * @description Create a new epic
-     * @param dto - The EpicCreateDto containing creation data
+     * @param epic - The Epic__c domain object containing creation data
      * @return The created Epic__c record
      * @throws EpicException - If validation fails or DML error occurs
      */
-    public static Epic__c execute(EpicCreateDto dto) {
+    public static Epic__c execute(Epic__c epic) {
         try {
-            if (dto == null) {
-                throw new EpicException('EpicCreateDto is required');
+            if (epic == null) {
+                throw new EpicException('Epic is required');
             }
-            if (String.isBlank(dto.name)) {
+            if (String.isBlank(epic.Name)) {
                 throw new EpicException('name is required');
             }
-            if (String.isBlank(dto.summary)) {
+            if (String.isBlank(epic.Summary__c)) {
                 throw new EpicException('summary is required');
             }
-            if (String.isBlank(dto.projectId)) {
+            if (String.isBlank(epic.Project__c)) {
                 throw new EpicException('projectId is required');
             }
             
-            ProjectValidator.exists(dto.projectId);
-
-            // Map DTO to domain object
-            Epic__c epic = EpicMapper.mapCreateEpicDtoToDomain(dto);
+            ProjectValidator.exists(epic.Project__c);
             
             // Call repo method with domain object
             return EpicRepository.createEpic(epic);

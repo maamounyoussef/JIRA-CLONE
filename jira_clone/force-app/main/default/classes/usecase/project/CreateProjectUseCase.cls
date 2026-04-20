@@ -5,13 +5,16 @@ public class CreateProjectUseCase {
     
     /**
      * @description Execute the use case to create a new project
-     * @param dto - The ProjectCreateDto with project details
+     * @param name - The project name
      * @return The created Project__c record
      * @throws ProjectException - If validation fails or DML error occurs
      */
-    public static Project__c execute(ProjectCreateDto dto) {
+    public static Project__c execute(String name) {
         try {
-            return ProjectRepository.createProject(dto.name);
+            if (String.isBlank(name)) {
+                throw new ProjectException('name is required');
+            }
+            return ProjectRepository.createProject(name);
         } catch (ProjectException ex) {
             throw ex;
         } catch (Exception ex) {

@@ -6,30 +6,30 @@ public with sharing class UpdateEpicUseCase {
     
     /**
      * @description Update an epic
-     * @param dto - The EpicUpdateDto containing update data
+     * @param epic - The Epic__c domain object containing update data
      * @return The updated Epic__c record
      * @throws EpicException - If validation fails or DML error occurs
      */
-    public static Epic__c execute(EpicUpdateDto dto) {
+    public static Epic__c execute(Epic__c epic) {
         try {
-            if (dto == null) {
-                throw new EpicException('EpicUpdateDto is required');
+            if (epic == null) {
+                throw new EpicException('Epic is required');
             }
-            if (String.isBlank(dto.epicId)) {
+            if (String.isBlank(epic.Id)) {
                 throw new EpicException('epicId is required');
+            }
+            if (String.isBlank(epic.Name)) {
+                throw new EpicException('name is required');
             }
             
             // Retrieve the existing epic
-            Epic__c existing = GetEpicByIdUseCase.execute(dto.epicId);
+            Epic__c existing = GetEpicByIdUseCase.execute(epic.Id);
             if (existing == null) {
-                throw new EpicException('Epic not found: ' + dto.epicId);
+                throw new EpicException('Epic not found: ' + epic.Id);
             }
             
-            // Update the fields using mapper
-            Epic__c toUpdate = EpicMapper.mapUpdateEpicDtoToDomain(dto, existing);
-            
             // Call repo method with updated domain object
-            return EpicRepository.updateEpic(toUpdate);
+            return EpicRepository.updateEpic(epic);
         } catch (EpicException ex) {
             throw ex;
         } catch (Exception ex) {

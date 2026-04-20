@@ -6,24 +6,22 @@ public with sharing class UpdateSubtaskUseCase {
     
     /**
      * @description Update a subtask
-     * @param dto - The SubtaskUpdateDto containing update data
+     * @param subtask - The Subtask__c domain object containing update data
      * @return The updated Subtask__c record
      * @throws SubtaskException - If validation fails or DML error occurs
      */
-    public static Subtask__c execute(SubtaskUpdateDto dto) {
+    public static Subtask__c execute(Subtask__c subtask) {
         try {
-            if (dto == null) throw new SubtaskException('dto is required');
-            if (String.isBlank(dto.subtaskId)) throw new SubtaskException('subtaskId is required');
+            if (subtask == null) throw new SubtaskException('subtask is required');
+            if (String.isBlank(subtask.Id)) throw new SubtaskException('subtaskId is required');
+            if (String.isBlank(subtask.Summary__c)) throw new SubtaskException('summary is required');
 
             // Retrieve the subtask
-            Subtask__c existing = SubtaskRepository.findSubtaskById(dto.subtaskId);
-            if (existing == null) throw new SubtaskException('Subtask not found: ' + dto.subtaskId);
-
-            // Update the fields using mapper
-            Subtask__c toUpdate = SubtaskMapper.mapUpdateSubtaskDtoToDomain(dto, existing);
+            Subtask__c existing = SubtaskRepository.findSubtaskById(subtask.Id);
+            if (existing == null) throw new SubtaskException('Subtask not found: ' + subtask.Id);
 
             // Call repo method with updated domain object
-            return SubtaskRepository.updateSubtask(toUpdate);
+            return SubtaskRepository.updateSubtask(subtask);
         } catch (SubtaskException sex) {
             throw sex;
         } catch (Exception ex) {

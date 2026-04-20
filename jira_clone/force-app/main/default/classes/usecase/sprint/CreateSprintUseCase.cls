@@ -1,26 +1,29 @@
 /**
  * @description UseCase for creating a new Sprint
- * Pattern: Validate DTO → Map to Domain → Repository Insert
+ * Pattern: Validate Domain → Repository Insert
  */
 public class CreateSprintUseCase {
     
     /**
      * @description Create a new sprint
-     * @param dto SprintCreateDto containing creation values
+     * @param sprint Sprint__c domain object containing creation values
      * @return Created Sprint__c object with Id populated
      * @throws SprintException if validation fails
      */
-    public static Sprint__c execute(SprintCreateDto dto) {
+    public static Sprint__c execute(Sprint__c sprint) {
         try {
-            if (dto == null) throw new SprintException('SprintCreateDto is required');
-            if (String.isBlank(dto.name)) throw new SprintException('name is required');
-            if (String.isBlank(dto.projectId)) throw new SprintException('projectId is required');
+            if (sprint == null) {
+                throw new SprintException('Sprint is required');
+            }
+            if (String.isBlank(sprint.Name)) {
+                throw new SprintException('name is required');
+            }
+            if (String.isBlank(sprint.Project__c)) {
+                throw new SprintException('projectId is required');
+            }
             
-            // Ensure project exists
-            ProjectRepository.getProjectById(dto.projectId);
-            
-            // Map DTO to domain object
-            Sprint__c sprint = SprintMapper.mapCreateSprintDtoToDomain(dto);
+            // Check project if exist using domain validator
+            ProjectRepository.getProjectById(sprint.Project__c);
             
             // Call repository to persist
             return SprintRepository.createSprint(sprint);

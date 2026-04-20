@@ -1,26 +1,23 @@
 /**
- * @description UseCase for creating a ticket from DTO
+ * @description UseCase for creating a ticket from domain object
  * Validates required fields and references before creating
  */
 public with sharing class CreateTicketUseCase {
     
-    public static Ticket__c execute(TicketCreateDto dto) {
+    public static Ticket__c execute(Ticket__c ticket) {
         try {
-            if (dto == null) throw new TicketException('TicketCreateDto is required');
-            if (String.isBlank(dto.ticketTypeId)) throw new TicketException('ticket_type is required');
-            if (String.isBlank(dto.name)) throw new TicketException('name is required');
-            if (String.isBlank(dto.currentStateId)) throw new TicketException('current_state is required');
+            if (ticket == null) throw new TicketException('Ticket is required');
+            if (String.isBlank(ticket.TicketType__c)) throw new TicketException('ticket_type is required');
+            if (String.isBlank(ticket.Name)) throw new TicketException('name is required');
+            if (String.isBlank(ticket.CurrentState__c)) throw new TicketException('current_state is required');
 
             // Validate ticket type exists
-            TicketType__c tt = [SELECT Id FROM TicketType__c WHERE Id = :dto.ticketTypeId LIMIT 1];
+            TicketType__c tt = [SELECT Id FROM TicketType__c WHERE Id = :ticket.TicketType__c LIMIT 1];
             if (tt == null) throw new TicketException('Invalid ticket type');
 
             // Validate status exists
-            Status__c status = [SELECT Id FROM Status__c WHERE Id = :dto.currentStateId LIMIT 1];
+            Status__c status = [SELECT Id FROM Status__c WHERE Id = :ticket.CurrentState__c LIMIT 1];
             if (status == null) throw new TicketException('Invalid status');
-
-            // Map DTO to domain object
-            Ticket__c ticket = TicketMapper.mapCreateTicketDtoToDomain(dto);
 
             // Call repo method with domain object
             return TicketRepository.createTicket(ticket);

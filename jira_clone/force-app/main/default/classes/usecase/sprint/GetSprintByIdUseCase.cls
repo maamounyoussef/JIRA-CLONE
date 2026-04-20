@@ -11,7 +11,6 @@ public class GetSprintByIdUseCase {
      */
     public static Sprint__c execute(String sprintId) {
         try {
-            if (String.isBlank(sprintId)) throw new SprintException('sprintId is required');
             Sprint__c sprint = SprintRepository.findSprintById(sprintId);
             if (sprint == null) throw new SprintException('Sprint not found');
             return sprint;

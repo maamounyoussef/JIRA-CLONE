@@ -5,19 +5,21 @@ public class CreateProjectMemberUseCase {
     
     /**
      * @description Execute the use case to create a new project member
-     * @param dto - The ProjectMemberCreateDto with project member details
+     * @param userId - The user ID
+     * @param projectId - The project ID
+     * @param recordStatus - The record status
      * @return The created ProjectMember__c record
      * @throws ProjectMemberException - If validation fails or DML error occurs
      */
-    public static ProjectMember__c execute(ProjectMemberCreateDto dto) {
+    public static ProjectMember__c execute(String userId, String projectId, String recordStatus) {
         try {
-            if (!UserValidator.exists(dto.userId)) {
+            if (!UserValidator.exists(userId)) {
                 throw new ProjectMemberException('User does not exist');
             }
-            if (!ProjectValidator.exists(dto.projectId)) {
+            if (!ProjectValidator.exists(projectId)) {
                 throw new ProjectMemberException('Project does not exist');
             }
-            return ProjectMemberRepository.createMember(dto.userId, dto.projectId, dto.recordStatus);
+            return ProjectMemberRepository.createMember(userId, projectId, recordStatus);
         } catch (ProjectMemberException ex) {
             throw ex;
         } catch (Exception ex) {

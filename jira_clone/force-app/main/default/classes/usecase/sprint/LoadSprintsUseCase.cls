@@ -11,8 +11,7 @@ public class LoadSprintsUseCase {
      */
     public static List<Sprint__c> execute(String projectId) {
         try {
-            if (String.isBlank(projectId)) throw new SprintException('projectId is required');
-            // Ensure project exists
+            // Todo chek of project  exsit using project validator
             ProjectRepository.getProjectById(projectId);
             return SprintRepository.getSprintsByProject(projectId);
         } catch (ProjectException pex) {

@@ -11,9 +11,8 @@ public class CompleteSprintUseCase {
      */
     public static void execute(String sprintId) {
         try {
-            if (String.isBlank(sprintId)) throw new SprintException('sprintId is required');
-            
-            // Retrieve
+
+            // Todo validate sprint if exist using validator
             Sprint__c sprint = SprintRepository.findSprintById(sprintId);
             if (sprint == null) throw new SprintException('Sprint not found');
             

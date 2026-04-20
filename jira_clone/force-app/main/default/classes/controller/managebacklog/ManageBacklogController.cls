@@ -84,7 +84,7 @@ public with sharing class ManageBacklogController {
     public static APIResponse createProject(String projectCreateDtoJson) {
         try {
             ProjectCreateDto dto = (ProjectCreateDto) JSON.deserialize(projectCreateDtoJson, ProjectCreateDto.class);
-            Project__c created = CreateProjectUseCase.execute(dto);
+            Project__c created = CreateProjectUseCase.execute(dto.name);
             return new APIResponse(true, 'Project created successfully', created);
         } catch (ProjectException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -123,7 +123,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse createEpic(String epicCreateDtoJson) {
         try {
             EpicCreateDto dto = (EpicCreateDto) JSON.deserialize(epicCreateDtoJson, EpicCreateDto.class);
-            Epic__c created = CreateEpicUseCase.execute(dto);
+            Epic__c epic = EpicMapper.mapCreateEpicDtoToDomain(dto);
+            Epic__c created = CreateEpicUseCase.execute(epic);
             return new APIResponse(true, 'Epic created successfully', created);
         } catch (EpicException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -136,7 +137,10 @@ public with sharing class ManageBacklogController {
     public static APIResponse updateEpic(String epicUpdateDtoJson) {
         try {
             EpicUpdateDto dto = (EpicUpdateDto) JSON.deserialize(epicUpdateDtoJson, EpicUpdateDto.class);
-            Epic__c updated = UpdateEpicUseCase.execute(dto);
+            Epic__c existing = GetEpicByIdUseCase.execute(dto.epicId);
+            if (existing == null) throw new EpicException('Epic not found: ' + dto.epicId);
+            Epic__c epic = EpicMapper.mapUpdateEpicDtoToDomain(dto, existing);
+            Epic__c updated = UpdateEpicUseCase.execute(epic);
             return new APIResponse(true, 'Epic updated successfully', updated);
         } catch (EpicException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -149,7 +153,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse createSprint(String sprintCreateDtoJson) {
         try {
             SprintCreateDto dto = (SprintCreateDto) JSON.deserialize(sprintCreateDtoJson, SprintCreateDto.class);
-            Sprint__c created = CreateSprintUseCase.execute(dto);
+            Sprint__c sprint = SprintMapper.mapCreateSprintDtoToDomain(dto);
+            Sprint__c created = CreateSprintUseCase.execute(sprint);
             return new APIResponse(true, 'Sprint created successfully', created);
         } catch (SprintException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -162,7 +167,10 @@ public with sharing class ManageBacklogController {
     public static APIResponse updateSprint(String sprintUpdateDtoJson) {
         try {
             SprintUpdateDto dto = (SprintUpdateDto) JSON.deserialize(sprintUpdateDtoJson, SprintUpdateDto.class);
-            Sprint__c updated = UpdateSprintUseCase.execute(dto);
+            Sprint__c existing = SprintRepository.findSprintById(dto.sprintId);
+            if (existing == null) throw new SprintException('Sprint not found');
+            Sprint__c sprint = SprintMapper.mapUpdateSprintDtoToDomain(dto, existing);
+            Sprint__c updated = UpdateSprintUseCase.execute(sprint);
             return new APIResponse(true, 'Sprint updated successfully', updated);
         } catch (SprintException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -247,7 +255,7 @@ public with sharing class ManageBacklogController {
     public static APIResponse createTicketType(String ticketTypeCreateDtoJson) {
         try {
             TicketTypeCreateDto dto = (TicketTypeCreateDto) JSON.deserialize(ticketTypeCreateDtoJson, TicketTypeCreateDto.class);
-            TicketType__c created = CreateTicketTypeUseCase.execute(dto);
+            TicketType__c created = CreateTicketTypeUseCase.execute(dto.name, dto.description, dto.iconUrl, dto.workflowId, dto.projectId);
             return new APIResponse(true, 'Ticket Type created successfully', created);
         } catch (TicketTypeException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -260,7 +268,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse createTicket(String ticketCreateDtoJson) {
         try {
             TicketCreateDto dto = (TicketCreateDto) JSON.deserialize(ticketCreateDtoJson, TicketCreateDto.class);
-            Ticket__c created = CreateTicketUseCase.execute(dto);
+            Ticket__c ticket = TicketMapper.mapCreateTicketDtoToDomain(dto);
+            Ticket__c created = CreateTicketUseCase.execute(ticket);
             return new APIResponse(true, 'Ticket created successfully', created);
         } catch (TicketException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -274,7 +283,10 @@ public with sharing class ManageBacklogController {
         try {
             TicketUpdateDto dto = (TicketUpdateDto) JSON.deserialize(ticketUpdateDtoJson, TicketUpdateDto.class);
             if (dto == null) throw new TicketException('dto is required');
-            Ticket__c updated = UpdateTicketUseCase.execute(dto);
+            Ticket__c existing = GetTicketByIdUseCase.execute(dto.ticketId);
+            if (existing == null) throw new TicketException('Ticket not found: ' + dto.ticketId);
+            Ticket__c ticket = TicketMapper.mapUpdateTicketDtoToDomain(dto, existing);
+            Ticket__c updated = UpdateTicketUseCase.execute(ticket);
             return new APIResponse(true, 'Ticket updated', updated);
         } catch (TicketException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -373,7 +385,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse createSubtask(String subtaskCreateDtoJson) {
         try {
             SubtaskCreateDto dto = (SubtaskCreateDto) JSON.deserialize(subtaskCreateDtoJson, SubtaskCreateDto.class);
-            Subtask__c created = CreateSubtaskUseCase.execute(dto);
+            Subtask__c subtask = SubtaskMapper.mapCreateSubtaskDtoToDomain(dto);
+            Subtask__c created = CreateSubtaskUseCase.execute(subtask);
             return new APIResponse(true, 'Subtask created', created);
         } catch (SubtaskException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -399,7 +412,10 @@ public with sharing class ManageBacklogController {
         try {
             SubtaskUpdateDto dto = (SubtaskUpdateDto) JSON.deserialize(subtaskUpdateDtoJson, SubtaskUpdateDto.class);
             if (dto == null) throw new SubtaskException('dto is required');
-            Subtask__c updated = UpdateSubtaskUseCase.execute(dto);
+            Subtask__c existing = SubtaskRepository.findSubtaskById(dto.subtaskId);
+            if (existing == null) throw new SubtaskException('Subtask not found: ' + dto.subtaskId);
+            Subtask__c subtask = SubtaskMapper.mapUpdateSubtaskDtoToDomain(dto, existing);
+            Subtask__c updated = UpdateSubtaskUseCase.execute(subtask);
             return new APIResponse(true, 'Subtask updated', updated);
         } catch (SubtaskException ex) {
             return new APIResponse(false, ex.getMessage());
@@ -450,7 +466,7 @@ public with sharing class ManageBacklogController {
     public static APIResponse createMember(String memberCreateDtoJson) {
         try {
             ProjectMemberCreateDto dto = (ProjectMemberCreateDto) JSON.deserialize(memberCreateDtoJson, ProjectMemberCreateDto.class);
-            ProjectMember__c created = CreateProjectMemberUseCase.execute(dto);
+            ProjectMember__c created = CreateProjectMemberUseCase.execute(dto.userId, dto.projectId, dto.recordStatus);
             return new APIResponse(true, 'Project member created successfully', created);
         } catch (ProjectMemberException ex) {
             return new APIResponse(false, ex.getMessage());
