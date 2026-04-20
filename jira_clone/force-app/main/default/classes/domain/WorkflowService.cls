@@ -39,7 +39,7 @@ public with sharing class WorkflowService {
         ];
         
         if (workflows.isEmpty()) {
-            throw new Exception('Workflow not found');
+            throw new ServiceException('Workflow not found');
         }
         
         return workflows[0];
@@ -54,7 +54,7 @@ public with sharing class WorkflowService {
         ];
         
         if (workflows.isEmpty()) {
-            throw new Exception('Workflow not found');
+            throw new ServiceException('Workflow not found');
         }
         
         return workflows[0];
@@ -70,7 +70,7 @@ public with sharing class WorkflowService {
         ];
         
         if (transitions.isEmpty()) {
-            throw new Exception('Workflow Transition not found');
+            throw new ServiceException('Workflow Transition not found');
         }
         
         return transitions[0];
@@ -85,7 +85,7 @@ public with sharing class WorkflowService {
         ];
         
         if (rules.isEmpty()) {
-            throw new Exception('Validation Rule not found');
+            throw new ServiceException('Validation Rule not found');
         }
         
         return rules[0];
@@ -125,7 +125,7 @@ public with sharing class WorkflowService {
             insert workflow;
             return workflow;
         } catch (DmlException ex) {
-            throw new Exception('Error creating workflow: ' + ex.getMessage());
+            throw new ServiceException('Error creating workflow: ' + ex.getMessage());
         }
     }
     
@@ -154,7 +154,7 @@ public with sharing class WorkflowService {
             insert rule;
             return rule;
         } catch (DmlException ex) {
-            throw new Exception('Error inserting validation rule: ' + ex.getMessage());
+            throw new ServiceException('Error inserting validation rule: ' + ex.getMessage());
         }
     }
     
@@ -163,7 +163,7 @@ public with sharing class WorkflowService {
             insert transition;
             return transition;
         } catch (DmlException ex) {
-            throw new Exception('Error inserting workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error inserting workflow transition: ' + ex.getMessage());
         }
     }
     
@@ -171,7 +171,7 @@ public with sharing class WorkflowService {
         try {
             update record;
         } catch (DmlException ex) {
-            throw new Exception('Error updating record: ' + ex.getMessage());
+            throw new ServiceException('Error updating record: ' + ex.getMessage());
         }
     }
     
@@ -179,7 +179,7 @@ public with sharing class WorkflowService {
         try {
             update records;
         } catch (DmlException ex) {
-            throw new Exception('Error updating records: ' + ex.getMessage());
+            throw new ServiceException('Error updating records: ' + ex.getMessage());
         }
     }
     
@@ -206,7 +206,7 @@ public with sharing class WorkflowService {
         ];
         
         if (transitions.isEmpty()) {
-            throw new Exception('Workflow Transition not found');
+            throw new ServiceException('Workflow Transition not found');
         }
         
         return transitions[0];
@@ -224,7 +224,7 @@ public with sharing class WorkflowService {
             insert transition;
             return transition;
         } catch (DmlException ex) {
-            throw new Exception('Error creating workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error creating workflow transition: ' + ex.getMessage());
         }
     }
     
@@ -251,7 +251,7 @@ public with sharing class WorkflowService {
             ValidationRule__c rule = getValidationRuleById(validationRuleId);
             
             if (rule.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
-                throw new Exception(
+                throw new ServiceException(
                     'Validation Rule can only be activated from pending status'
                 );
             }
@@ -259,7 +259,7 @@ public with sharing class WorkflowService {
             rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             updateRecord(rule);
         } catch (Exception ex) {
-            throw new Exception('Error activating validation rule: ' + ex.getMessage());
+            throw new ServiceException('Error activating validation rule: ' + ex.getMessage());
         }
     }
     
@@ -270,7 +270,7 @@ public with sharing class WorkflowService {
             WorkflowTransition__c transition = getTransitionById(workflowTransitionId);
             
             if (transition.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
-                throw new Exception(
+                throw new ServiceException(
                     'Workflow Transition can only be activated from pending status'
                 );
             }
@@ -278,7 +278,7 @@ public with sharing class WorkflowService {
             transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             updateRecord(transition);
         } catch (Exception ex) {
-            throw new Exception('Error activating workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error activating workflow transition: ' + ex.getMessage());
         }
     }
     
@@ -287,11 +287,11 @@ public with sharing class WorkflowService {
             validateIdParameter(workflowTransitionId, 'Workflow Transition Id');
             
             if (String.isBlank(ticketField)) {
-                throw new Exception('Ticket field is required');
+                throw new ServiceException('Ticket field is required');
             }
             
             if (String.isBlank(validationType)) {
-                throw new Exception('Validation type is required');
+                throw new ServiceException('Validation type is required');
             }
             
             getWorkflowTransitionById(workflowTransitionId);
@@ -304,7 +304,7 @@ public with sharing class WorkflowService {
             
             return insertValidationRule(newRule);
         } catch (Exception ex) {
-            throw new Exception('Error adding validation rule: ' + ex.getMessage());
+            throw new ServiceException('Error adding validation rule: ' + ex.getMessage());
         }
     }
     
@@ -313,7 +313,7 @@ public with sharing class WorkflowService {
             validateIdParameter(workflowId, 'Workflow Id');
             
             if (String.isBlank(name)) {
-                throw new Exception('Transition name is required');
+                throw new ServiceException('Transition name is required');
             }
             
             validateIdParameter(fromStatusId, 'From Status Id');
@@ -326,11 +326,11 @@ public with sharing class WorkflowService {
             );
             
             if (statuses.size() != 2) {
-                throw new Exception('One or both statuses not found');
+                throw new ServiceException('One or both statuses not found');
             }
             
             if (transitionNameExists(workflowId, name)) {
-                throw new Exception('Transition name already exists in this workflow');
+                throw new ServiceException('Transition name already exists in this workflow');
             }
             
             WorkflowTransition__c newTransition = new WorkflowTransition__c();
@@ -342,7 +342,7 @@ public with sharing class WorkflowService {
             
             return insertWorkflowTransition(newTransition);
         } catch (Exception ex) {
-            throw new Exception('Error adding workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error adding workflow transition: ' + ex.getMessage());
         }
     }
     
@@ -359,12 +359,12 @@ public with sharing class WorkflowService {
             StatusService.getStatusById(toStatusId);
             
             if (transitionNameExists(workflowId, name)) {
-                throw new Exception('Transition name already exists in this workflow');
+                throw new ServiceException('Transition name already exists in this workflow');
             }
             
             return createTransition(name, workflowId, fromStatusId, toStatusId, recordStatus);
         } catch (Exception ex) {
-            throw new Exception('Error creating workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error creating workflow transition: ' + ex.getMessage());
         }
     }
     
@@ -375,7 +375,7 @@ public with sharing class WorkflowService {
             
             return createWorkflow(name, projectId);
         } catch (Exception ex) {
-            throw new Exception('Error creating workflow: ' + ex.getMessage());
+            throw new ServiceException('Error creating workflow: ' + ex.getMessage());
         }
     }
     
@@ -389,7 +389,7 @@ public with sharing class WorkflowService {
             
             updateRecord(rule);
         } catch (Exception ex) {
-            throw new Exception('Error deleting validation rule: ' + ex.getMessage());
+            throw new ServiceException('Error deleting validation rule: ' + ex.getMessage());
         }
     }
     
@@ -403,7 +403,7 @@ public with sharing class WorkflowService {
             
             updateRecord(transition);
         } catch (Exception ex) {
-            throw new Exception('Error deleting workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error deleting workflow transition: ' + ex.getMessage());
         }
     }
     
@@ -413,7 +413,7 @@ public with sharing class WorkflowService {
             
             return getProjectStatuses(projectId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving project statuses: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving project statuses: ' + ex.getMessage());
         }
     }
     
@@ -423,11 +423,11 @@ public with sharing class WorkflowService {
             
             return getTransitionById(transitionId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving workflow transition: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving workflow transition: ' + ex.getMessage());
         }
     }
     
-    public static WorkflowConfigDTO getWorkflow(String workflowId) {
+    public static WorkflowConfigDTO getWorkflowConfig(String workflowId) {
         try {
             validateIdParameter(workflowId, 'Workflow Id');
             
@@ -464,7 +464,7 @@ public with sharing class WorkflowService {
             
             return config;
         } catch (Exception ex) {
-            throw new Exception('Error retrieving workflow: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving workflow: ' + ex.getMessage());
         }
     }
     
@@ -474,7 +474,7 @@ public with sharing class WorkflowService {
             
             return getTransitionsByWorkflow(workflowId);
         } catch (Exception ex) {
-            throw new Exception('Error loading workflow transitions: ' + ex.getMessage());
+            throw new ServiceException('Error loading workflow transitions: ' + ex.getMessage());
         }
     }
     
@@ -482,7 +482,7 @@ public with sharing class WorkflowService {
         try {
             return getAllWorkflows();
         } catch (Exception ex) {
-            throw new Exception('Error loading workflows: ' + ex.getMessage());
+            throw new ServiceException('Error loading workflows: ' + ex.getMessage());
         }
     }
     
@@ -510,20 +510,20 @@ public with sharing class WorkflowService {
             
             updateRecords(recordsToUpdate);
         } catch (Exception ex) {
-            throw new Exception('Error updating workflow: ' + ex.getMessage());
+            throw new ServiceException('Error updating workflow: ' + ex.getMessage());
         }
     }
     
     // Private helper methods
     private static void validateIdParameter(String value, String paramName) {
         if (String.isBlank(value)) {
-            throw new Exception(paramName + ' is required');
+            throw new ServiceException(paramName + ' is required');
         }
     }
     
     private static void validateNameParameter(String value, String paramName) {
         if (String.isBlank(value)) {
-            throw new Exception(paramName + ' is required');
+            throw new ServiceException(paramName + ' is required');
         }
     }
 }

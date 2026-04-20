@@ -16,7 +16,7 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getWorkflow(String workflowId) {
         try {
-            WorkflowConfigDTO config = WorkflowService.getWorkflow(workflowId);
+            WorkflowConfigDTO config = WorkflowService.getWorkflowConfig(workflowId);
             return new APIResponse(true, 'Workflow retrieved successfully', config);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving workflow: ' + ex.getMessage());

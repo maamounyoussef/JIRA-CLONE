@@ -25,7 +25,7 @@ public with sharing class ProjectMemberService {
             insert pm;
             return pm;
         } catch (DmlException ex) {
-            throw new Exception('DML error: ' + ex.getMessage());
+            throw new ServiceException('DML error: ' + ex.getMessage());
         }
     }
     
@@ -34,15 +34,15 @@ public with sharing class ProjectMemberService {
         try {
             List<User> users = [SELECT Id FROM User WHERE Id = :userId LIMIT 1];
             if (users.isEmpty()) {
-                throw new Exception('User does not exist');
+                throw new ServiceException('User does not exist');
             }
             List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :projectId LIMIT 1];
             if (projects.isEmpty()) {
-                throw new Exception('Project does not exist');
+                throw new ServiceException('Project does not exist');
             }
             return createMember(userId, projectId, recordStatus);
         } catch (Exception ex) {
-            throw new Exception('Error creating project member: ' + ex.getMessage());
+            throw new ServiceException('Error creating project member: ' + ex.getMessage());
         }
     }
 
@@ -50,11 +50,11 @@ public with sharing class ProjectMemberService {
         try {
             List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :projectId LIMIT 1];
             if (projects.isEmpty()) {
-                throw new Exception('Project does not exist');
+                throw new ServiceException('Project does not exist');
             }
             return getMembersByProject(projectId);
         } catch (Exception ex) {
-            throw new Exception('Error loading project members: ' + ex.getMessage());
+            throw new ServiceException('Error loading project members: ' + ex.getMessage());
         }
     }
 }

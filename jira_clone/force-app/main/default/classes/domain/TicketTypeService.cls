@@ -24,7 +24,7 @@ public with sharing class TicketTypeService {
         ];
         
         if (ticketTypes.isEmpty()) {
-            throw new Exception('Ticket Type not found: ' + ticketTypeName);
+            throw new ServiceException('Ticket Type not found: ' + ticketTypeName);
         }
         
         return ticketTypes[0];
@@ -39,7 +39,7 @@ public with sharing class TicketTypeService {
         ];
         
         if (ticketTypes.isEmpty()) {
-            throw new Exception('Ticket Type not found');
+            throw new ServiceException('Ticket Type not found');
         }
         
         return ticketTypes[0];
@@ -57,51 +57,51 @@ public with sharing class TicketTypeService {
             insert ticketType;
             return ticketType;
         } catch (DmlException ex) {
-            throw new Exception('Error creating ticket type: ' + ex.getMessage());
+            throw new ServiceException('Error creating ticket type: ' + ex.getMessage());
         }
     }
     
     // Use case methods
     public static TicketType__c createTicketTypeWithValidation(String name, String description, String iconUrl, String workflowId, String projectId) {
         try {
-            if (String.isBlank(name)) throw new Exception('name is required');
-            if (String.isBlank(workflowId)) throw new Exception('workflowId is required');
-            if (String.isBlank(projectId)) throw new Exception('projectId is required');
+            if (String.isBlank(name)) throw new ServiceException('name is required');
+            if (String.isBlank(workflowId)) throw new ServiceException('workflowId is required');
+            if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
             
             ProjectService.getProjectById(projectId);
             
             return createTicketType(name, description, iconUrl, workflowId, projectId);
         } catch (Exception ex) {
-            throw new Exception('Error creating ticket type: ' + ex.getMessage());
+            throw new ServiceException('Error creating ticket type: ' + ex.getMessage());
         }
     }
 
     public static TicketType__c getTicketTypeByIdWithValidation(String ticketTypeId) {
         try {
-            if (String.isBlank(ticketTypeId)) throw new Exception('ticketTypeId is required');
+            if (String.isBlank(ticketTypeId)) throw new ServiceException('ticketTypeId is required');
             return getTicketTypeById(ticketTypeId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving ticket type: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving ticket type: ' + ex.getMessage());
         }
     }
 
     public static TicketType__c getTicketTypeByNameWithValidation(String ticketTypeName, String projectId) {
         try {
-            if (String.isBlank(ticketTypeName)) throw new Exception('ticketTypeName is required');
-            if (String.isBlank(projectId)) throw new Exception('projectId is required');
+            if (String.isBlank(ticketTypeName)) throw new ServiceException('ticketTypeName is required');
+            if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
             return getTicketTypeByName(ticketTypeName, projectId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving ticket type: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving ticket type: ' + ex.getMessage());
         }
     }
 
     public static List<TicketType__c> loadTicketTypes(String projectId) {
         try {
-            if (String.isBlank(projectId)) throw new Exception('projectId is required');
+            if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
             ProjectService.getProjectById(projectId);
             return getTicketTypesByProject(projectId);
         } catch (Exception ex) {
-            throw new Exception('Error loading ticket types: ' + ex.getMessage());
+            throw new ServiceException('Error loading ticket types: ' + ex.getMessage());
         }
     }
 }

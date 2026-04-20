@@ -22,7 +22,7 @@ public with sharing class ProjectService {
         ];
         
         if (projects.isEmpty()) {
-            throw new Exception('Project not found: ' + projectName);
+            throw new ServiceException('Project not found: ' + projectName);
         }
         
         return projects[0];
@@ -37,7 +37,7 @@ public with sharing class ProjectService {
         ];
         
         if (projects.isEmpty()) {
-            throw new Exception('Project not found');
+            throw new ServiceException('Project not found');
         }
         
         return projects[0];
@@ -51,7 +51,7 @@ public with sharing class ProjectService {
             insert project;
             return project;
         } catch (DmlException ex) {
-            throw new Exception('Error creating project: ' + ex.getMessage());
+            throw new ServiceException('Error creating project: ' + ex.getMessage());
         }
     }
     
@@ -59,11 +59,11 @@ public with sharing class ProjectService {
     public static Project__c createProjectWithValidation(String name) {
         try {
             if (String.isBlank(name)) {
-                throw new Exception('name is required');
+                throw new ServiceException('name is required');
             }
             return createProject(name);
         } catch (Exception ex) {
-            throw new Exception('Error creating project: ' + ex.getMessage());
+            throw new ServiceException('Error creating project: ' + ex.getMessage());
         }
     }
 
@@ -71,7 +71,7 @@ public with sharing class ProjectService {
         try {
             return getProjectByName(projectName);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving project by name: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving project by name: ' + ex.getMessage());
         }
     }
 
@@ -79,7 +79,7 @@ public with sharing class ProjectService {
         try {
             return getAllProjects();
         } catch (Exception ex) {
-            throw new Exception('Error loading projects: ' + ex.getMessage());
+            throw new ServiceException('Error loading projects: ' + ex.getMessage());
         }
     }
 }

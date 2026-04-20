@@ -24,7 +24,7 @@ public with sharing class StatusService {
         ];
         
         if (statuses.isEmpty()) {
-            throw new Exception('Status not found: ' + statusName);
+            throw new ServiceException('Status not found: ' + statusName);
         }
         
         return statuses[0];
@@ -39,7 +39,7 @@ public with sharing class StatusService {
         ];
         
         if (statuses.isEmpty()) {
-            throw new Exception('Status not found');
+            throw new ServiceException('Status not found');
         }
         
         return statuses[0];
@@ -54,7 +54,7 @@ public with sharing class StatusService {
             insert status;
             return status;
         } catch (DmlException ex) {
-            throw new Exception('Error creating status: ' + ex.getMessage());
+            throw new ServiceException('Error creating status: ' + ex.getMessage());
         }
     }
     
@@ -74,48 +74,48 @@ public with sharing class StatusService {
     public static Status__c createStatusWithValidation(String name, String projectId) {
         try {
             if (String.isBlank(name)) {
-                throw new Exception('Status Name is required');
+                throw new ServiceException('Status Name is required');
             }
             if (String.isBlank(projectId)) {
-                throw new Exception('Project Id is required');
+                throw new ServiceException('Project Id is required');
             }
             
             ProjectService.getProjectById(projectId);
             
             if (statusNameExists(projectId, name)) {
-                throw new Exception('Status name already exists in this project');
+                throw new ServiceException('Status name already exists in this project');
             }
             
             return createStatus(name, projectId);
         } catch (Exception ex) {
-            throw new Exception('Error creating status: ' + ex.getMessage());
+            throw new ServiceException('Error creating status: ' + ex.getMessage());
         }
     }
 
     public static Status__c getStatusByIdWithValidation(String statusId) {
         try {
             if (String.isBlank(statusId)) {
-                throw new Exception('Status Id is required');
+                throw new ServiceException('Status Id is required');
             }
             
             return getStatusById(statusId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving status by id: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving status by id: ' + ex.getMessage());
         }
     }
 
     public static Status__c getStatusByNameWithValidation(String statusName, String projectId) {
         try {
             if (String.isBlank(statusName)) {
-                throw new Exception('Status Name is required');
+                throw new ServiceException('Status Name is required');
             }
             if (String.isBlank(projectId)) {
-                throw new Exception('Project Id is required');
+                throw new ServiceException('Project Id is required');
             }
             
             return getStatusByName(statusName, projectId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving status by name: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving status by name: ' + ex.getMessage());
         }
     }
 
@@ -123,24 +123,24 @@ public with sharing class StatusService {
         try {
             List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :projectId LIMIT 1];
             if (projects.isEmpty()) {
-                throw new Exception('Project not found');
+                throw new ServiceException('Project not found');
             }
             
             return getStatusesByProject(projectId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving project statuses: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving project statuses: ' + ex.getMessage());
         }
     }
 
     public static List<Status__c> loadStatuses(String projectId) {
         try {
             if (String.isBlank(projectId)) {
-                throw new Exception('Project Id is required');
+                throw new ServiceException('Project Id is required');
             }
             
             return getStatusesByProject(projectId);
         } catch (Exception ex) {
-            throw new Exception('Error loading statuses: ' + ex.getMessage());
+            throw new ServiceException('Error loading statuses: ' + ex.getMessage());
         }
     }
 }

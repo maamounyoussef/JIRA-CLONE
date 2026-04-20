@@ -15,7 +15,7 @@ public with sharing class SubtaskService {
                 ORDER BY CreatedDate DESC
             ];
         } catch (Exception ex) {
-            throw new Exception('Error querying subtasks: ' + ex.getMessage());
+            throw new ServiceException('Error querying subtasks: ' + ex.getMessage());
         }
     }
 
@@ -30,7 +30,7 @@ public with sharing class SubtaskService {
             ];
             return res.isEmpty() ? null : res[0];
         } catch (Exception ex) {
-            throw new Exception('Error retrieving subtask: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving subtask: ' + ex.getMessage());
         }
     }
 
@@ -39,9 +39,9 @@ public with sharing class SubtaskService {
             insert s;
             return s;
         } catch (DmlException dex) {
-            throw new Exception('DML error creating subtask: ' + dex.getMessage());
+            throw new ServiceException('DML error creating subtask: ' + dex.getMessage());
         } catch (Exception ex) {
-            throw new Exception('Error creating subtask: ' + ex.getMessage());
+            throw new ServiceException('Error creating subtask: ' + ex.getMessage());
         }
     }
 
@@ -50,9 +50,9 @@ public with sharing class SubtaskService {
             update s;
             return s;
         } catch (DmlException dex) {
-            throw new Exception('DML error updating subtask: ' + dex.getMessage());
+            throw new ServiceException('DML error updating subtask: ' + dex.getMessage());
         } catch (Exception ex) {
-            throw new Exception('Error updating subtask: ' + ex.getMessage());
+            throw new ServiceException('Error updating subtask: ' + ex.getMessage());
         }
     }
 
@@ -64,85 +64,85 @@ public with sharing class SubtaskService {
                 update found;
             }
         } catch (DmlException dex) {
-            throw new Exception('DML error deleting subtasks: ' + dex.getMessage());
+            throw new ServiceException('DML error deleting subtasks: ' + dex.getMessage());
         } catch (Exception ex) {
-            throw new Exception('Error deleting subtasks: ' + ex.getMessage());
+            throw new ServiceException('Error deleting subtasks: ' + ex.getMessage());
         }
     }
     
     // Use case methods
     public static Subtask__c assignSubtask(String subtaskId, String memberId) {
         try {
-            if (String.isBlank(subtaskId)) throw new Exception('subtaskId is required');
-            if (String.isBlank(memberId)) throw new Exception('memberId is required');
+            if (String.isBlank(subtaskId)) throw new ServiceException('subtaskId is required');
+            if (String.isBlank(memberId)) throw new ServiceException('memberId is required');
 
             Subtask__c existing = findSubtaskById(subtaskId);
-            if (existing == null) throw new Exception('Subtask not found: ' + subtaskId);
+            if (existing == null) throw new ServiceException('Subtask not found: ' + subtaskId);
 
             existing.Assignee__c = memberId;
             return updateSubtask(existing);
         } catch (Exception ex) {
-            throw new Exception('Error assigning subtask: ' + ex.getMessage());
+            throw new ServiceException('Error assigning subtask: ' + ex.getMessage());
         }
     }
 
     public static Subtask__c createSubtaskWithValidation(Subtask__c subtask) {
         try {
-            if (subtask == null) throw new Exception('Subtask is required');
-            if (String.isBlank(subtask.Summary__c)) throw new Exception('summary is required');
-            if (String.isBlank(subtask.Ticket__c)) throw new Exception('ticketId is required');
+            if (subtask == null) throw new ServiceException('Subtask is required');
+            if (String.isBlank(subtask.Summary__c)) throw new ServiceException('summary is required');
+            if (String.isBlank(subtask.Ticket__c)) throw new ServiceException('ticketId is required');
 
             return createSubtask(subtask);
         } catch (Exception ex) {
-            throw new Exception('Error creating subtask: ' + ex.getMessage());
+            throw new ServiceException('Error creating subtask: ' + ex.getMessage());
         }
     }
 
     public static void deleteSubtasks(List<String> subtaskIds) {
         try {
-            if (subtaskIds == null || subtaskIds.isEmpty()) throw new Exception('subtaskIds are required');
+            if (subtaskIds == null || subtaskIds.isEmpty()) throw new ServiceException('subtaskIds are required');
             deleteSubtasksByIds(subtaskIds);
         } catch (Exception ex) {
-            throw new Exception('Error deleting subtasks: ' + ex.getMessage());
+            throw new ServiceException('Error deleting subtasks: ' + ex.getMessage());
         }
     }
 
     public static List<Subtask__c> getSubtasksByTicket(String ticketId) {
         try {
-            if (String.isBlank(ticketId)) throw new Exception('ticketId is required');
+            if (String.isBlank(ticketId)) throw new ServiceException('ticketId is required');
             return findSubtasksByTicket(ticketId);
         } catch (Exception ex) {
-            throw new Exception('Error loading subtasks: ' + ex.getMessage());
+            throw new ServiceException('Error loading subtasks: ' + ex.getMessage());
         }
     }
 
     public static Subtask__c updateSubtaskSummary(String subtaskId, String summary) {
         try {
-            if (String.isBlank(subtaskId)) throw new Exception('subtaskId is required');
-            if (summary == null) throw new Exception('summary field is required');
+            if (String.isBlank(subtaskId)) throw new ServiceException('subtaskId is required');
+            if (summary == null) throw new ServiceException('summary field is required');
 
             Subtask__c s = findSubtaskById(subtaskId);
-            if (s == null) throw new Exception('Subtask not found: ' + subtaskId);
+            if (s == null) throw new ServiceException('Subtask not found: ' + subtaskId);
 
             s.Summary__c = summary;
             return updateSubtask(s);
         } catch (Exception ex) {
-            throw new Exception('Error updating subtask: ' + ex.getMessage());
+            throw new ServiceException('Error updating subtask: ' + ex.getMessage());
         }
     }
 
     public static Subtask__c updateSubtaskWithValidation(Subtask__c subtask) {
         try {
-            if (subtask == null) throw new Exception('subtask is required');
-            if (String.isBlank(subtask.Id)) throw new Exception('subtaskId is required');
-            if (String.isBlank(subtask.Summary__c)) throw new Exception('summary is required');
+            if (subtask == null) throw new ServiceException('subtask is required');
+            if (String.isBlank(subtask.Id)) throw new ServiceException('subtaskId is required');
+            if (String.isBlank(subtask.Summary__c)) throw new ServiceException('summary is required');
 
             Subtask__c existing = findSubtaskById(subtask.Id);
-            if (existing == null) throw new Exception('Subtask not found: ' + subtask.Id);
+            if (existing == null) throw new ServiceException('Subtask not found: ' + subtask.Id);
 
             return updateSubtask(subtask);
         } catch (Exception ex) {
-            throw new Exception('Error updating subtask: ' + ex.getMessage());
+            throw new ServiceException('Error updating subtask: ' + ex.getMessage());
         }
     }
 }

@@ -14,7 +14,7 @@ public with sharing class EpicService {
                 ORDER BY Name ASC
             ];
         } catch (Exception ex) {
-            throw new Exception('Error querying epics: ' + ex.getMessage());
+            throw new ServiceException('Error querying epics: ' + ex.getMessage());
         }
     }
 
@@ -28,7 +28,7 @@ public with sharing class EpicService {
             ];
             return res.isEmpty() ? null : res[0];
         } catch (Exception ex) {
-            throw new Exception('Error retrieving epic: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving epic: ' + ex.getMessage());
         }
     }
 
@@ -37,9 +37,9 @@ public with sharing class EpicService {
             insert epic;
             return epic;
         } catch (DmlException dex) {
-            throw new Exception('DML error creating epic: ' + dex.getMessage());
+            throw new ServiceException('DML error creating epic: ' + dex.getMessage());
         } catch (Exception ex) {
-            throw new Exception('Error creating epic: ' + ex.getMessage());
+            throw new ServiceException('Error creating epic: ' + ex.getMessage());
         }
     }
 
@@ -48,9 +48,9 @@ public with sharing class EpicService {
             update epic;
             return epic;
         } catch (DmlException dex) {
-            throw new Exception('DML error updating epic: ' + dex.getMessage());
+            throw new ServiceException('DML error updating epic: ' + dex.getMessage());
         } catch (Exception ex) {
-            throw new Exception('Error updating epic: ' + ex.getMessage());
+            throw new ServiceException('Error updating epic: ' + ex.getMessage());
         }
     }
     
@@ -58,77 +58,77 @@ public with sharing class EpicService {
     public static Epic__c createEpicWithValidation(Epic__c epic) {
         try {
             if (epic == null) {
-                throw new Exception('Epic is required');
+                throw new ServiceException('Epic is required');
             }
             if (String.isBlank(epic.Name)) {
-                throw new Exception('name is required');
+                throw new ServiceException('name is required');
             }
             if (String.isBlank(epic.Summary__c)) {
-                throw new Exception('summary is required');
+                throw new ServiceException('summary is required');
             }
             if (String.isBlank(epic.Project__c)) {
-                throw new Exception('projectId is required');
+                throw new ServiceException('projectId is required');
             }
             
             List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :epic.Project__c LIMIT 1];
             if (projects.isEmpty()) {
-                throw new Exception('Project not found');
+                throw new ServiceException('Project not found');
             }
             
             return createEpic(epic);
         } catch (Exception ex) {
-            throw new Exception('Error creating epic: ' + ex.getMessage());
+            throw new ServiceException('Error creating epic: ' + ex.getMessage());
         }
     }
 
     public static Epic__c getEpicById(String epicId) {
         try {
             if (String.isBlank(epicId)) {
-                throw new Exception('epicId is required');
+                throw new ServiceException('epicId is required');
             }
             
             return findEpicById(epicId);
         } catch (Exception ex) {
-            throw new Exception('Error retrieving epic: ' + ex.getMessage());
+            throw new ServiceException('Error retrieving epic: ' + ex.getMessage());
         }
     }
 
     public static List<Epic__c> getEpicsByProject(String projectId) {
         try {
             if (String.isBlank(projectId)) {
-                throw new Exception('projectId is required');
+                throw new ServiceException('projectId is required');
             }
             List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :projectId LIMIT 1];
             if (projects.isEmpty()) {
-                throw new Exception('Project not found');
+                throw new ServiceException('Project not found');
             }
             
             return findEpicsByProject(projectId);
         } catch (Exception ex) {
-            throw new Exception('Error loading epics: ' + ex.getMessage());
+            throw new ServiceException('Error loading epics: ' + ex.getMessage());
         }
     }
 
     public static Epic__c updateEpicWithValidation(Epic__c epic) {
         try {
             if (epic == null) {
-                throw new Exception('Epic is required');
+                throw new ServiceException('Epic is required');
             }
             if (String.isBlank(epic.Id)) {
-                throw new Exception('epicId is required');
+                throw new ServiceException('epicId is required');
             }
             if (String.isBlank(epic.Name)) {
-                throw new Exception('name is required');
+                throw new ServiceException('name is required');
             }
             
             Epic__c existing = findEpicById(epic.Id);
             if (existing == null) {
-                throw new Exception('Epic not found: ' + epic.Id);
+                throw new ServiceException('Epic not found: ' + epic.Id);
             }
             
             return updateEpic(epic);
         } catch (Exception ex) {
-            throw new Exception('Error updating epic: ' + ex.getMessage());
+            throw new ServiceException('Error updating epic: ' + ex.getMessage());
         }
     }
 }

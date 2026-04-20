@@ -9,7 +9,7 @@ public with sharing class UserService {
         try {
             return [SELECT Id, Name, Email FROM User WHERE IsActive = TRUE ORDER BY Name];
         } catch (Exception ex) {
-            throw new Exception('Error querying users: ' + ex.getMessage());
+            throw new ServiceException('Error querying users: ' + ex.getMessage());
         }
     }
     
@@ -18,7 +18,7 @@ public with sharing class UserService {
         try {
             return getActiveUsers();
         } catch (Exception ex) {
-            throw new Exception('Error loading users: ' + ex.getMessage());
+            throw new ServiceException('Error loading users: ' + ex.getMessage());
         }
     }
 }
