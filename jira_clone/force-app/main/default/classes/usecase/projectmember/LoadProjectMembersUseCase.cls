@@ -11,8 +11,8 @@ public class LoadProjectMembersUseCase {
      */
     public static List<ProjectMember__c> execute(String projectId) {
         try {
-            if (String.isBlank(projectId)) {
-                throw new ProjectMemberException('projectId is required');
+            if (!ProjectValidator.exists(projectId)) {
+                throw new ProjectMemberException('Project does not exist');
             }
             return ProjectMemberRepository.getMembersByProject(projectId);
         } catch (ProjectMemberException ex) {

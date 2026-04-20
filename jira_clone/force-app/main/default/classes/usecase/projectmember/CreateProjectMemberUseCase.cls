@@ -11,14 +11,12 @@ public class CreateProjectMemberUseCase {
      */
     public static ProjectMember__c execute(ProjectMemberCreateDto dto) {
         try {
-            if (dto == null) {
-                throw new ProjectMemberException('ProjectMemberCreateDto is required');
+            if (!UserValidator.exists(dto.userId)) {
+                throw new ProjectMemberException('User does not exist');
             }
-            
-            if (String.isBlank(dto.projectId)) {
-                throw new ProjectMemberException('projectId is required');
+            if (!ProjectValidator.exists(dto.projectId)) {
+                throw new ProjectMemberException('Project does not exist');
             }
-            
             return ProjectMemberRepository.createMember(dto.userId, dto.projectId, dto.recordStatus);
         } catch (ProjectMemberException ex) {
             throw ex;
