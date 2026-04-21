@@ -61,13 +61,15 @@
         <!-- State label -->
         <span class="subtask-state">{subtask.stateName}</span>
 
-        <!-- Assignee combobox -->
+        <!-- Assignee: lazy-load members when user clicks to change -->
         <lightning-combobox
             label=""
-            placeholder="Assignee"
+            placeholder="─"
             value={subtask.Assignee__c}
-            options={memberOptions}
-            onchange={handleAssigneeChange}>
+            options={comboboxMemberOptions}
+            onchange={handleAssigneeChange}
+            onfocus={handleLoadMembers}
+            onclick={handleLoadMembers}>
         </lightning-combobox>
 
         <!-- Delete -->

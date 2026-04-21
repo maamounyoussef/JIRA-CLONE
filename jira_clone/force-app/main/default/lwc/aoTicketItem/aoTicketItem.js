@@ -6,6 +6,7 @@ import assignTicket         from '@salesforce/apex/ManageBacklogController.assig
 import deleteTicket         from '@salesforce/apex/ManageBacklogController.deleteTicket';
 import loadSubtasks         from '@salesforce/apex/ManageBacklogController.loadSubtasks';
 import createSubtask        from '@salesforce/apex/ManageBacklogController.createSubtask';
+import loadMembers          from '@salesforce/apex/ManageBacklogController.loadMembers';
 
 const PRIORITY_OPTIONS = [
     { label: '—',        value: ''         },
@@ -15,13 +16,15 @@ const PRIORITY_OPTIONS = [
     { label: 'Critical', value: 'Critical' },
 ];
 
+
 export default class AoTicketItem extends LightningElement {
 
     // ── API props passed from parent (manageBacklog) ─────────────────────────
-    @api ticket        = {};
+    @api ticket        = {};   // enriched with assigneeName
     @api statusOptions  = [];
-    @api memberOptions  = [];
+    @api memberOptions  = [];  // pre-loaded members for create subtask modal
     @api priorityOptions = PRIORITY_OPTIONS;
+    @api projectId      = '';  // for lazy-loading members in assignee dropdown
 
     // ── Internal state ────────────────────────────────────────────────────────
     @track isExpanded        = false;
@@ -36,6 +39,9 @@ export default class AoTicketItem extends LightningElement {
 
     @track errorMessage      = null;
     @track modalError        = null;
+    @track assigneeMemberOptions = [];   // lazy-loaded for assignee combobox
+    @track isLoadingMembers   = false;
+    @track hasLoadedMembers   = false;
 
     @track showConfirmDialog    = false;
     @track showCreateSubtaskModal = false;
@@ -58,7 +64,14 @@ export default class AoTicketItem extends LightningElement {
     _enrichSubtask(sub) {
         // Build stateName from statusOptions available in parent scope
         const stateOpt = this.statusOptions.find(o => o.value === sub.CurrentState__c);
-        return { ...sub, stateName: stateOpt ? stateOpt.label : '', isSelected: false };
+        // Build assigneeName from memberOptions (pre-loaded for create subtask modal)
+        const memberOpt = this.memberOptions.find(o => o.value === sub.Assignee__c);
+        return {
+            ...sub,
+            stateName: stateOpt ? stateOpt.label : '',
+            assigneeName: memberOpt ? memberOpt.label : '',
+            isSelected: false
+        };
     }
 
     // ── Confirm ───────────────────────────────────────────────────────────────
@@ -161,6 +174,14 @@ export default class AoTicketItem extends LightningElement {
         this.errorMessage      = null;
     }
 
+    handleBlurPriority(event) {
+        // Check if related target is within the edit container
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            this.isEditingPriority = false;
+            this.errorMessage      = null;
+        }
+    }
+
     // ── State change ──────────────────────────────────────────────────────────
     handleStateChange(event) {
         const ticketId = this.ticket.Id;
@@ -173,43 +194,56 @@ export default class AoTicketItem extends LightningElement {
             .catch(err => { this.errorMessage = err.body?.message || 'Error updating state'; });
     }
 
-    // ── Assignee change ───────────────────────────────────────────────────────
+    // ── Assignee lazy loading & change ───────────────────────────────────────
+    get comboboxAssigneeOptions() {
+        // Always include current assignee if exists (so combobox displays it correctly)
+        if (this.ticket.AssignedTo__c && this.ticket.assigneeName) {
+            const currentAssignee = { label: this.ticket.assigneeName, value: this.ticket.AssignedTo__c };
+            // Avoid duplicates if already loaded
+            const hasCurrent = this.assigneeMemberOptions.some(o => o.value === this.ticket.AssignedTo__c);
+            if (!hasCurrent) {
+                return [currentAssignee, ...this.assigneeMemberOptions];
+            }
+        }
+        return this.assigneeMemberOptions;
+    }
+
+    handleLoadMembers() {
+        if (this.hasLoadedMembers || this.isLoadingMembers || !this.projectId) return;
+        this.isLoadingMembers = true;
+        loadMembers({ projectId: this.projectId })
+            .then(res => {
+                if (!res.success) { this.errorMessage = res.message; return; }
+                this.assigneeMemberOptions = (res.data || []).map(m => ({ label: m.Name, value: m.Id }));
+                this.hasLoadedMembers = true;
+            })
+            .catch(err => { this.errorMessage = err.body?.message || 'Error loading members'; })
+            .finally(() => { this.isLoadingMembers = false; });
+    }
+
     handleAssigneeChange(event) {
         const ticketId = this.ticket.Id;
         const memberId = event.detail.value;
         assignTicket({ ticketId, memberId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
+                // Update local assignee name for display
+                const selectedMember = this.assigneeMemberOptions.find(m => m.value === memberId);
+                this.ticket.assigneeName = selectedMember ? selectedMember.label : '';
                 this._notifyUpdate('AssignedTo__c', memberId);
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error assigning ticket'; });
     }
 
-    // ── Delete ticket ─────────────────────────────────────────────────────────
-    handleDeleteClick() {
-        this._confirm('Delete this ticket?', () => {
-            deleteTicket({ ticketId: this.ticket.Id })
-                .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
-                    this.dispatchEvent(new CustomEvent('ticketdeleted', {
-                        bubbles  : true,
-                        composed : true,
-                        detail   : { ticketId: this.ticket.Id },
-                    }));
-                })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting ticket'; });
-        });
-    }
-
-    // ── Create Subtask modal ──────────────────────────────────────────────────
-    handleOpenCreateSubtask() {
-        this.newSubtask             = this._emptySubtask();
-        this.modalError             = null;
+    handleOpenCreateSubtaskModal() {
+        this.newSubtask = this._emptySubtask();
+        this.modalError = null;
         this.showCreateSubtaskModal = true;
     }
 
     handleCloseCreateSubtaskModal() {
         this.showCreateSubtaskModal = false;
+        this.modalError = null;
     }
 
     handleNewSubtaskChange(event) {
@@ -250,9 +284,16 @@ export default class AoTicketItem extends LightningElement {
 
     handleSubtaskUpdated(event) {
         const { subtaskId, field, value } = event.detail;
-        this.subtasks = this.subtasks.map(s =>
-            s.Id === subtaskId ? { ...s, [field]: value } : s
-        );
+        this.subtasks = this.subtasks.map(s => {
+            if (s.Id !== subtaskId) return s;
+            const updated = { ...s, [field]: value };
+            // If assignee changed, update the display name from memberOptions
+            if (field === 'Assignee__c') {
+                const memberOpt = this.memberOptions.find(o => o.value === value);
+                updated.assigneeName = memberOpt ? memberOpt.label : '';
+            }
+            return updated;
+        });
     }
 
     // ── Notify parent of field update (so parent list stays in sync) ───

@@ -86,11 +86,13 @@ export default class ManageBacklog extends LightningElement {
                 // Build quick look-up maps for enrichment
                 const epicMap       = Object.fromEntries(epics.map(e => [e.Id, e.Name]));
                 const ticketTypeMap = Object.fromEntries(ticketTypes.map(t => [t.Id, t.Name]));
+                const memberMap     = Object.fromEntries(members.map(m => [m.Id, m.Name]));
 
                 const enrich = t => ({
                     ...t,
                     epicName      : epicMap[t.Epic__c]              || '',
                     ticketTypeName: ticketTypeMap[t.Ticket_Type__c] || '',
+                    assigneeName  : memberMap[t.AssignedTo__c]       || '',
                     isSelected    : false,
                 });
 

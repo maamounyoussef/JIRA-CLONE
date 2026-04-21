@@ -1,0 +1,55 @@
+/* Subtask row layout */
+.subtask-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 2rem;
+    border-bottom: 1px solid #e5e5e5;
+    background-color: #fafaf9;
+}
+
+.subtask-row:hover {
+    background-color: #f3f2f2;
+}
+
+/* Summary section */
+.subtask-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.summary-text {
+    color: #181818;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.summary-input {
+    flex: 1;
+}
+
+/* State label */
+.subtask-state {
+    min-width: 80px;
+    font-size: 0.75rem;
+    color: #706e6b;
+    text-align: center;
+}
+
+/* Error message */
+.subtask-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    margin: 0.25rem 0.5rem;
+    background-color: #fff1f0;
+    border: 1px solid #ea001e;
+    border-radius: 0.25rem;
+    color: #ea001e;
+    font-size: 0.875rem;
+}

@@ -36,6 +36,7 @@ public with sharing class SubtaskService {
 
     public static Subtask__c createSubtask(Subtask__c s) {
         try {
+            s.RecordStatus__c = 'active';
             insert s;
             return s;
         } catch (DmlException dex) {

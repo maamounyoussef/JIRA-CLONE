@@ -163,35 +163,38 @@
                 </button>
             </template>
             <template if:true={isEditingPriority}>
-                <lightning-combobox
-                    label=""
-                    value={priorityDraft}
-                    options={priorityOptions}
-                    onchange={handlePriorityDraftChange}>
-                </lightning-combobox>
-                <lightning-button-icon
-                    icon-name="utility:check"
-                    variant="bare"
-                    size="x-small"
-                    onclick={handleSavePriority}>
-                </lightning-button-icon>
-                <lightning-button-icon
-                    icon-name="utility:close"
-                    variant="bare"
-                    size="x-small"
-                    onclick={handleCancelEditPriority}>
-                </lightning-button-icon>
+                <div class="priority-edit-container" onblur={handleBlurPriority} tabindex="-1">
+                    <lightning-combobox
+                        label=""
+                        value={priorityDraft}
+                        options={priorityOptions}
+                        onchange={handlePriorityDraftChange}>
+                    </lightning-combobox>
+                    <lightning-button-icon
+                        icon-name="utility:check"
+                        variant="bare"
+                        size="x-small"
+                        onclick={handleSavePriority}>
+                    </lightning-button-icon>
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        variant="bare"
+                        size="x-small"
+                        onclick={handleCancelEditPriority}>
+                    </lightning-button-icon>
+                </div>
             </template>
         </div>
 
-        <!-- 7. Assignee combobox (person icon in image) -->
+        <!-- 7. Assignee: lazy-load members when user clicks to change -->
         <div class="ticket-assignee">
             <lightning-combobox
                 label=""
                 placeholder="─"
                 value={ticket.AssignedTo__c}
-                options={memberOptions}
-                onchange={handleAssigneeChange}>
+                options={comboboxAssigneeOptions}
+                onchange={handleAssigneeChange}
+                onclick={handleLoadMembers}>
             </lightning-combobox>
         </div>
 
@@ -211,7 +214,7 @@
             size="small"
             title="Add Subtask"
             alternative-text="Add subtask"
-            onclick={handleOpenCreateSubtask}>
+            onclick={handleOpenCreateSubtaskModal}>
         </lightning-button-icon>
 
     </div>
@@ -246,7 +249,7 @@
                 <c-ao-subtask-item
                     key={sub.Id}
                     subtask={sub}
-                    member-options={memberOptions}
+                    project-id={projectId}
                     onsubtaskdeleted={handleSubtaskDeleted}
                     onsubtaskupdated={handleSubtaskUpdated}>
                 </c-ao-subtask-item>

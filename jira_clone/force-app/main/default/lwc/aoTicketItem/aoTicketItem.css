@@ -77,6 +77,12 @@
     min-width: 90px;
 }
 
+.priority-edit-container {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .priority-btn {
     background: none;
     border: 1px solid #dddbda;
