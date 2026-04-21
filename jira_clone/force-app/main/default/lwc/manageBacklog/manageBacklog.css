@@ -1,0 +1,178 @@
+/* ═════════════════════════════════════════════════════════════════════════════
+   MANAGE BACKLOG - Main Page Layout
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Page wrapper - two column layout */
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+    background-color: #f3f2f2;
+    min-height: 100vh;
+}
+
+@media (min-width: 1024px) {
+    .page-wrapper {
+        flex-direction: row;
+    }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   ERROR BOX
+   ═════════════════════════════════════════════════════════════════════════════ */
+.error-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: #fff1f0;
+    border: 1px solid #ea001e;
+    border-radius: 0.25rem;
+    color: #ea001e;
+    margin-bottom: 1rem;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   BULK ACTION BAR
+   ═════════════════════════════════════════════════════════════════════════════ */
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #d8edff;
+    border: 1px solid #1589ee;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.bulk-bar span {
+    font-weight: 600;
+    color: #015ba7;
+    flex: 1;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   WORK CONTAINER (Sprints Section)
+   ═════════════════════════════════════════════════════════════════════════════ */
+.work-container {
+    flex: 2;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #181818;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dddbda;
+}
+
+/* Sprint container */
+.sprint-container {
+    background-color: #fafaf9;
+    border: 1px solid #dddbda;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+/* Sprint header */
+.sprint-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: #f3f2f2;
+    border-bottom: 1px solid #dddbda;
+}
+
+.sprint-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #181818;
+}
+
+.sprint-dates {
+    color: #706e6b;
+    font-size: 0.875rem;
+}
+
+.sprint-status-badge {
+    background-color: #ecebea;
+    color: #3e3e3c;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.sprint-goal {
+    padding: 0.5rem 1rem;
+    margin: 0;
+    color: #3e3e3c;
+    font-style: italic;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #dddbda;
+    background-color: #ffffff;
+}
+
+.empty-sprint {
+    padding: 1rem;
+    text-align: center;
+    color: #706e6b;
+    font-style: italic;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   BACKLOG CONTAINER
+   ═════════════════════════════════════════════════════════════════════════════ */
+.backlog-container {
+    flex: 1;
+    min-width: 350px;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+}
+
+.backlog-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dddbda;
+}
+
+.backlog-header .section-title {
+    flex: 1;
+    margin: 0;
+    border-bottom: none;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   EMPTY STATES
+   ═════════════════════════════════════════════════════════════════════════════ */
+.empty-msg {
+    padding: 2rem;
+    text-align: center;
+    color: #706e6b;
+    font-style: italic;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   MODAL ERROR
+   ═════════════════════════════════════════════════════════════════════════════ */
+.modal-error {
+    color: #ea001e;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
