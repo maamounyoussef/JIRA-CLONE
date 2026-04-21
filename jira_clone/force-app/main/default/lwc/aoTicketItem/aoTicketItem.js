@@ -276,6 +276,29 @@ export default class AoTicketItem extends LightningElement {
             .catch(err => { this.modalError = err.body?.message || 'Error creating subtask'; });
     }
 
+    // ── Delete ticket ─────────────────────────────────────────────────────────
+    handleDeleteClick() {
+        this._confirm('Are you sure you want to delete this ticket?', () => {
+            const ticketId = this.ticket.Id;
+            deleteTicket({ ticketId })
+                .then(res => {
+                    if (!res.success) {
+                        this.errorMessage = res.message;
+                        return;
+                    }
+                    // Notify parent to remove this ticket from the list
+                    this.dispatchEvent(new CustomEvent('ticketdeleted', {
+                        bubbles: true,
+                        composed: true,
+                        detail: { ticketId: this.ticket.Id }
+                    }));
+                })
+                .catch(err => {
+                    this.errorMessage = err.body?.message || 'Error deleting ticket';
+                });
+        });
+    }
+
     // ── Subtask event handlers (bubbled from aoSubtaskItem) ───────────────────
     handleSubtaskDeleted(event) {
         const { subtaskId } = event.detail;
