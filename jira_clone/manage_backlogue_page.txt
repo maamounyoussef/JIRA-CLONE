@@ -113,7 +113,7 @@ Display :
 
 		What is a sub task container ? 
 			Just a display way for the sub task.
-			a sub task container show the title , summary , current state name , story point , priority, the assigned member for this ticket.
+			a sub task container show the title , summary , current state name    the assigned member for this ticket.
 			a sub task container show a combo box so it was selected.
 			a sub task container show a edit button right to summary to  update it. 
 			>> so it was not an entity.

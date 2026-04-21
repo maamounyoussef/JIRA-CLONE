@@ -1,0 +1,260 @@
+<template>
+
+    <!-- Confirm Dialog -->
+    <template if:true={showConfirmDialog}>
+        <section role="dialog" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p>{confirmMessage}</p>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel"  onclick={handleCancelConfirm}></lightning-button>
+                    <lightning-button label="Confirm" variant="destructive" onclick={handleConfirm}></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Create Subtask Modal -->
+    <template if:true={showCreateSubtaskModal}>
+        <section role="dialog" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2>Create Subtask</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input
+                        label="Summary *"
+                        value={newSubtask.summary}
+                        data-field="summary"
+                        onchange={handleNewSubtaskChange}>
+                    </lightning-input>
+                    <lightning-input
+                        label="Description"
+                        value={newSubtask.description}
+                        data-field="description"
+                        onchange={handleNewSubtaskChange}>
+                    </lightning-input>
+                    <lightning-combobox
+                        label="Assignee"
+                        value={newSubtask.assigneeId}
+                        options={memberOptions}
+                        data-field="assigneeId"
+                        onchange={handleNewSubtaskChange}>
+                    </lightning-combobox>
+                    <lightning-combobox
+                        label="State"
+                        value={newSubtask.currentStateId}
+                        options={statusOptions}
+                        data-field="currentStateId"
+                        onchange={handleNewSubtaskChange}>
+                    </lightning-combobox>
+                    <lightning-input
+                        type="number"
+                        label="Story Points"
+                        value={newSubtask.storyPoint}
+                        data-field="storyPoint"
+                        onchange={handleNewSubtaskChange}>
+                    </lightning-input>
+                    <template if:true={modalError}>
+                        <p class="modal-error">{modalError}</p>
+                    </template>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseCreateSubtaskModal}></lightning-button>
+                    <lightning-button label="Create" variant="brand" onclick={handleCreateSubtaskSubmit}></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ═══════════════════════════════════════════
+         TICKET ROW  (matches design in screenshot)
+         [✓] [name / type] ─────── [state▼] [!date] [-priority] [assignee icon]
+         ═══════════════════════════════════════════ -->
+    <div class="ticket-row">
+
+        <!-- 1. Checkbox -->
+        <lightning-input
+            type="checkbox"
+            label=""
+            checked={ticket.isSelected}
+            onchange={handleSelect}>
+        </lightning-input>
+
+        <!-- 2. Expand arrow -->
+        <lightning-button-icon
+            icon-name={expandIcon}
+            variant="bare"
+            size="small"
+            alternative-text="Expand subtasks"
+            onclick={handleToggleSubtasks}>
+        </lightning-button-icon>
+
+        <!-- 3. Ticket name & type badge -->
+        <div class="ticket-identity">
+            <span class="ticket-key">{ticket.Name}</span>
+
+            <!-- Summary inline edit -->
+            <template if:false={isEditingSummary}>
+                <span class="ticket-summary">{ticket.Summary__c}</span>
+                <lightning-button-icon
+                    icon-name="utility:edit"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleStartEditSummary}>
+                </lightning-button-icon>
+            </template>
+            <template if:true={isEditingSummary}>
+                <lightning-input
+                    value={summaryDraft}
+                    class="summary-input"
+                    onchange={handleSummaryDraftChange}>
+                </lightning-input>
+                <lightning-button-icon
+                    icon-name="utility:check"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleSaveSummary}>
+                </lightning-button-icon>
+                <lightning-button-icon
+                    icon-name="utility:close"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleCancelEditSummary}>
+                </lightning-button-icon>
+            </template>
+        </div>
+
+        <!-- Spacer -->
+        <span class="row-spacer"></span>
+
+        <!-- 4. State combobox (TO DO ▼ style) -->
+        <div class="ticket-state">
+            <lightning-combobox
+                label=""
+                placeholder="State"
+                value={ticket.CurrentState__c}
+                options={statusOptions}
+                onchange={handleStateChange}>
+            </lightning-combobox>
+        </div>
+
+        <!-- 5. Epic parent (! date badge — warning if no epic) -->
+        <div class="ticket-epic">
+            <template if:true={ticket.Epic__c}>
+                <span class="epic-badge">{ticket.epicName}</span>
+            </template>
+            <template if:false={ticket.Epic__c}>
+                <span class="epic-missing-badge">
+                    <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                    No Epic
+                </span>
+            </template>
+        </div>
+
+        <!-- 6. Priority inline edit (the "-" button in image) -->
+        <div class="ticket-priority">
+            <template if:false={isEditingPriority}>
+                <button class="priority-btn" onclick={handleStartEditPriority}>
+                    {priorityLabel}
+                </button>
+            </template>
+            <template if:true={isEditingPriority}>
+                <lightning-combobox
+                    label=""
+                    value={priorityDraft}
+                    options={priorityOptions}
+                    onchange={handlePriorityDraftChange}>
+                </lightning-combobox>
+                <lightning-button-icon
+                    icon-name="utility:check"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleSavePriority}>
+                </lightning-button-icon>
+                <lightning-button-icon
+                    icon-name="utility:close"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleCancelEditPriority}>
+                </lightning-button-icon>
+            </template>
+        </div>
+
+        <!-- 7. Assignee combobox (person icon in image) -->
+        <div class="ticket-assignee">
+            <lightning-combobox
+                label=""
+                placeholder="─"
+                value={ticket.AssignedTo__c}
+                options={memberOptions}
+                onchange={handleAssigneeChange}>
+            </lightning-combobox>
+        </div>
+
+        <!-- 8. Delete icon -->
+        <lightning-button-icon
+            icon-name="utility:delete"
+            variant="bare"
+            size="small"
+            alternative-text="Delete ticket"
+            onclick={handleDeleteClick}>
+        </lightning-button-icon>
+
+        <!-- 9. Add subtask -->
+        <lightning-button-icon
+            icon-name="utility:add"
+            variant="bare"
+            size="small"
+            title="Add Subtask"
+            alternative-text="Add subtask"
+            onclick={handleOpenCreateSubtask}>
+        </lightning-button-icon>
+
+    </div>
+
+    <!-- Story points & epic row (secondary info below main row) -->
+    <div class="ticket-meta-row">
+        <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
+        <span class="sp-badge">SP: {spLabel}</span>
+    </div>
+
+    <!-- Error -->
+    <template if:true={errorMessage}>
+        <div class="ticket-error">
+            <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
+            <span>{errorMessage}</span>
+            <lightning-button-icon
+                icon-name="utility:close"
+                variant="bare"
+                size="x-small"
+                onclick={clearError}>
+            </lightning-button-icon>
+        </div>
+    </template>
+
+    <!-- ── Subtasks (expanded) ─────────────────────────────────────────── -->
+    <template if:true={isExpanded}>
+        <div class="subtasks-wrapper">
+            <template if:true={isLoadingSubtasks}>
+                <lightning-spinner alternative-text="Loading subtasks..." size="small"></lightning-spinner>
+            </template>
+            <template for:each={subtasks} for:item="sub">
+                <c-ao-subtask-item
+                    key={sub.Id}
+                    subtask={sub}
+                    member-options={memberOptions}
+                    onsubtaskdeleted={handleSubtaskDeleted}
+                    onsubtaskupdated={handleSubtaskUpdated}>
+                </c-ao-subtask-item>
+            </template>
+            <template if:false={hasSubtasks}>
+                <p class="no-subtasks">No subtasks yet.</p>
+            </template>
+        </div>
+    </template>
+
+</template>

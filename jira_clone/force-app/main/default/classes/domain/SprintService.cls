@@ -21,6 +21,14 @@ public with sharing class SprintService {
         }
     }
 
+    public static List<Sprint__c> getFuturedSprintsByProject(String projectId) {
+        try {
+            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c FROM Sprint__c WHERE Project__c = :projectId AND RecordStatus__c = 'future'];
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading sprints: ' + ex.getMessage());
+        }
+    }
+
     public static Sprint__c createSprint(Sprint__c sprint) {
         try {
             insert sprint;
@@ -117,6 +125,16 @@ public with sharing class SprintService {
         try {
             ProjectService.getProjectById(projectId);
             return getSprintsByProject(projectId);
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading sprints: ' + ex.getMessage());
+        }
+    }
+
+
+        public static List<Sprint__c> loadFuturedSprints(String projectId) {
+        try {
+            ProjectService.getProjectById(projectId);
+            return getFuturedSprintsByProject(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading sprints: ' + ex.getMessage());
         }

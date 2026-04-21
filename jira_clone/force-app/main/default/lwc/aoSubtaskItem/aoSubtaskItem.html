@@ -1,0 +1,91 @@
+<template>
+    <!-- Confirm Dialog -->
+    <template if:true={showConfirmDialog}>
+        <section role="dialog" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p>{confirmMessage}</p>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel"  onclick={handleCancelConfirm}></lightning-button>
+                    <lightning-button label="Confirm" variant="destructive" onclick={handleConfirm}></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Subtask Row -->
+    <div class="subtask-row">
+
+        <!-- Checkbox -->
+        <lightning-input
+            type="checkbox"
+            label=""
+            checked={subtask.isSelected}
+            onchange={handleSelect}>
+        </lightning-input>
+
+        <!-- Summary (inline edit) -->
+        <div class="subtask-summary">
+            <template if:false={isEditingSummary}>
+                <span class="summary-text">{subtask.Summary__c}</span>
+                <lightning-button-icon
+                    icon-name="utility:edit"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleStartEditSummary}>
+                </lightning-button-icon>
+            </template>
+            <template if:true={isEditingSummary}>
+                <lightning-input
+                    value={summaryDraft}
+                    class="summary-input"
+                    onchange={handleSummaryDraftChange}>
+                </lightning-input>
+                <lightning-button-icon
+                    icon-name="utility:check"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleSaveSummary}>
+                </lightning-button-icon>
+                <lightning-button-icon
+                    icon-name="utility:close"
+                    variant="bare"
+                    size="x-small"
+                    onclick={handleCancelEditSummary}>
+                </lightning-button-icon>
+            </template>
+        </div>
+
+        <!-- State label -->
+        <span class="subtask-state">{subtask.stateName}</span>
+
+        <!-- Assignee combobox -->
+        <lightning-combobox
+            label=""
+            placeholder="Assignee"
+            value={subtask.Assignee__c}
+            options={memberOptions}
+            onchange={handleAssigneeChange}>
+        </lightning-combobox>
+
+        <!-- Delete -->
+        <lightning-button-icon
+            icon-name="utility:delete"
+            variant="bare"
+            size="small"
+            alternative-text="Delete subtask"
+            onclick={handleDeleteClick}>
+        </lightning-button-icon>
+
+    </div>
+
+    <!-- Error -->
+    <template if:true={errorMessage}>
+        <div class="subtask-error">
+            <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
+            <span>{errorMessage}</span>
+        </div>
+    </template>
+</template>

@@ -13,7 +13,7 @@ public with sharing class ManageBacklogController {
             ProjectService.getProjectById(projectId);
 
             List<Ticket__c> tickets = TicketService.loadTickets(projectId);
-            List<Sprint__c> sprints = SprintService.loadSprints(projectId);
+            List<Sprint__c> sprints = SprintService.loadFuturedSprints(projectId);
             List<Status__c> statuses = StatusService.loadStatuses(projectId);
             List<TicketType__c> ticketTypes = TicketTypeService.loadTicketTypes(projectId);
             List<ProjectMember__c> members = ProjectMemberService.loadProjectMembers(projectId);
