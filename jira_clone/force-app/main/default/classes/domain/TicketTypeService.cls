@@ -52,7 +52,8 @@ public with sharing class TicketTypeService {
                 Description__c = description,
                 IconUrl__c = iconUrl,
                 Workflow__c = workflowId,
-                Project__c = projectId
+                Project__c = projectId,
+                RecordStatus__c = 'active'
             );
             insert ticketType;
             return ticketType;

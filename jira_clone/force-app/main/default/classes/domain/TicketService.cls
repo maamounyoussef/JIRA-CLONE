@@ -24,6 +24,26 @@ public with sharing class TicketService {
         }
     }
 
+
+    public static List<Ticket__c> getActiveTicketsByProject(String projectId) {
+        try {
+            List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :projectId];
+            if (types.isEmpty()) return new List<Ticket__c>();
+            List<Id> typeIds = new List<Id>();
+            for (TicketType__c t : types) typeIds.add(t.Id);
+            return [
+                SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
+                       AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
+                       StartDate__c, EndDate__c
+                FROM Ticket__c
+                WHERE Ticket_Type__c IN :typeIds AND RecordStatus__c = 'active'
+                ORDER BY CreatedDate DESC
+            ];
+        } catch (Exception ex) {
+            throw new ServiceException('Error querying tickets: ' + ex.getMessage());
+        }
+    }
+
     public static Ticket__c findTicketById(String ticketId) {
         try {
             List<Ticket__c> res = [
@@ -42,6 +62,7 @@ public with sharing class TicketService {
 
     public static Ticket__c createTicket(Ticket__c ticket) {
         try {
+            ticket.RecordStatus__c = 'active';
             insert ticket;
             return ticket;
         } catch (DmlException dex) {
@@ -134,6 +155,16 @@ public with sharing class TicketService {
             if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
             ProjectService.getProjectById(projectId);
             return getTicketsByProject(projectId);
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading tickets: ' + ex.getMessage());
+        }
+    }
+
+    public static List<Ticket__c> loadActiveTickets(String projectId) {
+        try {
+            if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
+            ProjectService.getProjectById(projectId);
+            return getActiveTicketsByProject(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading tickets: ' + ex.getMessage());
         }
