@@ -1,7 +1,7 @@
 /* Ticket row layout */
 .ticket-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;   /* children fill the full row height */
     gap: 0.5rem;
     padding: 0.5rem;
     border-bottom: 1px solid #dddbda;
@@ -12,10 +12,21 @@
     background-color: #f3f2f2;
 }
 
+/* Every direct child of the row stretches and centers its content */
+.ticket-row > *,
+.ticket-row > lightning-input,
+.ticket-row > lightning-button-icon,
+.ticket-row > lightning-combobox {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+}
+
 /* Identity section */
 .ticket-identity {
     display: flex;
     align-items: center;
+    align-self: stretch;
     gap: 0.5rem;
     flex: 1;
     min-width: 0;
@@ -45,11 +56,17 @@
 
 /* State dropdown */
 .ticket-state {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
     min-width: 120px;
 }
 
 /* Epic badge */
 .ticket-epic {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
     min-width: 100px;
 }
 
@@ -73,6 +90,7 @@
 .ticket-priority {
     display: flex;
     align-items: center;
+    align-self: stretch;
     gap: 0.25rem;
     min-width: 90px;
 }
@@ -102,6 +120,9 @@
 
 /* Assignee dropdown */
 .ticket-assignee {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
     min-width: 120px;
 }
 

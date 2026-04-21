@@ -133,13 +133,13 @@
 
         <!-- 4. State combobox (TO DO ▼ style) -->
         <div class="ticket-state">
-            <lightning-combobox
-                label=""
-                placeholder="State"
-                value={ticket.CurrentState__c}
-                options={statusOptions}
-                onchange={handleStateChange}>
-            </lightning-combobox>
+<lightning-combobox
+    variant="label-hidden"
+    placeholder="State"
+    value={ticket.CurrentState__c}
+    options={statusOptions}
+    onchange={handleStateChange}>
+</lightning-combobox>
         </div>
 
         <!-- 5. Epic parent (! date badge — warning if no epic) -->
@@ -189,7 +189,7 @@
         <!-- 7. Assignee: lazy-load members when user clicks to change -->
         <div class="ticket-assignee">
             <lightning-combobox
-                label=""
+                variant="label-hidden"
                 placeholder="─"
                 value={ticket.AssignedTo__c}
                 options={comboboxAssigneeOptions}
