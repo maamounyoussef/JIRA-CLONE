@@ -227,10 +227,9 @@ export default class AoTicketItem extends LightningElement {
         assignTicket({ ticketId, memberId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                // Update local assignee name for display
+                // Reassign ticket to a new object so LWC proxy allows the update
                 const selectedMember = this.assigneeMemberOptions.find(m => m.value === memberId);
-                this.ticket.assigneeName = selectedMember ? selectedMember.label : '';
-                this._notifyUpdate('AssignedTo__c', memberId);
+                this.ticket = { ...this.ticket, AssignedTo__c: memberId, assigneeName: selectedMember ? selectedMember.label : '' };
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error assigning ticket'; });
     }

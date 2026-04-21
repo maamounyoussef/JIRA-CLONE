@@ -194,7 +194,9 @@
                 value={ticket.AssignedTo__c}
                 options={comboboxAssigneeOptions}
                 onchange={handleAssigneeChange}
-                onclick={handleLoadMembers}>
+                onclick={handleLoadMembers}
+                onfocus={handleLoadMembers}>
+
             </lightning-combobox>
         </div>
 
