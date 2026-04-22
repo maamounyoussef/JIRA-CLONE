@@ -4,28 +4,7 @@
  */
 public with sharing class TicketService {
     
-    // Repository methods
-    public static List<Ticket__c> getTicketsByProject(String projectId) {
-        try {
-            List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :projectId];
-            if (types.isEmpty()) return new List<Ticket__c>();
-            List<Id> typeIds = new List<Id>();
-            for (TicketType__c t : types) typeIds.add(t.Id);
-            return [
-                SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
-                       AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
-                       StartDate__c, EndDate__c
-                FROM Ticket__c
-                WHERE Ticket_Type__c IN :typeIds
-                ORDER BY CreatedDate DESC
-            ];
-        } catch (Exception ex) {
-            throw new ServiceException('Error querying tickets: ' + ex.getMessage());
-        }
-    }
-
-
-    public static List<Ticket__c> getActiveTicketsByProject(String projectId) {
+    public static List<Ticket__c> getActiveTicketsByProjectOrderByPriorityAsc(String projectId) {
         try {
             List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :projectId];
             if (types.isEmpty()) return new List<Ticket__c>();
@@ -37,12 +16,13 @@ public with sharing class TicketService {
                        StartDate__c, EndDate__c
                 FROM Ticket__c
                 WHERE Ticket_Type__c IN :typeIds AND RecordStatus__c = 'active'
-                ORDER BY CreatedDate DESC
+                ORDER BY Priority__c ASC , EndDate__c DESC
             ];
         } catch (Exception ex) {
             throw new ServiceException('Error querying tickets: ' + ex.getMessage());
         }
     }
+    
 
     public static Ticket__c findTicketById(String ticketId) {
         try {
@@ -150,25 +130,16 @@ public with sharing class TicketService {
         }
     }
 
-    public static List<Ticket__c> loadTickets(String projectId) {
+    public static List<Ticket__c> loadActiveTicketsOrderByPriorityAsc(String projectId) {
         try {
             if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
             ProjectService.getProjectById(projectId);
-            return getTicketsByProject(projectId);
+            return getActiveTicketsByProjectOrderByPriorityAsc(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading tickets: ' + ex.getMessage());
         }
     }
 
-    public static List<Ticket__c> loadActiveTickets(String projectId) {
-        try {
-            if (String.isBlank(projectId)) throw new ServiceException('projectId is required');
-            ProjectService.getProjectById(projectId);
-            return getActiveTicketsByProject(projectId);
-        } catch (Exception ex) {
-            throw new ServiceException('Error loading tickets: ' + ex.getMessage());
-        }
-    }
 
     public static Ticket__c updateTicketPriority(String ticketId, String priority) {
         try {

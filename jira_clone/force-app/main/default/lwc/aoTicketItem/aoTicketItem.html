@@ -140,7 +140,10 @@
                     placeholder="State"
                     value={ticket.CurrentState__c}
                     options={statusOptions}
-                    onchange={handleStateChange}>
+                    onchange={handleStateChange}
+                    onclick={handleLoadStatuses}
+                    onfocus={handleLoadStatuses}>
+                    
                 </lightning-combobox>
             </div>
 
