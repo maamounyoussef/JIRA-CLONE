@@ -3,43 +3,63 @@
    Sizing is 100 % parent-relative and recursive:
      • :host sets the em anchor → every em/% inside scales with the parent.
      • No px widths, no vw/vh, no media queries.
-     • subtasks-wrapper does NOT add extra indentation with fixed px/em —
-       the child c-ao-subtask-item handles its own indent relative to itself.
+     • Gap values use clamp() so they compress naturally at small container
+       sizes and breathe at larger ones — fully recursive, no px breakpoints.
+     • The edit button lives inside .ticket-identity, flush after the summary,
+       so it always appears right beside the text regardless of row width.
+     • subtasks-wrapper does NOT add extra indentation — the child component
+       owns its own indent relative to itself.
    ───────────────────────────────────────────────────────────────────────────── */
 
+/* ── Custom property anchors (all em → inherit from :host → from parent) ─── */
 :host {
-    /* Container queries let children query THIS element's size, not the page. */
     container-type: inline-size;
     container-name: ticket;
     display: block;
 
     /*
      * KEY SCALING ANCHOR
-     * All em values below are relative to this font-size, which in turn
-     * inherits from the parent element. If the parent shrinks the font-size,
-     * the entire ticket (gaps, padding, badges, min-widths) scales down too.
+     * Change this one value (via parent font-size) and the entire ticket
+     * — gaps, padding, badges, min-widths — scales proportionally.
      */
     font-size: 1em;
+
+    /*
+     * Gap scale tokens — defined once, overridden in container queries below.
+     * Using custom properties means every consumer of --gap-row and
+     * --gap-col gets the update for free when the container shrinks.
+     *
+     * --gap-row  : horizontal gap between the main flex children inside .ticket-row
+     * --gap-col  : horizontal gap between columns inside .ticket-right
+     * --row-pad  : block (vertical) + inline (horizontal) padding of .ticket-row
+     */
+    --gap-row:  0.625em;   /* ~10px at 16px base — comfortable, not crowded    */
+    --gap-col:  1.25em;    /* ~20px — clear column separation in .ticket-right  */
+    --row-pad-block:  0.4375em;  /* 7px — tighter vertical rhythm               */
+    --row-pad-inline: 0.75em;    /* 12px — breathing room from the edge         */
 }
 
 /* ── Ticket row layout ───────────────────────────────────────────────────── */
 .ticket-row {
     display: flex;
-    align-items: stretch;            /* children fill full row height */
-    gap: 0.5em;
-    padding: 0.5em;
-    border-bottom: 1px solid #dddbda;
+    align-items: stretch;
+    gap: var(--gap-row);
+    padding: var(--row-pad-block) var(--row-pad-inline);
+
+    border-bottom: 1px solid #e8e7e6;          /* slightly softer than #dddbda  */
     background-color: #ffffff;
 
-    /* Prevent children from escaping the container */
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
     min-width: 0;
+
+    /* Smooth hover without layout shift */
+    transition: background-color 0.12s ease;
 }
 
 .ticket-row:hover {
-    background-color: #f3f2f2;
+    background-color: #f6f5f4;                 /* warmer, less stark than #f3f2f2 */
 }
 
 /* Every direct child stretches and centers its content */
@@ -52,14 +72,36 @@
     align-self: stretch;
 }
 
+/* ── Left section: checkbox, expand, identity ────────────────────────────── */
+.ticket-left {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-row);                       /* recursive — uses same token     */
+    flex: 0 0 40%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ── Right section: state, epic, priority, assignee, actions ──────────────── */
+.ticket-right {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-col);                       /* column-level gap, wider         */
+    flex: 0 0 60%;
+    min-width: 0;
+    overflow: hidden;
+    justify-content: flex-end;
+}
+
 /* ── Identity section ────────────────────────────────────────────────────── */
 .ticket-identity {
     display: flex;
     align-items: center;
     align-self: stretch;
-    gap: 0.5em;
+    gap: 0.375em;                              /* tight — key, summary, edit btn  */
     flex: 1 1 0;
     min-width: 0;
+    overflow: hidden;
 }
 
 .ticket-key {
@@ -67,6 +109,7 @@
     color: #0176d3;
     white-space: nowrap;
     flex: 0 0 auto;
+    letter-spacing: 0.01em;
 }
 
 .ticket-summary {
@@ -83,9 +126,55 @@
     min-width: 0;
 }
 
+/*
+ * ── Inline-edit button — lives inside .ticket-identity, right of summary ──
+ *
+ * Kept out of the flow until hover so it doesn't push the summary text
+ * around. On .ticket-identity:hover it fades in and takes up its reserved
+ * flex slot (flex: 0 0 auto).  Because it's inside .ticket-identity it
+ * inherits the same gap token and is always optically adjacent to the text.
+ */
+.edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 0.25em;
+    padding: 0.2em 0.3em;
+    cursor: pointer;
+    color: #706e6b;
+    font-size: 0.8125em;                       /* ~13px — icon-sized              */
+    line-height: 1;
+
+    /* Hidden by default; shown on row hover */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease, background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.ticket-row:hover .edit-btn,
+.ticket-identity:focus-within .edit-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.edit-btn:hover {
+    background-color: #f3f2f2;
+    border-color: #c9c7c5;
+    color: #3e3e3c;
+}
+
+.edit-btn:focus-visible {
+    outline: 2px solid #0176d3;
+    outline-offset: 1px;
+}
+
 /* ── Spacer ──────────────────────────────────────────────────────────────── */
 .row-spacer {
-    flex: 0 0 0;   /* no growth — identity's flex:1 already pushes columns right */
+    flex: 0 0 0;
 }
 
 /* ── State dropdown ──────────────────────────────────────────────────────── */
@@ -93,7 +182,7 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 7.5em;   /* can shrink below 7.5em if needed */
+    flex: 0 1 7.5em;
     min-width: 0;
 }
 
@@ -102,17 +191,18 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 6em;     /* can shrink */
+    flex: 0 1 6em;
     min-width: 0;
 }
 
 .epic-badge {
-    background-color: #e5e5e5;
-    padding: 0.25em 0.5em;
+    background-color: #e8e7e6;
+    padding: 0.2em 0.45em;
     border-radius: 0.25em;
-    font-size: 0.75em;               /* relative to :host anchor */
+    font-size: 0.75em;
     color: #3e3e3c;
     white-space: nowrap;
+    letter-spacing: 0.01em;
 }
 
 .epic-missing-badge {
@@ -129,7 +219,7 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 6em;     /* can shrink */
+    flex: 0 1 6em;
     min-width: 0;
     gap: 0.25em;
 }
@@ -144,12 +234,13 @@
     background: none;
     border: 1px solid #dddbda;
     border-radius: 0.25em;
-    padding: 0.25em 0.5em;
+    padding: 0.2em 0.45em;
     cursor: pointer;
-    font-size: 0.75em;               /* relative to :host anchor */
+    font-size: 0.75em;
     color: #3e3e3c;
     min-width: 4em;
     text-align: center;
+    transition: background-color 0.1s ease, border-color 0.1s ease;
 }
 
 .priority-btn:hover {
@@ -162,7 +253,7 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 7.5em;   /* can shrink */
+    flex: 0 1 7.5em;
     min-width: 0;
 }
 
@@ -172,17 +263,11 @@
     gap: 0.5em;
     align-items: center;
 
-    /*
-     * OLD: padding-left: 3em  ← fixed, ignored parent size
-     * NEW: padding-inline-start uses em so it shrinks/grows with the parent.
-     * The 3em matches the visual offset of the identity section above
-     * (checkbox ~1em + expand arrow ~1em + gap ~1em).
-     */
-    padding-block: 0.25em 0.5em;
-    padding-inline-start: 3em;      /* em → recursive, parent-relative */
-    padding-inline-end: 0.5em;
+    padding-block: 0.2em 0.4em;
+    padding-inline-start: 3em;
+    padding-inline-end: var(--row-pad-inline);
 
-    border-bottom: 1px solid #dddbda;
+    border-bottom: 1px solid #e8e7e6;
     background-color: #ffffff;
 }
 
@@ -190,10 +275,11 @@
     background-color: #d8edff;
     color: #015ba7;
     padding: 0.125em 0.375em;
-    border-radius: 0.125em;
-    font-size: 0.7em;                /* relative to :host anchor */
+    border-radius: 0.1875em;
+    font-size: 0.7em;
     font-weight: 600;
     white-space: nowrap;
+    letter-spacing: 0.02em;
 }
 
 .sp-badge {
@@ -207,8 +293,8 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.5em;
-    margin: 0.5em;
+    padding: 0.5em var(--row-pad-inline);
+    margin: 0.375em var(--row-pad-inline);
     background-color: #fff1f0;
     border: 1px solid #ea001e;
     border-radius: 0.25em;
@@ -218,22 +304,10 @@
 
 /* ── Subtasks wrapper ────────────────────────────────────────────────────── */
 .subtasks-wrapper {
-    /*
-     * OLD: padding-left: 2em  ← this was adding flat indent here AND
-     *      inside aoSubtaskItem, doubling the indentation.
-     *
-     * NEW: Let aoSubtaskItem own its own indent (padding-inline-start: 2em
-     *      inside that component). The wrapper only provides the background
-     *      and a subtle inline-start border to visually group subtasks.
-     *
-     * This is critical for recursion: if ticket A nests ticket B nests
-     * subtask C, the indentation is owned by each child relative to itself,
-     * not stacked by every ancestor wrapper.
-     */
     padding-inline-start: 0;
     background-color: #fafaf9;
-    border-inline-start: 0.2em solid #e5e5e5;   /* subtle visual indent, em-scaled */
-    margin-inline-start: 1.5em;                  /* offset from left edge, em-scaled */
+    border-inline-start: 0.2em solid #e5e5e5;
+    margin-inline-start: 1.5em;
 }
 
 .no-subtasks {
@@ -250,24 +324,52 @@
     margin-top: 0.5em;
 }
 
-/* ── Container queries: react to PARENT width, not page width ────────────── */
+/* ── Container queries ───────────────────────────────────────────────────── */
 /*
- * Hide lower-priority columns when the parent gives this ticket less space.
- * These breakpoints are in container (parent) units, not viewport units.
+ * As the container shrinks, we:
+ *   1. Progressively hide lower-priority columns (epic → priority → assignee).
+ *   2. Step down both gap tokens so spacing stays proportional, not cramped.
+ *
+ * All values are em — they scale with :host's font-size, which scales with
+ * the parent → fully recursive.
  */
+
+/* Medium container: compress column gap, hide epic */
+@container ticket (max-width: 48em) {
+    :host {
+        --gap-col: 0.875em;                    /* tighter columns                 */
+        --row-pad-inline: 0.5em;
+    }
+}
+
 @container ticket (max-width: 42em) {
+    :host {
+        --gap-col: 0.75em;
+    }
     .ticket-epic {
         display: none;
     }
 }
 
+/* Small container: minimal gaps, hide priority */
 @container ticket (max-width: 34em) {
+    :host {
+        --gap-row: 0.375em;
+        --gap-col: 0.5em;
+        --row-pad-block: 0.3125em;
+        --row-pad-inline: 0.375em;
+    }
     .ticket-priority {
         display: none;
     }
 }
 
+/* Very small container: micro gaps, hide assignee */
 @container ticket (max-width: 26em) {
+    :host {
+        --gap-row: 0.25em;
+        --gap-col: 0.375em;
+    }
     .ticket-assignee {
         display: none;
     }

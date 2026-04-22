@@ -8,18 +8,9 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 :host {
-    /* Container queries let children query THIS element's size, not the page. */
     container-type: inline-size;
     container-name: subtask;
     display: block;
-
-    /*
-     * KEY SCALING ANCHOR
-     * 1em here = the font-size the parent gave us.
-     * Every em unit below is relative to this value, so the whole component
-     * scales up/down purely based on how much space the parent provides.
-     * Change this one line to resize the entire component proportionally.
-     */
     font-size: 1em;
 }
 
@@ -28,32 +19,37 @@
     display: flex;
     align-items: center;
 
-    /*
-     * gap & padding in em → scale with :host font-size (= parent's font-size).
-     * padding-inline-start instead of padding-left so RTL layouts work too.
-     * The 2em indent is relative to THIS component's em, not the page —
-     * so a deeply nested subtask gets a proportionally smaller visual indent.
-     */
-    gap: 0.5em;
-    padding-block: 0.5em;
-    padding-inline: 0.5em 0.5em;
-    padding-inline-start: 2em;       /* recursive indent: shrinks with each nesting level */
+    gap: 0.375em;                    /* tighter, uniform gap between all cells */
+    padding-block: 0.4em;
+    padding-inline: 0.5em 0.625em;
+    padding-inline-start: 1.5em;     /* slightly reduced indent for a cleaner look */
 
     border-bottom: 1px solid #e5e5e5;
     background-color: #fafaf9;
+    transition: background-color 0.12s ease;
 }
 
 .subtask-row:hover {
     background-color: #f3f2f2;
 }
 
+/* ── Checkbox ────────────────────────────────────────────────────────────── */
+.subtask-row lightning-input[type="checkbox"] {
+    flex: 0 0 auto;
+}
+
 /* ── Summary section ─────────────────────────────────────────────────────── */
+/*
+ * max-width: 40% caps how wide the summary can grow, preventing it from
+ * consuming the full row. The edit icon is inside this same flex container
+ * so it stays adjacent to the text at all times.
+ */
 .subtask-summary {
     display: flex;
     align-items: center;
-    gap: 0.25em;
-    flex: 1 1 0;                     /* grow/shrink freely; basis 0 avoids overflow */
-    min-width: 0;                    /* allow flex children to shrink below content size */
+    gap: 0.2em;                      /* tight coupling between text and edit icon */
+    flex: 0 1 40%;                   /* can shrink but won't grow past 40 % of row */
+    min-width: 0;
 }
 
 .summary-text {
@@ -63,8 +59,22 @@
     white-space: nowrap;
     flex: 1 1 0;
     min-width: 0;
+    font-size: 0.875em;
+    line-height: 1.4;
 }
 
+/* Edit icon: visually subtle, appears right beside the text */
+.subtask-summary lightning-button-icon {
+    flex: 0 0 auto;
+    opacity: 0.45;
+    transition: opacity 0.1s ease;
+}
+
+.subtask-summary:hover lightning-button-icon {
+    opacity: 1;
+}
+
+/* Editing mode input stays within the same width budget */
 .summary-input {
     flex: 1 1 0;
     min-width: 0;
@@ -72,16 +82,31 @@
 
 /* ── State label ─────────────────────────────────────────────────────────── */
 .subtask-state {
-    /*
-     * min-width in em → proportional to parent, not viewport.
-     * flex-shrink: 0 keeps it from collapsing when the row is narrow.
-     */
     flex: 0 0 auto;
-    min-width: 5em;
-    font-size: 0.75em;               /* relative to :host em anchor */
+    min-width: 4.5em;
+    font-size: 0.72em;
     color: #706e6b;
     text-align: center;
     white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+/* ── Assignee combobox ───────────────────────────────────────────────────── */
+.subtask-row lightning-combobox {
+    flex: 0 1 9em;                   /* modest fixed budget; shrinks if needed */
+    min-width: 0;
+}
+
+/* ── Delete button ───────────────────────────────────────────────────────── */
+.subtask-row > lightning-button-icon:last-child {
+    flex: 0 0 auto;
+    margin-inline-start: auto;       /* push delete to the far right */
+    opacity: 0.45;
+    transition: opacity 0.1s ease;
+}
+
+.subtask-row:hover > lightning-button-icon:last-child {
+    opacity: 0.75;
 }
 
 /* ── Error message ───────────────────────────────────────────────────────── */
@@ -89,23 +114,22 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.5em;
-    margin: 0.25em 0.5em;
+    padding: 0.4em 0.75em;
+    margin: 0.2em 0.5em;
     background-color: #fff1f0;
     border: 1px solid #ea001e;
     border-radius: 0.25em;
     color: #ea001e;
-    font-size: 0.875em;              /* relative to :host em anchor */
+    font-size: 0.8em;
 }
 
 /* ── Container query: narrow parent ─────────────────────────────────────── */
-/*
- * When the parent gives this component less than 28em of inline space,
- * hide lower-priority columns so the summary still has room to breathe.
- * This reacts to the PARENT's width, not the page width.
- */
 @container subtask (max-width: 28em) {
     .subtask-state {
         display: none;
+    }
+
+    .subtask-summary {
+        flex: 0 1 55%;               /* reclaim state column space when hidden */
     }
 }
