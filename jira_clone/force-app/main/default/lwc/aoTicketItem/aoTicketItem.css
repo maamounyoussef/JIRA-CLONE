@@ -51,7 +51,7 @@
 
     width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;                         /* allow combobox dropdowns to escape */
     min-width: 0;
 
     /* Smooth hover without layout shift */
@@ -89,7 +89,7 @@
     gap: var(--gap-col);                       /* column-level gap, wider         */
     flex: 0 0 60%;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;                         /* allow combobox dropdowns to escape */
     justify-content: flex-end;
 }
 
@@ -184,6 +184,7 @@
     align-self: stretch;
     flex: 0 1 7.5em;
     min-width: 0;
+    overflow: visible;  /* allow dropdown to escape parent overflow:hidden */
 }
 
 /* ── Epic badge ──────────────────────────────────────────────────────────── */
@@ -255,6 +256,7 @@
     align-self: stretch;
     flex: 0 1 7.5em;
     min-width: 0;
+    overflow: visible;  /* allow dropdown to escape parent overflow:hidden */
 }
 
 /* ── Meta row (type badge, story points) ─────────────────────────────────── */
