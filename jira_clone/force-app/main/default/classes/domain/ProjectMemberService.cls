@@ -14,9 +14,10 @@ public with sharing class ProjectMemberService {
         ];
     }
     
-    public static ProjectMember__c createMember(String userId, String projectId, String recordStatus) {
+    public static ProjectMember__c createMember(String userId, String projectId, String recordStatus, String memberName) {
         try {
             ProjectMember__c pm = new ProjectMember__c(
+                Name          = memberName,
                 User__c       = userId,
                 Project__c    = projectId,
                 RecordStatus__c = recordStatus
@@ -32,7 +33,7 @@ public with sharing class ProjectMemberService {
     // Use case methods
     public static ProjectMember__c createProjectMember(String userId, String projectId, String recordStatus) {
         try {
-            List<User> users = [SELECT Id FROM User WHERE Id = :userId LIMIT 1];
+            List<User> users = [SELECT Id, Name FROM User WHERE Id = :userId LIMIT 1];
             if (users.isEmpty()) {
                 throw new ServiceException('User does not exist');
             }
@@ -40,10 +41,17 @@ public with sharing class ProjectMemberService {
             if (projects.isEmpty()) {
                 throw new ServiceException('Project does not exist');
             }
-            return createMember(userId, projectId, recordStatus);
+            String memberName = users[0].Name + '-' + generateUUID();
+            return createMember(userId, projectId, recordStatus, memberName);
         } catch (Exception ex) {
             throw new ServiceException('Error creating project member: ' + ex.getMessage());
         }
+    }
+
+    private static String generateUUID() {
+        Blob b = Crypto.generateAesKey(128);
+        String h = EncodingUtil.convertToHex(b);
+        return h.substring(0,8) + '-' + h.substring(8,12) + '-' + h.substring(12,16) + '-' + h.substring(16,20) + '-' + h.substring(20,32);
     }
 
     public static List<ProjectMember__c> loadProjectMembers(String projectId) {

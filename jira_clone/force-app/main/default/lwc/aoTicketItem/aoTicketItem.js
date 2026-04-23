@@ -3,11 +3,13 @@ import { refreshApex } from '@salesforce/apex';
 import updateTicketSummary  from '@salesforce/apex/ManageBacklogController.updateTicketSummary';
 import updateTicketPriority from '@salesforce/apex/ManageBacklogController.updateTicketPriority';
 import updateTicketState    from '@salesforce/apex/ManageBacklogController.updateTicketState';
+import updateTicketEpic     from '@salesforce/apex/ManageBacklogController.updateTicketEpic';
 import assignTicket         from '@salesforce/apex/ManageBacklogController.assignTicket';
 import deleteTicket         from '@salesforce/apex/ManageBacklogController.deleteTicket';
 import loadSubtasks         from '@salesforce/apex/ManageBacklogController.loadSubtasks';
 import createSubtask        from '@salesforce/apex/ManageBacklogController.createSubtask';
 import loadMembers          from '@salesforce/apex/ManageBacklogController.loadMembers';
+import createEpic           from '@salesforce/apex/ManageBacklogController.createEpic';
 
 const PRIORITY_OPTIONS = [
     { label: '—',        value: ''         },
@@ -25,6 +27,7 @@ export default class AoTicketItem extends LightningElement {
     @api memberOptions   = [];
     @api priorityOptions = PRIORITY_OPTIONS;
     @api projectId       = '';
+    @api epics           = [];
 
     // ── Internal state ────────────────────────────────────────────────────────
     @track isExpanded          = false;
@@ -50,7 +53,16 @@ export default class AoTicketItem extends LightningElement {
     _wiredResult    = null;   // holds the raw wire result for refreshApex
     _hasLoaded      = false;  // true after the first successful wire load
 
+    // ── Epic Modal State ─────────────────────────────────────────────────────
+    @track showEpicModal          = false;
+    @track showCreateEpicModal    = false;
+    @track epicOptions            = [];
+    @track selectedEpicId         = '';
+    @track hasEpics               = false;
+    @track isLoadingEpics         = false;
+
     newSubtask = this._emptySubtask();
+    newEpic    = this._emptyEpic();
 
     // ── Computed ──────────────────────────────────────────────────────────────
     get expandIcon()    { return this.isExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
@@ -58,9 +70,16 @@ export default class AoTicketItem extends LightningElement {
     get spLabel()       { return this.ticket.StoryPoint__c != null ? this.ticket.StoryPoint__c : '—'; }
     get priorityLabel() { return this.ticket.Priority__c  || '—'; }
 
+    get epicModalTitle() { return this.hasEpics ? 'Update Epic Parent' : 'No Epics Available'; }
+    get isEpicAssignDisabled() { return !this.selectedEpicId; }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
     _emptySubtask() {
         return { summary: '', description: '', assigneeId: '', currentStateId: '', storyPoint: null };
+    }
+
+    _emptyEpic() {
+        return { name: '', summary: '', description: '', startDate: '', endDate: '' };
     }
 
     _enrichSubtask(sub) {
@@ -323,5 +342,125 @@ export default class AoTicketItem extends LightningElement {
             composed : true,
             detail   : { ticketId: this.ticket.Id, field, value },
         }));
+    }
+
+    // ── Epic Parent Update Actions ────────────────────────────────────────────
+
+    handleOpenEpicModal() {
+        this.modalError = null;
+        this.selectedEpicId = this.ticket.Epic__c || '';
+        this._prepareEpicsForSelection();
+    }
+
+    _prepareEpicsForSelection() {
+        // Use pre-loaded epics from @api epics (passed from parent)
+        const epics = this.epics || [];
+        this.hasEpics = epics.length > 0;
+        this.epicOptions = epics.map(e => ({ label: e.Name + ' - ' + e.Summary__c, value: e.Id }));
+        this.showEpicModal = true;
+    }
+
+    handleCloseEpicModal() {
+        this.showEpicModal = false;
+        this.modalError = null;
+    }
+
+    handleEpicSelectionChange(event) {
+        this.selectedEpicId = event.detail.value;
+    }
+
+    handleAssignEpic() {
+        if (!this.selectedEpicId) {
+            this.modalError = 'Please select an epic.';
+            return;
+        }
+        const ticketId = this.ticket.Id;
+        const epicId = this.selectedEpicId;
+        updateTicketEpic({ ticketId, epicId })
+            .then(res => {
+                if (!res.success) {
+                    this.modalError = res.message;
+                    return;
+                }
+                const selectedEpic = this.epicOptions.find(e => e.value === epicId);
+                this.ticket = { ...this.ticket, Epic__c: epicId, epicName: selectedEpic ? selectedEpic.label.split(' - ')[0] : '' };
+                this.showEpicModal = false;
+                this._notifyUpdate('Epic__c', epicId);
+            })
+            .catch(err => {
+                this.modalError = err.body?.message || 'Error updating epic parent';
+            });
+    }
+
+    handleOpenCreateEpicFromEmpty() {
+        this.showEpicModal = false;
+        this.newEpic = this._emptyEpic();
+        this.modalError = null;
+        this.showCreateEpicModal = true;
+    }
+
+    handleOpenCreateEpicFromSelection() {
+        this.showEpicModal = false;
+        this.newEpic = this._emptyEpic();
+        this.modalError = null;
+        this.showCreateEpicModal = true;
+    }
+
+    handleCloseCreateEpicModal() {
+        this.showCreateEpicModal = false;
+        this.modalError = null;
+        // Re-open the epic selection modal if we came from there
+        if (this.epicOptions.length > 0 || !this.hasEpics) {
+            this.showEpicModal = true;
+        }
+    }
+
+    handleNewEpicChange(event) {
+        const field = event.target.dataset.field;
+        const val = event.detail ? event.detail.value : event.target.value;
+        this.newEpic = { ...this.newEpic, [field]: val };
+    }
+
+    handleCreateEpicSubmit() {
+        const { name, summary, description, startDate, endDate } = this.newEpic;
+        if (!name) {
+            this.modalError = 'Epic Name is required.';
+            return;
+        }
+        if (!summary) {
+            this.modalError = 'Summary is required.';
+            return;
+        }
+        createEpic({
+            name,
+            summary,
+            projectId: this.projectId,
+            description: description || null,
+            startDate: startDate ? new Date(startDate).toISOString() : null,
+            endDate: endDate ? new Date(endDate).toISOString() : null
+        })
+            .then(res => {
+                if (!res.success) {
+                    this.modalError = res.message;
+                    return;
+                }
+                const createdEpic = res.data;
+                // Automatically assign the newly created epic to this ticket
+                return updateTicketEpic({ ticketId: this.ticket.Id, epicId: createdEpic.Id });
+            })
+            .then(res => {
+                if (res && !res.success) {
+                    this.modalError = res.message;
+                    return;
+                }
+                if (res) {
+                    this.ticket = { ...this.ticket, Epic__c: res.data.Epic__c, epicName: this.newEpic.name };
+                    this.showCreateEpicModal = false;
+                    this._notifyUpdate('Epic__c', res.data.Epic__c);
+                }
+            })
+            .catch(err => {
+                this.modalError = err.body?.message || 'Error creating epic and assigning to ticket';
+            });
     }
 }

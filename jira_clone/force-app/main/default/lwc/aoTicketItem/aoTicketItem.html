@@ -70,6 +70,116 @@
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
+    <!-- Epic Parent Update Modal -->
+    <template if:true={showEpicModal}>
+        <section role="dialog" class="slds-modal slds-fade-in-open epic-modal">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2>{epicModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <!-- Empty State: No Epics Exist -->
+                    <template if:false={hasEpics}>
+                        <div class="epic-empty-state">
+                            <lightning-icon icon-name="utility:einstein" size="large" class="empty-icon"></lightning-icon>
+                            <h3>No Epics Found</h3>
+                            <p>There are no epics available for this project. Create your first epic to assign this ticket.</p>
+                            <button class="create-first-epic-btn" onclick={handleOpenCreateEpicFromEmpty}>
+                                Create First Epic
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Epic Selection: Epics Exist -->
+                    <template if:true={hasEpics}>
+                        <div class="epic-selection">
+                            <p class="epic-hint">Select an epic to assign as the parent for this ticket:</p>
+                            <lightning-combobox
+                                label="Epic"
+                                placeholder="Choose an Epic..."
+                                value={selectedEpicId}
+                                options={epicOptions}
+                                onchange={handleEpicSelectionChange}>
+                            </lightning-combobox>
+                            <div class="or-divider">
+                                <span>or</span>
+                            </div>
+                            <button class="create-epic-link" onclick={handleOpenCreateEpicFromSelection}>
+                                Create a new epic
+                            </button>
+                        </div>
+                    </template>
+
+                    <template if:true={modalError}>
+                        <p class="modal-error">{modalError}</p>
+                    </template>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseEpicModal}></lightning-button>
+                    <template if:true={hasEpics}>
+                        <lightning-button label="Assign Epic" variant="brand" onclick={handleAssignEpic} disabled={isEpicAssignDisabled}></lightning-button>
+                    </template>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Create Epic Modal -->
+    <template if:true={showCreateEpicModal}>
+        <section role="dialog" class="slds-modal slds-fade-in-open epic-modal">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2>Create Epic</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input
+                        label="Epic Name *"
+                        value={newEpic.name}
+                        data-field="name"
+                        onchange={handleNewEpicChange}
+                        required>
+                    </lightning-input>
+                    <lightning-input
+                        label="Summary *"
+                        value={newEpic.summary}
+                        data-field="summary"
+                        onchange={handleNewEpicChange}
+                        required>
+                    </lightning-input>
+                    <lightning-input
+                        label="Description"
+                        value={newEpic.description}
+                        data-field="description"
+                        onchange={handleNewEpicChange}>
+                    </lightning-input>
+                    <lightning-input
+                        type="date"
+                        label="Start Date"
+                        value={newEpic.startDate}
+                        data-field="startDate"
+                        onchange={handleNewEpicChange}>
+                    </lightning-input>
+                    <lightning-input
+                        type="date"
+                        label="End Date"
+                        value={newEpic.endDate}
+                        data-field="endDate"
+                        onchange={handleNewEpicChange}>
+                    </lightning-input>
+                    <template if:true={modalError}>
+                        <p class="modal-error">{modalError}</p>
+                    </template>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseCreateEpicModal}></lightning-button>
+                    <lightning-button label="Create" variant="brand" onclick={handleCreateEpicSubmit}></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
     <!-- ═══════════════════════════════════════════
          TICKET ROW  (matches design in screenshot)
          [✓] [name / type] ─────── [state▼] [!date] [-priority] [assignee icon]
@@ -146,7 +256,7 @@
             </div>
 
             <!-- 5. Epic parent (! date badge — warning if no epic) -->
-            <div class="ticket-epic">
+            <div class="ticket-epic" onclick={handleOpenEpicModal} title="Click to assign epic">
                 <template if:true={ticket.Epic__c}>
                     <span class="epic-badge">{ticket.epicName}</span>
                 </template>

@@ -24,6 +24,7 @@ export default class ManageBacklog extends LightningElement {
     @track statusOptions    = [];
     @track memberOptions    = [];
     @track ticketTypeOptions = [];
+    @track epics            = [];
     priorityOptions         = PRIORITY_OPTIONS;
 
     // ── Page state ────────────────────────────────────────────────────────────
@@ -77,6 +78,9 @@ export default class ManageBacklog extends LightningElement {
                 if (!res.success) { this.errorMessage = res.message; return; }
 
                 const { tickets = [], sprints = [], status = [], members = [], epics = [], ticketTypes = [] } = res.data;
+
+                // Store epics for child components
+                this.epics = epics;
 
                 // Build option arrays for child components
                 this.statusOptions      = status.map(s => ({ label: s.Name, value: s.Id }));

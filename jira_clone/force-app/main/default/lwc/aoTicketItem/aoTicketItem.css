@@ -376,3 +376,125 @@
         display: none;
     }
 }
+
+/* ── Epic Modal Styles ───────────────────────────────────────────────────── */
+.epic-modal .slds-modal__container {
+    max-width: 30rem;
+}
+
+/* Epic Empty State */
+.epic-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.epic-empty-state .empty-icon {
+    --slds-g-color-neutral-base-100: #d8edff;
+    margin-bottom: 1rem;
+}
+
+.epic-empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #181818;
+    margin: 0 0 0.5rem 0;
+}
+
+.epic-empty-state p {
+    font-size: 0.875rem;
+    color: #706e6b;
+    margin: 0 0 1.5rem 0;
+    max-width: 24rem;
+    line-height: 1.5;
+}
+
+.create-first-epic-btn {
+    background-color: #0176d3;
+    color: #ffffff;
+    border: none;
+    border-radius: 0.25rem;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.create-first-epic-btn:hover {
+    background-color: #015ba7;
+}
+
+.create-first-epic-btn:focus {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+}
+
+/* Epic Selection */
+.epic-selection {
+    padding: 0.5rem 0;
+}
+
+.epic-hint {
+    font-size: 0.875rem;
+    color: #3e3e3c;
+    margin-bottom: 1rem;
+}
+
+.or-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #706e6b;
+    font-size: 0.875rem;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #dddbda;
+}
+
+.or-divider span {
+    padding: 0 0.75rem;
+}
+
+.create-epic-link {
+    background: none;
+    border: none;
+    color: #0176d3;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    transition: color 0.15s ease;
+}
+
+.create-epic-link:hover {
+    color: #015ba7;
+}
+
+.create-epic-link:focus {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+    border-radius: 0.125rem;
+}
+
+/* Make ticket-epic clickable */
+.ticket-epic {
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.ticket-epic:hover {
+    opacity: 0.8;
+}
+
+.ticket-epic:hover .epic-missing-badge {
+    color: #ea001e;
+}

@@ -499,6 +499,24 @@ public with sharing class ManageBacklogController {
         }
     }
 
+    // ========== Epic Parent Update Actions ==========
+
+    @AuraEnabled
+    public static APIResponse updateTicketEpic(String ticketId, String epicId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+
+            Ticket__c existing = TicketService.findTicketById(ticketId);
+            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+
+            existing.Epic__c = epicId;
+            Ticket__c updated = TicketService.updateTicket(existing);
+            return new APIResponse(true, 'Ticket epic updated successfully', updated);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error updating ticket epic: ' + ex.getMessage());
+        }
+    }
+
     // ========== User Actions ==========
 
     @AuraEnabled(cacheable=true)
