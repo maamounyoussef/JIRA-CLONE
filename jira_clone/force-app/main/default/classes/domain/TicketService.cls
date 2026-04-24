@@ -167,6 +167,29 @@ public with sharing class TicketService {
         }
     }
 
+    public static Map<Id, List<Ticket__c>> getActiveTicketsBySprintsOrderByPriorityAsc(List<Id> sprintIds) {
+        try {
+            Map<Id, List<Ticket__c>> result = new Map<Id, List<Ticket__c>>();
+            for (Id sid : sprintIds) result.put(sid, new List<Ticket__c>());
+
+            if (sprintIds.isEmpty()) return result;
+
+            List<Ticket__c> tickets = [
+                SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
+                       AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
+                       StartDate__c, EndDate__c
+                FROM Ticket__c
+                WHERE Sprint__c IN :sprintIds AND RecordStatus__c = 'active'
+                ORDER BY Priority__c ASC, EndDate__c DESC
+            ];
+
+            for (Ticket__c t : tickets) result.get(t.Sprint__c).add(t);
+            return result;
+        } catch (Exception ex) {
+            throw new ServiceException('Error querying tickets by sprints: ' + ex.getMessage());
+        }
+    }
+
 
     public static Ticket__c updateTicketPriority(String ticketId, String priority) {
         try {

@@ -77,17 +77,14 @@ export default class ManageBacklog extends LightningElement {
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
 
-                const { tickets = [], sprints = [], status = [], members = [], epics = [], ticketTypes = [] } = res.data;
+                const { sprintTickets = {}, sprints = [], status = [], members = [], epics = [], ticketTypes = [] } = res.data;
 
-                // Store epics for child components
                 this.epics = epics;
 
-                // Build option arrays for child components
-                this.statusOptions      = status.map(s => ({ label: s.Name, value: s.Id }));
-                this.memberOptions      = members.map(m => ({ label: m.Name, value: m.Id }));
-                this.ticketTypeOptions  = ticketTypes.map(t => ({ label: t.Name, value: t.Id }));
+                this.statusOptions     = status.map(s => ({ label: s.Name, value: s.Id }));
+                this.memberOptions     = members.map(m => ({ label: m.Name, value: m.Id }));
+                this.ticketTypeOptions = ticketTypes.map(t => ({ label: t.Name, value: t.Id }));
 
-                // Build quick look-up maps for enrichment
                 const epicMap       = Object.fromEntries(epics.map(e => [e.Id, e.Name]));
                 const ticketTypeMap = Object.fromEntries(ticketTypes.map(t => [t.Id, t.Name]));
                 const memberMap     = Object.fromEntries(members.map(m => [m.Id, m.Name]));
@@ -96,21 +93,18 @@ export default class ManageBacklog extends LightningElement {
                     ...t,
                     epicName      : epicMap[t.Epic__c]              || '',
                     ticketTypeName: ticketTypeMap[t.Ticket_Type__c] || '',
-                    assigneeName  : memberMap[t.AssignedTo__c]       || '',
+                    assigneeName  : memberMap[t.AssignedTo__c]      || '',
                     isSelected    : false,
                 });
 
-                const enriched = tickets.map(enrich);
+                this.backlogTickets = [];
 
-                // Backlog = no sprint
-                this.backlogTickets = enriched.filter(t => !t.Sprint__c);
-
-                // Sprints with their tickets
+                // Sprints already carry their tickets from the saga response (ordered by priority ASC, end date DESC)
                 this.sprints = sprints.map(s => ({
                     ...s,
                     endDate    : this._calcEndDate(s.StartDate__c, s.Duration__c),
                     isComplete : s.RecordStatus__c === 'complete',
-                    tickets    : enriched.filter(t => t.Sprint__c === s.Id),
+                    tickets    : (sprintTickets[s.Id] || []).map(enrich),
                     get hasTickets() { return this.tickets.length > 0; },
                 }));
             })
