@@ -14,12 +14,6 @@ public with sharing class ManageBacklogController {
             // Saga step 1: load future sprints
             List<Sprint__c> sprints = SprintService.loadFuturedSprints(projectId);
 
-            // Saga step 2: for each sprint, load its active tickets ordered by priority ASC, end date DESC
-            List<Id> sprintIds = new List<Id>();
-            for (Sprint__c s : sprints) sprintIds.add(s.Id);
-            // I keep SprintTickets separatly to reduce load in the backEnd and let this work to frontEnd
-            Map<Id, List<Ticket__c>> sprintTickets = TicketService.getActiveTicketsBySprintsOrderByPriorityAsc(sprintIds);
-
             List<Status__c> statuses = StatusService.loadStatuses(projectId);
             List<TicketType__c> ticketTypes = TicketTypeService.loadTicketTypes(projectId);
             List<ProjectMember__c> members = ProjectMemberService.loadProjectMembers(projectId);
@@ -27,7 +21,6 @@ public with sharing class ManageBacklogController {
 
             Map<String, Object> data = new Map<String, Object>{
                 'sprints' => sprints,
-                'sprintTickets' => sprintTickets,
                 'status' => statuses,
                 'ticketTypes' => ticketTypes,
                 'members' => members,
@@ -220,6 +213,17 @@ public with sharing class ManageBacklogController {
             return new APIResponse(true, 'Sprint started');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error starting sprint: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketsBySprint(String sprintId, Integer offset, Integer pageSize) {
+        try {
+            if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
+            List<Ticket__c> tickets = TicketService.getActiveTicketsBySprintOrderByPriorityAsc(sprintId, offset, pageSize);
+            return new APIResponse(true, 'Tickets loaded', tickets);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading tickets by sprint: ' + ex.getMessage());
         }
     }
 

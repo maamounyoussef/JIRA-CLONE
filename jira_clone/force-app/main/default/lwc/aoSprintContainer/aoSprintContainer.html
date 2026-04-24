@@ -1,0 +1,75 @@
+<template>
+    <div class="sprint-container">
+
+        <!-- Sprint Header -->
+        <div class="sprint-header">
+            <button class="toggle-btn" onclick={handleToggle}>
+                <lightning-icon icon-name={chevronIcon} size="x-small"></lightning-icon>
+            </button>
+            <span class="sprint-name">{sprint.Name}</span>
+            <span class="sprint-dates">{sprint.StartDate__c} → {_endDate}</span>
+            <span class="sprint-status-badge">{sprint.RecordStatus__c}</span>
+
+            <template if:false={sprint.isComplete}>
+                <lightning-button label="Start"    variant="brand"       onclick={handleStart}></lightning-button>
+            </template>
+            <lightning-button label="Complete" variant="neutral"     onclick={handleComplete}></lightning-button>
+            <lightning-button label="Edit"     variant="neutral"     onclick={handleEdit}></lightning-button>
+            <lightning-button label="Delete"   variant="destructive" onclick={handleDelete}></lightning-button>
+            <lightning-button label="+ Ticket" variant="neutral"     onclick={handleAddTicket}></lightning-button>
+        </div>
+
+        <!-- Collapsible body -->
+        <template if:true={isExpanded}>
+            <template if:true={sprint.Goal__c}>
+                <p class="sprint-goal">{sprint.Goal__c}</p>
+            </template>
+
+            <template if:true={isLoadingTickets}>
+                <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
+            </template>
+
+            <template for:each={_tickets} for:item="ticket">
+                <c-ao-ticket-item
+                    key={ticket.Id}
+                    ticket={ticket}
+                    status-options={statusOptions}
+                    member-options={memberOptions}
+                    priority-options={priorityOptions}
+                    project-id={projectId}
+                    epics={epics}
+                    onticketdeleted={handleTicketDeleted}
+                    onticketupdated={handleTicketUpdated}>
+                </c-ao-ticket-item>
+            </template>
+
+            <template if:false={hasTickets}>
+                <template if:false={isLoadingTickets}>
+                    <p class="empty-sprint">No tickets in this sprint.</p>
+                </template>
+            </template>
+
+           <!-- Pagination footer — always visible when expanded -->
+            <div class="pagination-footer">
+                <lightning-button-icon
+                    icon-name="utility:chevronleft"
+                    variant="border-filled"
+                    size="small"
+                    alternative-text="Previous page"
+                    disabled={isFirstPage}
+                    onclick={handlePrevPage}>
+                </lightning-button-icon>
+                <span class="page-indicator">Page {currentPage}</span>
+                <lightning-button-icon
+                    icon-name="utility:chevronright"
+                    variant="border-filled"
+                    size="small"
+                    alternative-text="Next page"
+                    disabled={isLastPage}
+                    onclick={handleNextPage}>
+                </lightning-button-icon>
+            </div>
+        </template>
+         
+    </div>
+</template>

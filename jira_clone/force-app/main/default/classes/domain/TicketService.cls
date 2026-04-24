@@ -167,23 +167,46 @@ public with sharing class TicketService {
         }
     }
 
-    public static Map<Id, List<Ticket__c>> getActiveTicketsBySprintsOrderByPriorityAsc(List<Id> sprintIds) {
+    private static final Integer DEFAULT_PAGE_SIZE = 5;
+
+    public static List<Ticket__c> getActiveTicketsBySprintOrderByPriorityAsc(Id sprintId, Integer offset, Integer pageSize) {
         try {
-            Map<Id, List<Ticket__c>> result = new Map<Id, List<Ticket__c>>();
-            for (Id sid : sprintIds) result.put(sid, new List<Ticket__c>());
-
-            if (sprintIds.isEmpty()) return result;
-
-            List<Ticket__c> tickets = [
+            if (sprintId == null) throw new ServiceException('sprintId is required');
+            Integer currentOffset   = (offset   != null && offset   >= 0) ? offset   : 0;
+            Integer currentPageSize = (pageSize != null && pageSize >  0) ? pageSize : DEFAULT_PAGE_SIZE;
+            return [
                 SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
                        StartDate__c, EndDate__c
                 FROM Ticket__c
-                WHERE Sprint__c IN :sprintIds AND RecordStatus__c = 'active'
+                WHERE Sprint__c = :sprintId AND RecordStatus__c = 'active'
                 ORDER BY Priority__c ASC, EndDate__c DESC
+                LIMIT :currentPageSize OFFSET :currentOffset
             ];
+        } catch (Exception ex) {
+            throw new ServiceException('Error querying tickets by sprint: ' + ex.getMessage());
+        }
+    }
 
-            for (Ticket__c t : tickets) result.get(t.Sprint__c).add(t);
+   public static Map<Id, List<Ticket__c>> getActiveTicketsBySprintsOrderByPriorityAsc(List<Id> sprintIds) {
+        try {
+            Map<Id, List<Ticket__c>> result = new Map<Id, List<Ticket__c>>();
+            
+            if (sprintIds == null || sprintIds.isEmpty()) return result;
+            
+            for (Id sid : sprintIds) {
+                List<Ticket__c> tickets = [
+                    SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
+                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
+                        StartDate__c, EndDate__c
+                    FROM Ticket__c
+                    WHERE Sprint__c = :sid AND RecordStatus__c = 'active'
+                    ORDER BY Priority__c ASC, EndDate__c DESC
+                    LIMIT 3
+                ];
+                result.put(sid, tickets);
+            }
+            
             return result;
         } catch (Exception ex) {
             throw new ServiceException('Error querying tickets by sprints: ' + ex.getMessage());

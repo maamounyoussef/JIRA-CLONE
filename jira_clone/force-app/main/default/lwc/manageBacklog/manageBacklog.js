@@ -18,14 +18,14 @@ const PRIORITY_OPTIONS = [
 
 export default class ManageBacklog extends LightningElement {
 
-    // ── Shared lookup data (passed down to c-ao-ticket-item) ─────────────────
-    @track sprints          = [];
-    @track backlogTickets   = [];
-    @track statusOptions    = [];
-    @track memberOptions    = [];
+    // ── Shared lookup data ────────────────────────────────────────────────────
+    @track sprints           = [];
+    @track backlogTickets    = [];
+    @track statusOptions     = [];
+    @track memberOptions     = [];
     @track ticketTypeOptions = [];
-    @track epics            = [];
-    priorityOptions         = PRIORITY_OPTIONS;
+    @track epics             = [];
+    priorityOptions          = PRIORITY_OPTIONS;
 
     // ── Page state ────────────────────────────────────────────────────────────
     isLoading    = false;
@@ -33,14 +33,14 @@ export default class ManageBacklog extends LightningElement {
     modalError   = null;
     _projectId   = null;
 
-    // ── Confirm dialog (for sprint-level destructive actions) ─────────────────
+    // ── Confirm dialog ────────────────────────────────────────────────────────
     @track showConfirmDialog = false;
     confirmMessage           = '';
     _pendingAction           = null;
 
     // ── Create Ticket modal ───────────────────────────────────────────────────
     @track showCreateTicketModal = false;
-    newTicket = this._emptyTicket();
+    newTicket          = this._emptyTicket();
     _newTicketSprintId = null;
 
     // ── Sprint modal (create / edit) ──────────────────────────────────────────
@@ -77,46 +77,22 @@ export default class ManageBacklog extends LightningElement {
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
 
-                const { sprintTickets = {}, sprints = [], status = [], members = [], epics = [], ticketTypes = [] } = res.data;
+                const { sprints = [], status = [], members = [], epics = [], ticketTypes = [] } = res.data;
 
-                this.epics = epics;
-
+                this.epics             = epics;
                 this.statusOptions     = status.map(s => ({ label: s.Name, value: s.Id }));
                 this.memberOptions     = members.map(m => ({ label: m.Name, value: m.Id }));
                 this.ticketTypeOptions = ticketTypes.map(t => ({ label: t.Name, value: t.Id }));
 
-                const epicMap       = Object.fromEntries(epics.map(e => [e.Id, e.Name]));
-                const ticketTypeMap = Object.fromEntries(ticketTypes.map(t => [t.Id, t.Name]));
-                const memberMap     = Object.fromEntries(members.map(m => [m.Id, m.Name]));
-
-                const enrich = t => ({
-                    ...t,
-                    epicName      : epicMap[t.Epic__c]              || '',
-                    ticketTypeName: ticketTypeMap[t.Ticket_Type__c] || '',
-                    assigneeName  : memberMap[t.AssignedTo__c]      || '',
-                    isSelected    : false,
-                });
-
-                this.backlogTickets = [];
-
-                // Sprints already carry their tickets from the saga response (ordered by priority ASC, end date DESC)
                 this.sprints = sprints.map(s => ({
                     ...s,
-                    endDate    : this._calcEndDate(s.StartDate__c, s.Duration__c),
-                    isComplete : s.RecordStatus__c === 'complete',
-                    tickets    : (sprintTickets[s.Id] || []).map(enrich),
-                    get hasTickets() { return this.tickets.length > 0; },
+                    isComplete: s.RecordStatus__c === 'complete',
                 }));
+
+                this.backlogTickets = [];
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Failed to load backlog data'; })
             .finally(() => { this.isLoading = false; });
-    }
-
-    _calcEndDate(startDate, duration) {
-        if (!startDate || !duration) return '';
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + parseInt(duration, 10));
-        return d.toISOString().split('T')[0];
     }
 
     _emptyTicket() {
@@ -129,9 +105,8 @@ export default class ManageBacklog extends LightningElement {
 
     clearError() { this.errorMessage = null; }
 
-    // ── Ticket events bubbled from c-ao-ticket-item ───────────────────────────
+    // ── Ticket events bubbled from c-ao-sprint-container / c-ao-ticket-item ───
 
-    /** Child fires this when user checks/unchecks the ticket checkbox */
     handleTicketSelect(event) {
         const { ticketId, selected } = event.detail;
         if (selected) {
@@ -139,37 +114,28 @@ export default class ManageBacklog extends LightningElement {
         } else {
             this._selectedTicketIds.delete(ticketId);
         }
-        this._selectedTicketIds = new Set(this._selectedTicketIds); // trigger reactivity
+        this._selectedTicketIds = new Set(this._selectedTicketIds);
     }
 
-    /** Child fires this after a successful delete */
     handleTicketDeleted(event) {
         const { ticketId } = event.detail;
-        this._removeTicket(ticketId);
+        this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
         this._selectedTicketIds.delete(ticketId);
         this._selectedTicketIds = new Set(this._selectedTicketIds);
     }
 
-    /** Child fires this after any field update so parent list stays in sync */
     handleTicketUpdated(event) {
         const { ticketId, field, value } = event.detail;
         this.backlogTickets = this.backlogTickets.map(t =>
             t.Id === ticketId ? { ...t, [field]: value } : t
         );
-        this.sprints = this.sprints.map(s => ({
-            ...s,
-            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, [field]: value } : t),
-        }));
     }
 
     // ── Bulk delete ───────────────────────────────────────────────────────────
     handleClearSelection() {
         this._selectedTicketIds = new Set();
         this.backlogTickets = this.backlogTickets.map(t => ({ ...t, isSelected: false }));
-        this.sprints = this.sprints.map(s => ({
-            ...s,
-            tickets: s.tickets.map(t => ({ ...t, isSelected: false })),
-        }));
+        this.template.querySelectorAll('c-ao-sprint-container').forEach(c => c.clearSelection());
     }
 
     handleBulkDelete() {
@@ -178,19 +144,12 @@ export default class ManageBacklog extends LightningElement {
             deleteTickets({ ticketIds: ids })
                 .then(res => {
                     if (!res.success) { this.errorMessage = res.message; return; }
-                    ids.forEach(id => this._removeTicket(id));
+                    this.backlogTickets = this.backlogTickets.filter(t => !ids.includes(t.Id));
                     this._selectedTicketIds = new Set();
+                    this.template.querySelectorAll('c-ao-sprint-container').forEach(c => c.refreshTickets());
                 })
                 .catch(err => { this.errorMessage = err.body?.message || 'Error deleting tickets'; });
         });
-    }
-
-    _removeTicket(ticketId) {
-        this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
-        this.sprints = this.sprints.map(s => ({
-            ...s,
-            tickets: s.tickets.filter(t => t.Id !== ticketId),
-        }));
     }
 
     // ── Confirm helpers ───────────────────────────────────────────────────────
@@ -212,17 +171,10 @@ export default class ManageBacklog extends LightningElement {
 
     // ── Create Ticket ─────────────────────────────────────────────────────────
     handleOpenCreateTicketForBacklog() {
-        this._newTicketSprintId      = null;
-        this.newTicket               = this._emptyTicket();
-        this.modalError              = null;
-        this.showCreateTicketModal   = true;
-    }
-
-    handleOpenCreateTicketForSprint(event) {
-        this._newTicketSprintId      = event.currentTarget.dataset.sprintId;
-        this.newTicket               = this._emptyTicket();
-        this.modalError              = null;
-        this.showCreateTicketModal   = true;
+        this._newTicketSprintId    = null;
+        this.newTicket             = this._emptyTicket();
+        this.modalError            = null;
+        this.showCreateTicketModal = true;
     }
 
     handleCloseCreateTicketModal() {
@@ -237,9 +189,8 @@ export default class ManageBacklog extends LightningElement {
 
     handleCreateTicketSubmit() {
         const { name, summary, description, storyPoint, ticketTypeId, currentStateId, priority } = this.newTicket;
-        if (!name)          { this.modalError = 'Name is required.';         return; }
-        if (!ticketTypeId)  { this.modalError = 'Ticket Type is required.';  return; }
-        // if (!currentStateId){ this.modalError = 'State is required.';        return; }
+        if (!name)         { this.modalError = 'Name is required.';        return; }
+        if (!ticketTypeId) { this.modalError = 'Ticket Type is required.'; return; }
 
         createTicket({
             name,
@@ -255,19 +206,18 @@ export default class ManageBacklog extends LightningElement {
         })
             .then(res => {
                 if (!res.success) { this.modalError = res.message; return; }
-                const enriched = {
-                    ...res.data,
-                    epicName      : '',
-                    ticketTypeName: this.ticketTypeOptions.find(o => o.value === ticketTypeId)?.label || '',
-                    isSelected    : false,
-                };
                 if (!this._newTicketSprintId) {
+                    const enriched = {
+                        ...res.data,
+                        epicName      : '',
+                        ticketTypeName: this.ticketTypeOptions.find(o => o.value === ticketTypeId)?.label || '',
+                        isSelected    : false,
+                    };
                     this.backlogTickets = [...this.backlogTickets, enriched];
                 } else {
                     const sid = this._newTicketSprintId;
-                    this.sprints = this.sprints.map(s =>
-                        s.Id === sid ? { ...s, tickets: [...s.tickets, enriched] } : s
-                    );
+                    const container = this.template.querySelector(`[data-sprint-id="${sid}"]`);
+                    if (container) container.refreshTickets();
                 }
                 this.showCreateTicketModal = false;
                 this.newTicket             = this._emptyTicket();
@@ -275,18 +225,16 @@ export default class ManageBacklog extends LightningElement {
             .catch(err => { this.modalError = err.body?.message || 'Error creating ticket'; });
     }
 
-    // ── Create Sprint ─────────────────────────────────────────────────────────
-    handleOpenCreateSprint() {
-        this._editingSprintId       = null;
-        this.sprintModalTitle       = 'Create Sprint';
-        this.sprintModalSubmitLabel = 'Create';
-        this.sprintForm             = this._emptySprintForm();
-        this.modalError             = null;
-        this.showSprintModal        = true;
+    // ── Sprint events from c-ao-sprint-container ──────────────────────────────
+    handleSprintAddTicket(event) {
+        this._newTicketSprintId    = event.detail.sprintId;
+        this.newTicket             = this._emptyTicket();
+        this.modalError            = null;
+        this.showCreateTicketModal = true;
     }
 
-    handleEditSprint(event) {
-        const sprintId = event.currentTarget.dataset.sprintId;
+    handleSprintEdit(event) {
+        const sprintId = event.detail.sprintId;
         const sprint   = this.sprints.find(s => s.Id === sprintId);
         if (!sprint) return;
         this._editingSprintId       = sprintId;
@@ -300,6 +248,55 @@ export default class ManageBacklog extends LightningElement {
         };
         this.modalError      = null;
         this.showSprintModal = true;
+    }
+
+    handleSprintDelete(event) {
+        const sprintId = event.detail.sprintId;
+        this._confirm('Delete this sprint? Tickets will be moved to backlog.', () => {
+            deleteSprint({ sprintId })
+                .then(res => {
+                    if (!res.success) { this.errorMessage = res.message; return; }
+                    this.sprints = this.sprints.filter(s => s.Id !== sprintId);
+                    this._loadData();
+                })
+                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting sprint'; });
+        });
+    }
+
+    handleSprintComplete(event) {
+        const sprintId = event.detail.sprintId;
+        this._confirm('Mark this sprint as complete?', () => {
+            completeSprint({ sprintId })
+                .then(res => {
+                    if (!res.success) { this.errorMessage = res.message; return; }
+                    this.sprints = this.sprints.map(s =>
+                        s.Id === sprintId ? { ...s, RecordStatus__c: 'complete', isComplete: true } : s
+                    );
+                })
+                .catch(err => { this.errorMessage = err.body?.message || 'Error completing sprint'; });
+        });
+    }
+
+    handleSprintStart(event) {
+        const sprintId = event.detail.sprintId;
+        this._confirm('Start this sprint?', () => {
+            startSprint({ sprintId })
+                .then(res => {
+                    if (!res.success) { this.errorMessage = res.message; return; }
+                    this.sprints = this.sprints.filter(s => s.Id !== sprintId);
+                })
+                .catch(err => { this.errorMessage = err.body?.message || 'Error starting sprint'; });
+        });
+    }
+
+    // ── Create Sprint ─────────────────────────────────────────────────────────
+    handleOpenCreateSprint() {
+        this._editingSprintId       = null;
+        this.sprintModalTitle       = 'Create Sprint';
+        this.sprintModalSubmitLabel = 'Create';
+        this.sprintForm             = this._emptySprintForm();
+        this.modalError             = null;
+        this.showSprintModal        = true;
     }
 
     handleCloseSprintModal() {
@@ -331,7 +328,7 @@ export default class ManageBacklog extends LightningElement {
                     const sid = this._editingSprintId;
                     this.sprints = this.sprints.map(s =>
                         s.Id === sid
-                            ? { ...s, Name: name, Duration__c: duration, StartDate__c: startDate, Goal__c: goal, endDate: this._calcEndDate(startDate, duration) }
+                            ? { ...s, Name: name, Duration__c: duration, StartDate__c: startDate, Goal__c: goal }
                             : s
                     );
                     this.showSprintModal = false;
@@ -349,60 +346,12 @@ export default class ManageBacklog extends LightningElement {
                     if (!res.success) { this.modalError = res.message; return; }
                     this.sprints = [...this.sprints, {
                         ...res.data,
-                        endDate    : this._calcEndDate(startDate, parseInt(duration, 10)),
-                        isComplete : false,
-                        tickets    : [],
-                        hasTickets : false,
+                        isComplete: false,
                     }];
                     this.showSprintModal = false;
                     this.sprintForm      = this._emptySprintForm();
                 })
                 .catch(err => { this.modalError = err.body?.message || 'Error creating sprint'; });
         }
-    }
-
-    // ── Complete Sprint ───────────────────────────────────────────────────────
-    handleCompleteSprint(event) {
-        const sprintId = event.currentTarget.dataset.sprintId;
-        this._confirm('Mark this sprint as complete?', () => {
-            completeSprint({ sprintId })
-                .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
-                    this.sprints = this.sprints.map(s =>
-                        s.Id === sprintId ? { ...s, RecordStatus__c: 'complete', isComplete: true } : s
-                    );
-                })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error completing sprint'; });
-        });
-    }
-
-    // ── Delete Sprint ─────────────────────────────────────────────────────────
-    handleDeleteSprint(event) {
-        const sprintId = event.currentTarget.dataset.sprintId;
-        this._confirm('Delete this sprint? Tickets will be moved to backlog.', () => {
-            deleteSprint({ sprintId })
-                .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
-                    const sprint   = this.sprints.find(s => s.Id === sprintId);
-                    const orphaned = sprint ? sprint.tickets.map(t => ({ ...t, Sprint__c: null })) : [];
-                    this.backlogTickets = [...this.backlogTickets, ...orphaned];
-                    this.sprints        = this.sprints.filter(s => s.Id !== sprintId);
-                })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting sprint'; });
-        });
-    }
-
-    // ── Start Sprint ──────────────────────────────────────────────────────────
-    handleStartSprint(event) {
-        const sprintId = event.currentTarget.dataset.sprintId;
-        this._confirm('Start this sprint?', () => {
-            startSprint({ sprintId })
-                .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
-                    // Per spec: remove from current view after start
-                    this.sprints = this.sprints.filter(s => s.Id !== sprintId);
-                })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error starting sprint'; });
-        });
     }
 }

@@ -18,7 +18,7 @@
         </div>
     </template>
 
-    <!-- Confirmation Dialog (sprint-level actions only) -->
+    <!-- Confirmation Dialog -->
     <template if:true={showConfirmDialog}>
         <section role="dialog" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
@@ -101,47 +101,25 @@
             </template>
 
             <template for:each={sprints} for:item="sprint">
-                <div key={sprint.Id} class="sprint-container">
-
-                    <!-- Sprint Header -->
-                    <div class="sprint-header">
-                        <span class="sprint-name">{sprint.Name}</span>
-                        <span class="sprint-dates">{sprint.StartDate__c} → {sprint.endDate}</span>
-                        <span class="sprint-status-badge">{sprint.RecordStatus__c}</span>
-
-                        <template if:false={sprint.isComplete}>
-                            <lightning-button label="Start"    variant="brand"     data-sprint-id={sprint.Id} onclick={handleStartSprint}></lightning-button>
-                        </template>
-                        <lightning-button label="Complete" variant="neutral"   data-sprint-id={sprint.Id} onclick={handleCompleteSprint}></lightning-button>
-                        <lightning-button label="Edit"     variant="neutral"   data-sprint-id={sprint.Id} onclick={handleEditSprint}></lightning-button>
-                        <lightning-button label="Delete"   variant="destructive" data-sprint-id={sprint.Id} onclick={handleDeleteSprint}></lightning-button>
-                        <lightning-button label="+ Ticket" variant="neutral"   data-sprint-id={sprint.Id} onclick={handleOpenCreateTicketForSprint}></lightning-button>
-                    </div>
-
-                    <template if:true={sprint.Goal__c}>
-                        <p class="sprint-goal">{sprint.Goal__c}</p>
-                    </template>
-
-                    <!-- Sprint Tickets via aoTicketItem -->
-                    <template for:each={sprint.tickets} for:item="ticket">
-                        <c-ao-ticket-item
-                            key={ticket.Id}
-                            ticket={ticket}
-                            status-options={statusOptions}
-                            member-options={memberOptions}
-                            priority-options={priorityOptions}
-                            project-id={_projectId}
-                            epics={epics}
-                            onticketselect={handleTicketSelect}
-                            onticketdeleted={handleTicketDeleted}
-                            onticketupdated={handleTicketUpdated}>
-                        </c-ao-ticket-item>
-                    </template>
-
-                    <template if:false={sprint.hasTickets}>
-                        <p class="empty-sprint">No tickets in this sprint.</p>
-                    </template>
-                </div>
+                <c-ao-sprint-container
+                    key={sprint.Id}
+                    data-sprint-id={sprint.Id}
+                    sprint={sprint}
+                    status-options={statusOptions}
+                    member-options={memberOptions}
+                    priority-options={priorityOptions}
+                    ticket-type-options={ticketTypeOptions}
+                    project-id={_projectId}
+                    epics={epics}
+                    onsprintedit={handleSprintEdit}
+                    onsprintdelete={handleSprintDelete}
+                    onsprintcomplete={handleSprintComplete}
+                    onsprintstart={handleSprintStart}
+                    onsprintaddticket={handleSprintAddTicket}
+                    onticketselect={handleTicketSelect}
+                    onticketdeleted={handleTicketDeleted}
+                    onticketupdated={handleTicketUpdated}>
+                </c-ao-sprint-container>
             </template>
 
             <template if:false={hasSprints}>
