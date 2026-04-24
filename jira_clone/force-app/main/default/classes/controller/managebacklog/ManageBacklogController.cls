@@ -266,14 +266,13 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
-            if (String.isBlank(currentStateId)) return new APIResponse(false, 'currentStateId is required');
+            // if (String.isBlank(currentStateId)) return new APIResponse(false, 'currentStateId is required');
 
             Ticket__c ticket = new Ticket__c();
             ticket.Name = name;
             ticket.Summary__c = summary;
             ticket.Ticket_Type__c = ticketTypeId;
-            ticket.CurrentState__c = currentStateId;
-            if (String.isNotBlank(description)) ticket.Description__c = description;
+            if (description != null) ticket.Description__c = description;
             if (storyPoint != null) ticket.StoryPoint__c = storyPoint;
             if (String.isNotBlank(assignedToId)) ticket.AssignedTo__c = assignedToId;
             if (String.isNotBlank(epicId)) ticket.Epic__c = epicId;
@@ -482,7 +481,7 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(userId)) return new APIResponse(false, 'userId is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
-            ProjectMember__c created = ProjectMemberService.createMember(userId, projectId, recordStatus);
+            ProjectMember__c created = ProjectMemberService.createProjectMember(userId, projectId, recordStatus);
             return new APIResponse(true, 'Project member created successfully', created);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating project member: ' + ex.getMessage());

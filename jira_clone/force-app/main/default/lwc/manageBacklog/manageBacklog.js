@@ -245,7 +245,7 @@ export default class ManageBacklog extends LightningElement {
         const { name, summary, description, storyPoint, ticketTypeId, currentStateId, priority } = this.newTicket;
         if (!name)          { this.modalError = 'Name is required.';         return; }
         if (!ticketTypeId)  { this.modalError = 'Ticket Type is required.';  return; }
-        if (!currentStateId){ this.modalError = 'State is required.';        return; }
+        // if (!currentStateId){ this.modalError = 'State is required.';        return; }
 
         createTicket({
             name,

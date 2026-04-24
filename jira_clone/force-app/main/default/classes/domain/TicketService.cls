@@ -42,6 +42,22 @@ public with sharing class TicketService {
 
     public static Ticket__c createTicket(Ticket__c ticket) {
         try {
+            // check if  the Ticket type  exist 
+            List<TicketType__c> ticketTypes = [SELECT Id, Project__c FROM TicketType__c WHERE Id = :ticket.Ticket_Type__c LIMIT 1];
+            if (ticketTypes.isEmpty()) throw new ServiceException('Ticket type not found');
+            String projectId = ticketTypes[0].Project__c;
+            // check if the ticket type belong to a valid project
+            ProjectService.getProjectById(projectId);
+
+            if (String.isBlank(ticket.CurrentState__c)) {
+                ticket.CurrentState__c = getTodoStatus(projectId).Id;
+            } else {
+                List<Status__c> existing = [SELECT Id FROM Status__c WHERE Id = :ticket.CurrentState__c LIMIT 1];
+                if (existing.isEmpty()) {
+                    ticket.CurrentState__c = getTodoStatus(projectId).Id;
+                }
+            }
+
             ticket.RecordStatus__c = 'active';
             insert ticket;
             return ticket;
@@ -50,6 +66,17 @@ public with sharing class TicketService {
         } catch (Exception ex) {
             throw new ServiceException('Error creating ticket: ' + ex.getMessage());
         }
+    }
+
+    private static Status__c getTodoStatus(String projectId) {
+        List<Status__c> statuses = [
+            SELECT Id, Name
+            FROM Status__c
+            WHERE Project__c = :projectId AND Name = 'Todo'
+            LIMIT 1
+        ];
+        if (statuses.isEmpty()) throw new ServiceException('Todo status not found for project: ' + projectId);
+        return statuses[0];
     }
 
     public static Ticket__c updateTicket(Ticket__c ticket) {

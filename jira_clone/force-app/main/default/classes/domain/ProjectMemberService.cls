@@ -14,21 +14,7 @@ public with sharing class ProjectMemberService {
         ];
     }
     
-    public static ProjectMember__c createMember(String userId, String projectId, String recordStatus, String memberName) {
-        try {
-            ProjectMember__c pm = new ProjectMember__c(
-                Name          = memberName,
-                User__c       = userId,
-                Project__c    = projectId,
-                RecordStatus__c = recordStatus
-            );
 
-            insert pm;
-            return pm;
-        } catch (DmlException ex) {
-            throw new ServiceException('DML error: ' + ex.getMessage());
-        }
-    }
     
     // Use case methods
     public static ProjectMember__c createProjectMember(String userId, String projectId, String recordStatus) {
@@ -42,7 +28,15 @@ public with sharing class ProjectMemberService {
                 throw new ServiceException('Project does not exist');
             }
             String memberName = users[0].Name + '-' + generateUUID();
-            return createMember(userId, projectId, recordStatus, memberName);
+            ProjectMember__c pm = new ProjectMember__c(
+                Name          = memberName,
+                User__c       = userId,
+                Project__c    = projectId,
+                RecordStatus__c = recordStatus
+            );
+
+            insert pm;
+            return pm;
         } catch (Exception ex) {
             throw new ServiceException('Error creating project member: ' + ex.getMessage());
         }
