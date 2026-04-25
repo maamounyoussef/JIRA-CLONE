@@ -1,0 +1,108 @@
+When generating or organizing a LWC (Lightning Web Component), always apply
+the following architecture rules:
+
+──────────────────────────────────────────────
+FILE STRUCTURE:
+──────────────────────────────────────────────
+
+Every LWC component must follow this file layout:
+
+  myComponent/
+  ├── myComponent.js           → main controller (single entry point)
+  ├── myComponent.html         → template
+  ├── myComponent.css          → styles
+  │
+  ├── myComponentValidator.js  → root-level validator (shared validations)
+  │
+  ├── <domain>Validator.js     → one validator file per domain (always created,
+  │                              even if empty, with a comment explaining its purpose)
+  │
+  └── <domain>Utils.js         → one utils file per domain (always created,
+                                 even if empty, with a comment explaining its purpose)
+
+──────────────────────────────────────────────
+MAIN JS (myComponent.js):
+──────────────────────────────────────────────
+
+  - Acts as the single orchestrator for all domains.
+  - Imports from each domain's validator and utils.
+  - Structured using the section/subsection comment convention:
+
+      // ╔══════════════════════════════════════════════════════════════════════════╗
+      // ║                        <DOMAIN NAME> SECTION                            ║
+      // ╚══════════════════════════════════════════════════════════════════════════╝
+
+          // ─── PROPERTIES & STATE ───────────────────────────────────────────────
+          // ─── WIRE ─────────────────────────────────────────────────────────────
+          // ─── APEX CALLS ───────────────────────────────────────────────────────
+          // ─── EVENT HANDLERS ───────────────────────────────────────────────────
+          // ─── GETTERS ──────────────────────────────────────────────────────────
+
+  - Omit any subsection that has no members for that domain.
+  - Private helpers shared across domains go at the bottom under PRIVATE HELPERS.
+
+──────────────────────────────────────────────
+VALIDATOR FILES (<domain>Validator.js):
+──────────────────────────────────────────────
+
+  - One file per domain, always generated even if empty.
+  - Contains only pure validation functions (no Apex, no LWC imports).
+  - Each function returns a string error message or null.
+  - If empty, include this placeholder:
+
+      /**
+       * <Domain> Validator
+       * Validations for the <domain> domain.
+       * Add validate* functions here as the domain grows.
+       */
+
+  - Naming convention: validate<Entity><Field>() or validate<Entity>()
+  - Export every function individually (named exports, no default export).
+
+──────────────────────────────────────────────
+UTILS FILES (<domain>Utils.js):
+──────────────────────────────────────────────
+
+  - One file per domain, always generated even if empty.
+  - Contains only pure helper functions: formatters, mappers, empty object
+    factories, constants, and derived data builders.
+  - No Apex calls, no LWC decorators, no side effects.
+  - If empty, include this placeholder:
+
+      /**
+       * <Domain> Utils
+       * Utility functions for the <domain> domain.
+       * Add formatters, mappers, and factory functions here as the domain grows.
+       */
+
+  - Naming conventions:
+      empty<Entity>()       → factory that returns a blank object
+      format<Entity>()      → maps raw data to display-ready structure
+      build<Entity>()       → constructs derived or computed structures
+      to<Format>()          → converters (e.g. toISODateOrNull)
+
+  - Export every function individually (named exports, no default export).
+
+──────────────────────────────────────────────
+DOMAIN RULES:
+──────────────────────────────────────────────
+
+  - A domain is any distinct feature area of the component
+    (e.g. ticket, subtask, epic, member).
+  - Each domain gets its own validator and utils file, regardless of whether
+    they have content at the time of generation.
+  - The main JS imports from all domain files and is the only file allowed
+    to call Apex or dispatch CustomEvents.
+  - Validators and utils must remain free of side effects and LWC-specific APIs.
+  - If a function could belong to multiple domains, place it in the domain
+    that owns the primary entity it operates on.
+
+──────────────────────────────────────────────
+IMPORT CONVENTION IN MAIN JS:
+──────────────────────────────────────────────
+
+  Group imports in this order, separated by a blank line:
+
+    1. LWC core imports       (lwc, @salesforce/apex, etc.)
+    2. Validator imports      (one per domain)
+    3. Utils imports          (one per domain)

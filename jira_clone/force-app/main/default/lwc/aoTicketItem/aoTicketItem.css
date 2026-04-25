@@ -498,3 +498,102 @@
 .ticket-epic:hover .epic-missing-badge {
     color: #ea001e;
 }
+
+/* ── Subtask row ─────────────────────────────────────────────────────────── */
+.subtask-row {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+    padding-block: 0.4em;
+    padding-inline: 0.625em;
+    padding-inline-start: 1.5em;
+    border-bottom: 1px solid #e5e5e5;
+    background-color: #fafaf9;
+    transition: background-color 0.12s ease;
+}
+
+.subtask-row:hover {
+    background-color: #f3f2f2;
+}
+
+.subtask-row lightning-input[type="checkbox"] {
+    flex: 0 0 auto;
+}
+
+/* ── Subtask summary ─────────────────────────────────────────────────────── */
+.subtask-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.2em;
+    flex: 0 1 40%;
+    min-width: 0;
+}
+
+.summary-text {
+    color: #181818;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 0.875em;
+    line-height: 1.4;
+}
+
+.subtask-summary lightning-button-icon {
+    flex: 0 0 auto;
+    opacity: 0.45;
+    transition: opacity 0.1s ease;
+}
+
+.subtask-summary:hover lightning-button-icon {
+    opacity: 1;
+}
+
+/* ── Subtask state label ─────────────────────────────────────────────────── */
+.subtask-state {
+    flex: 0 0 auto;
+    min-width: 4.5em;
+    font-size: 0.72em;
+    color: #706e6b;
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+/* ── Subtask assignee combobox ───────────────────────────────────────────── */
+.subtask-row lightning-combobox {
+    flex: 0 1 9em;
+    min-width: 0;
+}
+
+/* ── Subtask delete button ───────────────────────────────────────────────── */
+.subtask-row > lightning-button-icon:last-child {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    opacity: 0.45;
+    transition: opacity 0.1s ease;
+}
+
+.subtask-row:hover > lightning-button-icon:last-child {
+    opacity: 0.75;
+}
+
+/* ── Subtask error ───────────────────────────────────────────────────────── */
+.subtask-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.4em 0.75em;
+    margin: 0.2em 0.5em;
+    background-color: #fff1f0;
+    border: 1px solid #ea001e;
+    border-radius: 0.25em;
+    color: #ea001e;
+    font-size: 0.8em;
+}
+
+@container ticket (max-width: 28em) {
+    .subtask-state   { display: none; }
+    .subtask-summary { flex: 0 1 55%; }
+}

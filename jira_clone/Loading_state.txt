@@ -1,0 +1,18 @@
+Loading States :
+. isLoading<dataName>: <boolean>
+
+* used for : 
+	- show skeleton.
+	- prevent multiple load if we have multiple click at the same time.
+
+* how to use : 
+	- update the state to true when the request is send. 
+	- update the state to false when the request is done.
+	exmaple : 
+		- in js and react set in the finally for the promise call this.load<> = false
+	
+
+Optional : 
+hasLoadedState : 
+	this is used when we need to call the api a single time when the component is called , 
+	so if it was not clear if load just at the first time ask me.

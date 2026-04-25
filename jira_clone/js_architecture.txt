@@ -1,0 +1,62 @@
+When generating or organizing a LWC (Lightning Web Component) JavaScript class,
+always structure the code using the following section comments:
+
+──────────────────────────────────────────────
+TOP-LEVEL SECTION DIVIDER (one per major domain):
+──────────────────────────────────────────────
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                        <SECTION NAME> SECTION                            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+──────────────────────────────────────────────
+SUBSECTION DIVIDER (inside each section):
+──────────────────────────────────────────────
+
+    // ─── <SUBSECTION NAME> ───────────────────────────────────────────────────
+
+──────────────────────────────────────────────
+INLINE GROUP LABEL (inside a subsection):
+──────────────────────────────────────────────
+
+    // -- <Group Name> --
+
+──────────────────────────────────────────────
+REQUIRED SUBSECTIONS PER SECTION:
+──────────────────────────────────────────────
+
+Each domain section must contain only the subsections that are relevant to it,
+chosen from this ordered list:
+
+  1. PROPERTIES & STATE   → @api, @track, plain fields belonging to this domain
+  2. WIRE                 → @wire adapters that serve this domain
+  3. APEX CALLS           → imperative Apex methods triggered by this domain
+  4. EVENT HANDLERS       → handle* methods, grouped by -- Sub-feature --
+  5. GETTERS              → get* computed properties for this domain
+
+If a subsection has no members for a given domain, omit it entirely.
+
+──────────────────────────────────────────────
+SHARED SECTION (always last):
+──────────────────────────────────────────────
+
+Private helpers (_camelCase methods) that are called by more than one domain
+section go at the bottom under:
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                         PRIVATE HELPERS                                  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+──────────────────────────────────────────────
+DOMAIN ASSIGNMENT RULES:
+──────────────────────────────────────────────
+
+When splitting fields and methods between domain sections, apply these rules:
+
+  - A field belongs to the domain it exclusively serves.
+  - If a field or method is shared between domains, place it in the first
+    domain that uses it, or in PRIVATE HELPERS if it is a utility method.
+  - Wire adapters always go in the domain that owns the data they return.
+  - Modal state (showXxxModal, modalError, newXxx) belongs to the domain
+    the modal is for.
+  - Shared error state (e.g. errorMessage) belongs to the primary domain.

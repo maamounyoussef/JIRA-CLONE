@@ -361,13 +361,82 @@
                 <lightning-spinner alternative-text="Loading subtasks..." size="small"></lightning-spinner>
             </template>
             <template for:each={subtasks} for:item="sub">
-                <c-ao-subtask-item
-                    key={sub.Id}
-                    subtask={sub}
-                    project-id={projectId}
-                    onsubtaskdeleted={handleSubtaskDeleted}
-                    onsubtaskupdated={handleSubtaskUpdated}>
-                </c-ao-subtask-item>
+                <div key={sub.Id}>
+                    <div class="subtask-row">
+
+                        <lightning-input
+                            type="checkbox"
+                            label=""
+                            checked={sub.isSelected}
+                            data-id={sub.Id}
+                            onchange={handleSubtaskSelect}>
+                        </lightning-input>
+
+                        <div class="subtask-summary">
+                            <template if:false={sub.isEditingSummary}>
+                                <span class="summary-text">{sub.Summary__c}</span>
+                                <lightning-button-icon
+                                    icon-name="utility:edit"
+                                    variant="bare"
+                                    size="x-small"
+                                    data-id={sub.Id}
+                                    onclick={handleSubtaskStartEditSummary}>
+                                </lightning-button-icon>
+                            </template>
+                            <template if:true={sub.isEditingSummary}>
+                                <lightning-input
+                                    value={sub.summaryDraft}
+                                    class="summary-input"
+                                    data-id={sub.Id}
+                                    onchange={handleSubtaskSummaryDraftChange}>
+                                </lightning-input>
+                                <lightning-button-icon
+                                    icon-name="utility:check"
+                                    variant="bare"
+                                    size="x-small"
+                                    data-id={sub.Id}
+                                    onclick={handleSubtaskSaveSummary}>
+                                </lightning-button-icon>
+                                <lightning-button-icon
+                                    icon-name="utility:close"
+                                    variant="bare"
+                                    size="x-small"
+                                    data-id={sub.Id}
+                                    onclick={handleSubtaskCancelEditSummary}>
+                                </lightning-button-icon>
+                            </template>
+                        </div>
+
+                        <span class="subtask-state">{sub.stateName}</span>
+
+                        <lightning-combobox
+                            variant="label-hidden"
+                            placeholder="─"
+                            value={sub.Assignee__c}
+                            options={sub.subtaskComboboxOptions}
+                            data-id={sub.Id}
+                            onchange={handleSubtaskAssigneeChange}
+                            onfocus={handleLoadMembers}
+                            onclick={handleLoadMembers}>
+                        </lightning-combobox>
+
+                        <lightning-button-icon
+                            icon-name="utility:delete"
+                            variant="bare"
+                            size="small"
+                            alternative-text="Delete subtask"
+                            data-id={sub.Id}
+                            onclick={handleSubtaskDeleteClick}>
+                        </lightning-button-icon>
+
+                    </div>
+                    <template if:true={sub.subtaskError}>
+                        <div class="subtask-error">
+                            <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
+                            <span>{sub.subtaskError}</span>
+                        </div>
+                    </template>
+                </div>
             </template>
             <template if:false={hasSubtasks}>
                 <p class="no-subtasks">No subtasks yet.</p>
