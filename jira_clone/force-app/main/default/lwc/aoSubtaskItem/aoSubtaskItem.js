@@ -3,6 +3,7 @@ import updateSubtaskSummary from '@salesforce/apex/ManageBacklogController.updat
 import assignSubtask        from '@salesforce/apex/ManageBacklogController.assignSubtask';
 import deleteSubtask        from '@salesforce/apex/ManageBacklogController.deleteSubtask';
 import loadMembers          from '@salesforce/apex/ManageBacklogController.loadMembers';
+import { validateSummary }  from './subtaskValidator';
 
 export default class AoSubtaskItem extends LightningElement {
 
@@ -61,7 +62,8 @@ export default class AoSubtaskItem extends LightningElement {
     handleSaveSummary() {
         const subtaskId = this.subtask.Id;
         const summary   = this.summaryDraft;
-        if (!summary) { this.errorMessage = 'Summary cannot be empty.'; return; }
+        const summaryError = validateSummary(summary);
+        if (summaryError) { this.errorMessage = summaryError; return; }
         updateSubtaskSummary({ subtaskId, summary })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }

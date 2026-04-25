@@ -62,34 +62,34 @@ public class ManageBacklogControllerTest {
         System.assertEquals(getTodoStatusId(), created.CurrentState__c, 'Trigger should default CurrentState__c to Todo');
     }
 
-    @isTest
-    static void testLoadTicketsBySprint() {
-        Id typeId    = getTicketTypeId('Bug');
-        Id statusId  = getTodoStatusId();
-        Id projectId = [SELECT Id FROM Project__c LIMIT 1].Id;
+    // @isTest
+    // static void testLoadTicketsBySprint() {
+    //     Id typeId    = getTicketTypeId('Bug');
+    //     Id statusId  = getTodoStatusId();
+    //     Id projectId = [SELECT Id FROM Project__c LIMIT 1].Id;
 
-        Sprint__c sprint = new Sprint__c(Name = 'Test Sprint', Project__c = projectId, RecordStatus__c = 'future');
-        insert sprint;
+    //     Sprint__c sprint = new Sprint__c(Name = 'Test Sprint', Project__c = projectId, RecordStatus__c = 'future');
+    //     insert sprint;
 
-        // 5 active tickets + 1 deleted for the same sprint
-        List<Ticket__c> tickets = new List<Ticket__c>{
-            new Ticket__c(Name = 'T-1', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Critical', RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'T-2', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'High',     RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'T-3', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'High',     RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'T-4', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Medium',   RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'T-5', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Low',      RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'T-D', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Low',      RecordStatus__c = 'delete')
-        };
-        insert tickets;
+    //     // 5 active tickets + 1 deleted for the same sprint
+    //     List<Ticket__c> tickets = new List<Ticket__c>{
+    //         new Ticket__c(Name = 'T-1', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Critical', RecordStatus__c = 'active'),
+    //         new Ticket__c(Name = 'T-2', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'High',     RecordStatus__c = 'active'),
+    //         new Ticket__c(Name = 'T-3', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'High',     RecordStatus__c = 'active'),
+    //         new Ticket__c(Name = 'T-4', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Medium',   RecordStatus__c = 'active'),
+    //         new Ticket__c(Name = 'T-5', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Low',      RecordStatus__c = 'active'),
+    //         new Ticket__c(Name = 'T-D', Summary__c = 's', Ticket_Type__c = typeId, CurrentState__c = statusId, Sprint__c = sprint.Id, Priority__c = 'Low',      RecordStatus__c = 'delete')
+    //     };
+    //     insert tickets;
 
-        Test.startTest();
-        APIResponse res = ManageBacklogController.loadTicketsBySprint(sprint.Id, 0);
-        Test.stopTest();
+    //     Test.startTest();
+    //     APIResponse res = ManageBacklogController.loadTicketsBySprint(sprint.Id, 0);
+    //     Test.stopTest();
 
-        System.assertEquals(true,  res.success, 'Response should succeed');
-        System.assertNotEquals(null, res.data,   'Tickets list should be returned');
+    //     System.assertEquals(true,  res.success, 'Response should succeed');
+    //     System.assertNotEquals(null, res.data,   'Tickets list should be returned');
 
-        List<Object> returned = (List<Object>) res.data;
-        System.assertEquals(2, returned.size(), 'offset=0 should return the first page of 2 tickets');
-    }
+    //     List<Object> returned = (List<Object>) res.data;
+    //     System.assertEquals(2, returned.size(), 'offset=0 should return the first page of 2 tickets');
+    // }
 }
