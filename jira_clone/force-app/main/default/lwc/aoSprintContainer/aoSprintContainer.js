@@ -1,6 +1,8 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { loadStyle } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
 import loadTicketsBySprint from '@salesforce/apex/ManageBacklogController.loadTicketsBySprint';
+import aoThemeResource from '@salesforce/resourceUrl/aoTheme';
 
 import { calcEndDate } from './sprintUtils';
 import { enrichTickets } from './sprintTicketUtils';
@@ -29,6 +31,10 @@ export default class AoSprintContainer extends LightningElement {
     _endDate = '';
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
+    connectedCallback() {
+        loadStyle(this, aoThemeResource);
+    }
+
     handleToggle()    { this.isExpanded = !this.isExpanded;          }
     handleStart()     { this._dispatch('sprintstart');               }
     handleComplete()  { this._dispatch('sprintcomplete');            }

@@ -8,8 +8,8 @@
                     <p>{confirmMessage}</p>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel"  onclick={handleCancelConfirm}></lightning-button>
-                    <lightning-button label="Confirm" variant="destructive" onclick={handleConfirm}></lightning-button>
+                    <c-ao-btn label="Cancel"  variant="ghost"  onclick={handleCancelConfirm}></c-ao-btn>
+                    <c-ao-btn label="Confirm" variant="danger" onclick={handleConfirm}></c-ao-btn>
                 </div>
             </div>
         </section>
@@ -24,46 +24,47 @@
                     <h2>Create Subtask</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <lightning-input
-                        label="Summary *"
+                    <c-ao-input
+                        label="Summary"
                         value={newSubtask.summary}
+                        required
                         data-field="summary"
                         onchange={handleNewSubtaskChange}>
-                    </lightning-input>
-                    <lightning-input
+                    </c-ao-input>
+                    <c-ao-input
                         label="Description"
                         value={newSubtask.description}
                         data-field="description"
                         onchange={handleNewSubtaskChange}>
-                    </lightning-input>
-                    <lightning-combobox
+                    </c-ao-input>
+                    <c-ao-combobox
                         label="Assignee"
                         value={newSubtask.assigneeId}
                         options={memberOptions}
                         data-field="assigneeId"
                         onchange={handleNewSubtaskChange}>
-                    </lightning-combobox>
-                    <lightning-combobox
+                    </c-ao-combobox>
+                    <c-ao-combobox
                         label="State"
                         value={newSubtask.currentStateId}
                         options={statusOptions}
                         data-field="currentStateId"
                         onchange={handleNewSubtaskChange}>
-                    </lightning-combobox>
-                    <lightning-input
-                        type="number"
+                    </c-ao-combobox>
+                    <c-ao-input
                         label="Story Points"
+                        type="number"
                         value={newSubtask.storyPoint}
                         data-field="storyPoint"
                         onchange={handleNewSubtaskChange}>
-                    </lightning-input>
+                    </c-ao-input>
                     <template if:true={modalError}>
                         <p class="modal-error">{modalError}</p>
                     </template>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel" onclick={handleCloseCreateSubtaskModal}></lightning-button>
-                    <lightning-button label="Create" variant="brand" onclick={handleCreateSubtaskSubmit}></lightning-button>
+                    <c-ao-btn label="Cancel" variant="ghost"   onclick={handleCloseCreateSubtaskModal}></c-ao-btn>
+                    <c-ao-btn label="Create" variant="primary" onclick={handleCreateSubtaskSubmit}></c-ao-btn>
                 </div>
             </div>
         </section>
@@ -78,7 +79,6 @@
                     <h2>{epicModalTitle}</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <!-- Empty State: No Epics Exist -->
                     <template if:false={hasEpics}>
                         <div class="epic-empty-state">
                             <lightning-icon icon-name="utility:einstein" size="large" class="empty-icon"></lightning-icon>
@@ -89,18 +89,16 @@
                             </button>
                         </div>
                     </template>
-
-                    <!-- Epic Selection: Epics Exist -->
                     <template if:true={hasEpics}>
                         <div class="epic-selection">
                             <p class="epic-hint">Select an epic to assign as the parent for this ticket:</p>
-                            <lightning-combobox
+                            <c-ao-combobox
                                 label="Epic"
                                 placeholder="Choose an Epic..."
                                 value={selectedEpicId}
                                 options={epicOptions}
                                 onchange={handleEpicSelectionChange}>
-                            </lightning-combobox>
+                            </c-ao-combobox>
                             <div class="or-divider">
                                 <span>or</span>
                             </div>
@@ -109,15 +107,14 @@
                             </button>
                         </div>
                     </template>
-
                     <template if:true={modalError}>
                         <p class="modal-error">{modalError}</p>
                     </template>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel" onclick={handleCloseEpicModal}></lightning-button>
+                    <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseEpicModal}></c-ao-btn>
                     <template if:true={hasEpics}>
-                        <lightning-button label="Assign Epic" variant="brand" onclick={handleAssignEpic} disabled={isEpicAssignDisabled}></lightning-button>
+                        <c-ao-btn label="Assign Epic" variant="primary" disabled={isEpicAssignDisabled} onclick={handleAssignEpic}></c-ao-btn>
                     </template>
                 </div>
             </div>
@@ -133,129 +130,127 @@
                     <h2>Create Epic</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <lightning-input
-                        label="Epic Name *"
+                    <c-ao-input
+                        label="Epic Name"
                         value={newEpic.name}
+                        required
                         data-field="name"
-                        onchange={handleNewEpicChange}
-                        required>
-                    </lightning-input>
-                    <lightning-input
-                        label="Summary *"
+                        onchange={handleNewEpicChange}>
+                    </c-ao-input>
+                    <c-ao-input
+                        label="Summary"
                         value={newEpic.summary}
+                        required
                         data-field="summary"
-                        onchange={handleNewEpicChange}
-                        required>
-                    </lightning-input>
-                    <lightning-input
+                        onchange={handleNewEpicChange}>
+                    </c-ao-input>
+                    <c-ao-input
                         label="Description"
                         value={newEpic.description}
                         data-field="description"
                         onchange={handleNewEpicChange}>
-                    </lightning-input>
-                    <lightning-input
-                        type="date"
+                    </c-ao-input>
+                    <c-ao-input
                         label="Start Date"
+                        type="date"
                         value={newEpic.startDate}
                         data-field="startDate"
                         onchange={handleNewEpicChange}>
-                    </lightning-input>
-                    <lightning-input
-                        type="date"
+                    </c-ao-input>
+                    <c-ao-input
                         label="End Date"
+                        type="date"
                         value={newEpic.endDate}
                         data-field="endDate"
                         onchange={handleNewEpicChange}>
-                    </lightning-input>
+                    </c-ao-input>
                     <template if:true={modalError}>
                         <p class="modal-error">{modalError}</p>
                     </template>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel" onclick={handleCloseCreateEpicModal}></lightning-button>
-                    <lightning-button label="Create" variant="brand" onclick={handleCreateEpicSubmit}></lightning-button>
+                    <c-ao-btn label="Cancel" variant="ghost"   onclick={handleCloseCreateEpicModal}></c-ao-btn>
+                    <c-ao-btn label="Create" variant="primary" onclick={handleCreateEpicSubmit}></c-ao-btn>
                 </div>
             </div>
         </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
-    <!-- ═══════════════════════════════════════════
-         TICKET ROW  (matches design in screenshot)
-         [✓] [name / type] ─────── [state▼] [!date] [-priority] [assignee icon]
-         ═══════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TICKET ROW
+         ═══════════════════════════════════════════════════════════════════ -->
     <div class="ticket-row">
 
-        <!-- LEFT SECTION: checkbox, expand, name, summary -->
+        <!-- LEFT: checkbox, expand, identity -->
         <div class="ticket-left">
-            <!-- 1. Checkbox -->
-            <lightning-input
+
+            <c-ao-input
                 type="checkbox"
-                label=""
                 checked={ticket.isSelected}
                 onchange={handleSelect}>
-            </lightning-input>
+            </c-ao-input>
 
-            <!-- 2. Expand arrow -->
-            <lightning-button-icon
-                icon-name={expandIcon}
-                variant="bare"
-                size="small"
-                alternative-text="Expand subtasks"
-                onclick={handleToggleSubtasks}>
-            </lightning-button-icon>
+            <div class="icon-wrapper">
+                <c-ao-btn
+                    icon-name={expandIcon}
+                    variant="bare"
+                    size="sm"
+                    title="Expand subtasks"
+                    onclick={handleToggleSubtasks}>
+                </c-ao-btn>
+            </div>
 
-            <!-- 3. Ticket name & type badge -->
             <div class="ticket-identity">
                 <span class="ticket-key">{ticket.Name}</span>
 
-                <!-- Summary inline edit -->
                 <template if:false={isEditingSummary}>
                     <span class="ticket-summary">{ticket.Summary__c}</span>
-                    <lightning-button-icon
+                    <c-ao-btn
                         icon-name="utility:edit"
                         variant="bare"
-                        size="x-small"
+                        size="sm"
+                        title="Edit summary"
                         onclick={handleStartEditSummary}>
-                    </lightning-button-icon>
+                    </c-ao-btn>
                 </template>
                 <template if:true={isEditingSummary}>
-                    <lightning-input
+                    <c-ao-input
                         value={summaryDraft}
                         class="summary-input"
                         onchange={handleSummaryDraftChange}>
-                    </lightning-input>
-                    <lightning-button-icon
+                    </c-ao-input>
+                    <c-ao-btn
                         icon-name="utility:check"
                         variant="bare"
-                        size="x-small"
+                        size="sm"
+                        title="Save"
                         onclick={handleSaveSummary}>
-                    </lightning-button-icon>
-                    <lightning-button-icon
+                    </c-ao-btn>
+                    <c-ao-btn
                         icon-name="utility:close"
                         variant="bare"
-                        size="x-small"
+                        size="sm"
+                        title="Cancel"
                         onclick={handleCancelEditSummary}>
-                    </lightning-button-icon>
+                    </c-ao-btn>
                 </template>
             </div>
         </div>
 
-        <!-- RIGHT SECTION: state, epic, priority, assignee, actions -->
+        <!-- RIGHT: state, epic, priority, assignee, actions -->
         <div class="ticket-right">
-            <!-- 4. State combobox (TO DO ▼ style) -->
+
             <div class="ticket-state">
-                <lightning-combobox
+                <c-ao-combobox
                     variant="label-hidden"
                     placeholder="State"
                     value={ticket.CurrentState__c}
                     options={statusOptions}
                     onchange={handleStateChange}>
-                    
-                </lightning-combobox>
+                </c-ao-combobox>
             </div>
 
-            <!-- 5. Epic parent (! date badge — warning if no epic) -->
             <div class="ticket-epic" onclick={handleOpenEpicModal} title="Click to assign epic">
                 <template if:true={ticket.Epic__c}>
                     <span class="epic-badge">{ticket.epicName}</span>
@@ -268,7 +263,6 @@
                 </template>
             </div>
 
-            <!-- 6. Priority inline edit (the "-" button in image) -->
             <div class="ticket-priority">
                 <template if:false={isEditingPriority}>
                     <button class="priority-btn" onclick={handleStartEditPriority}>
@@ -277,31 +271,32 @@
                 </template>
                 <template if:true={isEditingPriority}>
                     <div class="priority-edit-container" onblur={handleBlurPriority} tabindex="-1">
-                        <lightning-combobox
-                            label=""
+                        <c-ao-combobox
+                            variant="label-hidden"
                             value={priorityDraft}
                             options={priorityOptions}
                             onchange={handlePriorityDraftChange}>
-                        </lightning-combobox>
-                        <lightning-button-icon
+                        </c-ao-combobox>
+                        <c-ao-btn
                             icon-name="utility:check"
                             variant="bare"
-                            size="x-small"
+                            size="sm"
+                            title="Save priority"
                             onclick={handleSavePriority}>
-                        </lightning-button-icon>
-                        <lightning-button-icon
+                        </c-ao-btn>
+                        <c-ao-btn
                             icon-name="utility:close"
                             variant="bare"
-                            size="x-small"
+                            size="sm"
+                            title="Cancel"
                             onclick={handleCancelEditPriority}>
-                        </lightning-button-icon>
+                        </c-ao-btn>
                     </div>
                 </template>
             </div>
 
-            <!-- 7. Assignee: lazy-load members when user clicks to change -->
             <div class="ticket-assignee">
-                <lightning-combobox
+                <c-ao-combobox
                     variant="label-hidden"
                     placeholder="─"
                     value={ticket.AssignedTo__c}
@@ -309,32 +304,29 @@
                     onchange={handleAssigneeChange}
                     onclick={handleLoadMembers}
                     onfocus={handleLoadMembers}>
-                </lightning-combobox>
+                </c-ao-combobox>
             </div>
 
-            <!-- 8. Delete icon -->
-            <lightning-button-icon
+            <c-ao-btn
                 icon-name="utility:delete"
                 variant="bare"
-                size="small"
-                alternative-text="Delete ticket"
+                size="sm"
+                title="Delete ticket"
                 onclick={handleDeleteClick}>
-            </lightning-button-icon>
+            </c-ao-btn>
 
-            <!-- 9. Add subtask -->
-            <lightning-button-icon
+            <c-ao-btn
                 icon-name="utility:add"
                 variant="bare"
-                size="small"
-                title="Add Subtask"
-                alternative-text="Add subtask"
+                size="sm"
+                title="Add subtask"
                 onclick={handleOpenCreateSubtaskModal}>
-            </lightning-button-icon>
+            </c-ao-btn>
         </div>
 
     </div>
 
-    <!-- Story points & epic row (secondary info below main row) -->
+    <!-- Meta row -->
     <div class="ticket-meta-row">
         <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
         <span class="sp-badge">SP: {spLabel}</span>
@@ -345,16 +337,17 @@
         <div class="ticket-error">
             <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
             <span>{errorMessage}</span>
-            <lightning-button-icon
+            <c-ao-btn
                 icon-name="utility:close"
                 variant="bare"
-                size="x-small"
+                size="sm"
+                title="Dismiss"
                 onclick={clearError}>
-            </lightning-button-icon>
+            </c-ao-btn>
         </div>
     </template>
 
-    <!-- ── Subtasks (expanded) ─────────────────────────────────────────── -->
+    <!-- ── Subtasks ─────────────────────────────────────────────────────── -->
     <template if:true={isExpanded}>
         <div class="subtasks-wrapper">
             <template if:true={isLoadingSubtasks}>
@@ -364,52 +357,54 @@
                 <div key={sub.Id}>
                     <div class="subtask-row">
 
-                        <lightning-input
+                        <c-ao-input
                             type="checkbox"
-                            label=""
                             checked={sub.isSelected}
                             data-id={sub.Id}
                             onchange={handleSubtaskSelect}>
-                        </lightning-input>
+                        </c-ao-input>
 
                         <div class="subtask-summary">
                             <template if:false={sub.isEditingSummary}>
                                 <span class="summary-text">{sub.Summary__c}</span>
-                                <lightning-button-icon
+                                <c-ao-btn
                                     icon-name="utility:edit"
                                     variant="bare"
-                                    size="x-small"
+                                    size="sm"
+                                    title="Edit"
                                     data-id={sub.Id}
                                     onclick={handleSubtaskStartEditSummary}>
-                                </lightning-button-icon>
+                                </c-ao-btn>
                             </template>
                             <template if:true={sub.isEditingSummary}>
-                                <lightning-input
+                                <c-ao-input
                                     value={sub.summaryDraft}
                                     class="summary-input"
                                     data-id={sub.Id}
                                     onchange={handleSubtaskSummaryDraftChange}>
-                                </lightning-input>
-                                <lightning-button-icon
+                                </c-ao-input>
+                                <c-ao-btn
                                     icon-name="utility:check"
                                     variant="bare"
-                                    size="x-small"
+                                    size="sm"
+                                    title="Save"
                                     data-id={sub.Id}
                                     onclick={handleSubtaskSaveSummary}>
-                                </lightning-button-icon>
-                                <lightning-button-icon
+                                </c-ao-btn>
+                                <c-ao-btn
                                     icon-name="utility:close"
                                     variant="bare"
-                                    size="x-small"
+                                    size="sm"
+                                    title="Cancel"
                                     data-id={sub.Id}
                                     onclick={handleSubtaskCancelEditSummary}>
-                                </lightning-button-icon>
+                                </c-ao-btn>
                             </template>
                         </div>
 
                         <span class="subtask-state">{sub.stateName}</span>
 
-                        <lightning-combobox
+                        <c-ao-combobox
                             variant="label-hidden"
                             placeholder="─"
                             value={sub.Assignee__c}
@@ -418,16 +413,16 @@
                             onchange={handleSubtaskAssigneeChange}
                             onfocus={handleLoadMembers}
                             onclick={handleLoadMembers}>
-                        </lightning-combobox>
+                        </c-ao-combobox>
 
-                        <lightning-button-icon
+                        <c-ao-btn
                             icon-name="utility:delete"
                             variant="bare"
-                            size="small"
-                            alternative-text="Delete subtask"
+                            size="sm"
+                            title="Delete subtask"
                             data-id={sub.Id}
                             onclick={handleSubtaskDeleteClick}>
-                        </lightning-button-icon>
+                        </c-ao-btn>
 
                     </div>
                     <template if:true={sub.subtaskError}>

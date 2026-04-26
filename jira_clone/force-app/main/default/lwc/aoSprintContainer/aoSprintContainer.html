@@ -11,12 +11,12 @@
             <span class="sprint-status-badge">{sprint.RecordStatus__c}</span>
 
             <template if:false={sprint.isComplete}>
-                <lightning-button label="Start"    variant="brand"       onclick={handleStart}></lightning-button>
+                <c-ao-btn label="Start"    variant="primary"   onclick={handleStart}></c-ao-btn>
             </template>
-            <lightning-button label="Complete" variant="neutral"     onclick={handleComplete}></lightning-button>
-            <lightning-button label="Edit"     variant="neutral"     onclick={handleEdit}></lightning-button>
-            <lightning-button label="Delete"   variant="destructive" onclick={handleDelete}></lightning-button>
-            <lightning-button label="+ Ticket" variant="neutral"     onclick={handleAddTicket}></lightning-button>
+            <c-ao-btn label="Complete" variant="secondary" onclick={handleComplete}></c-ao-btn>
+            <c-ao-btn label="Edit"     variant="secondary" onclick={handleEdit}></c-ao-btn>
+            <c-ao-btn label="Delete"   variant="danger"    onclick={handleDelete}></c-ao-btn>
+            <c-ao-btn label="+ Ticket" variant="ghost"     onclick={handleAddTicket}></c-ao-btn>
         </div>
 
         <!-- Collapsible body -->
@@ -49,27 +49,27 @@
                 </template>
             </template>
 
-           <!-- Pagination footer — always visible when expanded -->
+            <!-- Pagination footer -->
             <div class="pagination-footer">
-                <lightning-button-icon
+                <c-ao-btn
                     icon-name="utility:chevronleft"
-                    variant="border-filled"
-                    size="small"
-                    alternative-text="Previous page"
+                    variant="secondary"
+                    size="sm"
+                    title="Previous page"
                     disabled={isFirstPage}
                     onclick={handlePrevPage}>
-                </lightning-button-icon>
+                </c-ao-btn>
                 <span class="page-indicator">Page {currentPage}</span>
-                <lightning-button-icon
+                <c-ao-btn
                     icon-name="utility:chevronright"
-                    variant="border-filled"
-                    size="small"
-                    alternative-text="Next page"
+                    variant="secondary"
+                    size="sm"
+                    title="Next page"
                     disabled={isLastPage}
                     onclick={handleNextPage}>
-                </lightning-button-icon>
+                </c-ao-btn>
             </div>
         </template>
-         
+
     </div>
 </template>

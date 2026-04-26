@@ -15,8 +15,8 @@ public with sharing class ManageBacklogController {
             List<Sprint__c> sprints = SprintService.loadFuturedSprints(projectId);
 
             List<Status__c> statuses = StatusService.loadStatuses(projectId);
-            List<TicketType__c> ticketTypes = TicketTypeService.loadTicketTypes(projectId);
-            List<ProjectMember__c> members = ProjectMemberService.loadProjectMembers(projectId);
+            List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(projectId);
+            List<ProjectMember__c> members = ProjectService.loadProjectMembers(projectId);
             List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
 
             Map<String, Object> data = new Map<String, Object>{
@@ -187,6 +187,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse completeSprint(String sprintId) {
         try {
+            if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
             SprintService.completeSprint(sprintId);
             return new APIResponse(true, 'Sprint completed');
         } catch (Exception ex) {
@@ -197,6 +198,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSprint(String sprintId) {
         try {
+            if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
             SprintService.deleteSprint(sprintId);
             return new APIResponse(true, 'Sprint deleted');
         } catch (SprintException ex) {
@@ -209,6 +211,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse startSprint(String sprintId) {
         try {
+            if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
             SprintService.startSprint(sprintId);
             return new APIResponse(true, 'Sprint started');
         } catch (Exception ex) {
@@ -230,7 +233,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadTicketTypes(String projectId) {
         try {
-            List<TicketType__c> ticketTypes = TicketTypeService.loadTicketTypes(projectId);
+            List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(projectId);
             return new APIResponse(true, 'Ticket Types loaded successfully', ticketTypes);
         }catch (Exception ex) {
             return new APIResponse(false, 'Error loading ticket types: ' + ex.getMessage());
@@ -240,7 +243,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
-            TicketType__c ticketType = TicketTypeService.getTicketTypeByIdWithValidation(ticketTypeId);
+            TicketType__c ticketType = TicketService.getTicketTypeByIdWithValidation(ticketTypeId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
         }  catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
@@ -250,7 +253,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeByName(String ticketTypeName, String projectId) {
         try {
-            TicketType__c ticketType = TicketTypeService.getTicketTypeByNameWithValidation(ticketTypeName, projectId);
+            TicketType__c ticketType = TicketService.getTicketTypeByNameWithValidation(ticketTypeName, projectId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
         }catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
@@ -264,7 +267,7 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
-            TicketType__c created = TicketTypeService.createTicketType(name, description, iconUrl, workflowId, projectId);
+            TicketType__c created = TicketService.createTicketType(name, description, iconUrl, workflowId, projectId);
             return new APIResponse(true, 'Ticket Type created successfully', created);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating ticket type: ' + ex.getMessage());
@@ -323,8 +326,6 @@ public with sharing class ManageBacklogController {
         try {
             Ticket__c updated = TicketService.updateTicketSummary(ticketId, summary);
             return new APIResponse(true, 'Ticket summary updated', updated);
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket summary: ' + ex.getMessage());
         }
@@ -345,8 +346,6 @@ public with sharing class ManageBacklogController {
         try {
             Ticket__c updated = TicketService.assignTicket(ticketId, memberId);
             return new APIResponse(true, 'Ticket assignee updated', updated);
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error assigning ticket: ' + ex.getMessage());
         }
@@ -367,8 +366,6 @@ public with sharing class ManageBacklogController {
         try {
             TicketService.deleteTickets(new List<String>{ticketId});
             return new APIResponse(true, 'Ticket deleted');
-        } catch (TicketException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting ticket: ' + ex.getMessage());
         }
@@ -387,10 +384,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadSubtasks(String ticketId) {
         try {
-            List<Subtask__c> subs = SubtaskService.getSubtasksByTicket(ticketId);
+            List<Subtask__c> subs = TicketService.getSubtasksByTicket(ticketId);
             return new APIResponse(true, 'Subtasks loaded', subs);
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading subtasks: ' + ex.getMessage());
         }
@@ -413,7 +408,7 @@ public with sharing class ManageBacklogController {
             if (storyPoint != null) subtask.StoryPoint__c = storyPoint;
             if (startDate != null) subtask.StartDate__c = startDate;
 
-            Subtask__c created = SubtaskService.createSubtask(subtask);
+            Subtask__c created = TicketService.createSubtask(subtask);
             return new APIResponse(true, 'Subtask created', created);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating subtask: ' + ex.getMessage());
@@ -423,9 +418,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateSubtaskSummary(String subtaskId, String summary) {
         try {
-            Subtask__c updated = SubtaskService.updateSubtaskSummary(subtaskId, summary);
+            Subtask__c updated = TicketService.updateSubtaskSummary(subtaskId, summary);
             return new APIResponse(true, 'Subtask summary updated', updated);
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error updating subtask summary: ' + ex.getMessage());
         }
     }
@@ -435,7 +430,7 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
 
-            Subtask__c existing = SubtaskService.findSubtaskById(subtaskId);
+            Subtask__c existing = TicketService.findSubtaskById(subtaskId);
             if (existing == null) return new APIResponse(false, 'Subtask not found: ' + subtaskId);
 
             if (String.isNotBlank(summary)) existing.Summary__c = summary;
@@ -444,7 +439,7 @@ public with sharing class ManageBacklogController {
             if (String.isNotBlank(currentStateId)) existing.CurrentState__c = currentStateId;
             if (storyPoint != null) existing.StoryPoint__c = storyPoint;
 
-            Subtask__c updated = SubtaskService.updateSubtask(existing);
+            Subtask__c updated = TicketService.updateSubtask(existing);
             return new APIResponse(true, 'Subtask updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating subtask: ' + ex.getMessage());
@@ -454,7 +449,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse assignSubtask(String subtaskId, String memberId) {
         try {
-            Subtask__c updated = SubtaskService.assignSubtask(subtaskId, memberId);
+            Subtask__c updated = TicketService.assignSubtask(subtaskId, memberId);
             return new APIResponse(true, 'Subtask assignee updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error assigning subtask: ' + ex.getMessage());
@@ -464,10 +459,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSubtask(String subtaskId) {
         try {
-            SubtaskService.deleteSubtasks(new List<String>{subtaskId});
+            TicketService.deleteSubtasks(new List<String>{subtaskId});
             return new APIResponse(true, 'Subtask deleted');
-        } catch (SubtaskException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting subtask: ' + ex.getMessage());
         }
@@ -476,9 +469,9 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSubtasks(List<String> subtaskIds) {
         try {
-            SubtaskService.deleteSubtasks(subtaskIds);
+            TicketService.deleteSubtasks(subtaskIds);
             return new APIResponse(true, 'Subtasks deleted');
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting subtasks: ' + ex.getMessage());
         }
     }
@@ -491,7 +484,7 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(userId)) return new APIResponse(false, 'userId is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
-            ProjectMember__c created = ProjectMemberService.createProjectMember(userId, projectId, recordStatus);
+            ProjectMember__c created = ProjectService.createProjectMember(userId, projectId, recordStatus);
             return new APIResponse(true, 'Project member created successfully', created);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating project member: ' + ex.getMessage());
@@ -501,7 +494,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadMembers(String projectId) {
         try {
-            List<ProjectMember__c> members = ProjectMemberService.loadProjectMembers(projectId);
+            List<ProjectMember__c> members = ProjectService.loadProjectMembers(projectId);
             return new APIResponse(true, 'Project members loaded successfully', members);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading project members: ' + ex.getMessage());

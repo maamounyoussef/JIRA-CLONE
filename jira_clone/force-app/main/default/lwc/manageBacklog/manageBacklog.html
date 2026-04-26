@@ -5,7 +5,7 @@
         <div class="error-box">
             <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
             <span>{errorMessage}</span>
-            <lightning-button label="Dismiss" variant="bare" onclick={clearError}></lightning-button>
+            <c-ao-btn label="Dismiss" variant="ghost" onclick={clearError}></c-ao-btn>
         </div>
     </template>
 
@@ -13,8 +13,8 @@
     <template if:true={hasSelectedTickets}>
         <div class="bulk-bar">
             <span>{selectedCount} ticket(s) selected</span>
-            <lightning-button label="Delete Selected" variant="destructive" onclick={handleBulkDelete}></lightning-button>
-            <lightning-button label="Cancel" onclick={handleClearSelection}></lightning-button>
+            <c-ao-btn label="Delete Selected" variant="danger" onclick={handleBulkDelete}></c-ao-btn>
+            <c-ao-btn label="Cancel" variant="ghost" onclick={handleClearSelection}></c-ao-btn>
         </div>
     </template>
 
@@ -26,8 +26,8 @@
                     <p>{confirmMessage}</p>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel"  onclick={handleCancelConfirm}></lightning-button>
-                    <lightning-button label="Confirm" variant="destructive" onclick={handleConfirm}></lightning-button>
+                    <c-ao-btn label="Cancel"  variant="ghost"  onclick={handleCancelConfirm}></c-ao-btn>
+                    <c-ao-btn label="Confirm" variant="danger" onclick={handleConfirm}></c-ao-btn>
                 </div>
             </div>
         </section>
@@ -42,20 +42,20 @@
                     <h2>Create Ticket</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <lightning-input label="Name *"        value={newTicket.name}        data-field="name"          onchange={handleNewTicketChange}></lightning-input>
-                    <lightning-input label="Summary"       value={newTicket.summary}      data-field="summary"       onchange={handleNewTicketChange}></lightning-input>
-                    <lightning-input label="Description"   value={newTicket.description}  data-field="description"   onchange={handleNewTicketChange}></lightning-input>
-                    <lightning-input type="number" label="Story Points" value={newTicket.storyPoint} data-field="storyPoint" onchange={handleNewTicketChange}></lightning-input>
-                    <lightning-combobox label="Ticket Type *" value={newTicket.ticketTypeId}   options={ticketTypeOptions} data-field="ticketTypeId"   onchange={handleNewTicketChange}></lightning-combobox>
-                    <lightning-combobox label="State *"       value={newTicket.currentStateId} options={statusOptions}     data-field="currentStateId" onchange={handleNewTicketChange}></lightning-combobox>
-                    <lightning-combobox label="Priority"      value={newTicket.priority}       options={priorityOptions}   data-field="priority"       onchange={handleNewTicketChange}></lightning-combobox>
+                    <c-ao-input label="Name"         required value={newTicket.name}        data-field="name"          onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Summary"                value={newTicket.summary}      data-field="summary"       onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Description"            value={newTicket.description}  data-field="description"   onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Story Points" type="number" value={newTicket.storyPoint} data-field="storyPoint" onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-combobox label="Ticket Type" required value={newTicket.ticketTypeId}   options={ticketTypeOptions} data-field="ticketTypeId"   onchange={handleNewTicketChange}></c-ao-combobox>
+                    <c-ao-combobox label="State"      required value={newTicket.currentStateId} options={statusOptions}     data-field="currentStateId" onchange={handleNewTicketChange}></c-ao-combobox>
+                    <c-ao-combobox label="Priority"            value={newTicket.priority}       options={priorityOptions}   data-field="priority"       onchange={handleNewTicketChange}></c-ao-combobox>
                     <template if:true={modalError}>
                         <p class="modal-error">{modalError}</p>
                     </template>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel" onclick={handleCloseCreateTicketModal}></lightning-button>
-                    <lightning-button label="Create" variant="brand" onclick={handleCreateTicketSubmit}></lightning-button>
+                    <c-ao-btn label="Cancel" variant="ghost"   onclick={handleCloseCreateTicketModal}></c-ao-btn>
+                    <c-ao-btn label="Create" variant="primary" onclick={handleCreateTicketSubmit}></c-ao-btn>
                 </div>
             </div>
         </section>
@@ -70,17 +70,17 @@
                     <h2>{sprintModalTitle}</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <lightning-input label="Name *"            value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></lightning-input>
-                    <lightning-input type="number" label="Duration (days) *" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></lightning-input>
-                    <lightning-input type="date"   label="Start Date *"      value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></lightning-input>
-                    <lightning-input label="Goal *"            value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></lightning-input>
+                    <c-ao-input label="Name"           required value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></c-ao-input>
+                    <c-ao-input label="Duration (days)" required type="number" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></c-ao-input>
+                    <c-ao-input label="Start Date"      required type="date"   value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></c-ao-input>
+                    <c-ao-input label="Goal"            required value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></c-ao-input>
                     <template if:true={modalError}>
                         <p class="modal-error">{modalError}</p>
                     </template>
                 </div>
                 <div class="slds-modal__footer">
-                    <lightning-button label="Cancel" onclick={handleCloseSprintModal}></lightning-button>
-                    <lightning-button label={sprintModalSubmitLabel} variant="brand" onclick={handleSprintSubmit}></lightning-button>
+                    <c-ao-btn label="Cancel"                variant="ghost"   onclick={handleCloseSprintModal}></c-ao-btn>
+                    <c-ao-btn label={sprintModalSubmitLabel} variant="primary" onclick={handleSprintSubmit}></c-ao-btn>
                 </div>
             </div>
         </section>
@@ -131,15 +131,14 @@
         <div class="backlog-container">
             <div class="backlog-header">
                 <h1 class="section-title">Backlog</h1>
-                <lightning-button label="+ Sprint" variant="neutral" onclick={handleOpenCreateSprint}></lightning-button>
-                <lightning-button label="+ Ticket" variant="brand"   onclick={handleOpenCreateTicketForBacklog}></lightning-button>
+                <c-ao-btn label="+ Sprint" variant="secondary" onclick={handleOpenCreateSprint}></c-ao-btn>
+                <c-ao-btn label="+ Ticket" variant="primary"   onclick={handleOpenCreateTicketForBacklog}></c-ao-btn>
             </div>
 
             <template if:true={isLoading}>
                 <lightning-spinner alternative-text="Loading..."></lightning-spinner>
             </template>
 
-            <!-- Backlog Tickets via aoTicketItem -->
             <template for:each={backlogTickets} for:item="ticket">
                 <c-ao-ticket-item
                     key={ticket.Id}

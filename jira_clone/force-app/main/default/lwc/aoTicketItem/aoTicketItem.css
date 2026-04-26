@@ -1,95 +1,69 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    aoTicketItem.css
-   Sizing is 100 % parent-relative and recursive:
-     • :host sets the em anchor → every em/% inside scales with the parent.
-     • No px widths, no vw/vh, no media queries.
-     • Gap values use clamp() so they compress naturally at small container
-       sizes and breathe at larger ones — fully recursive, no px breakpoints.
-     • The edit button lives inside .ticket-identity, flush after the summary,
-       so it always appears right beside the text regardless of row width.
-     • subtasks-wrapper does NOT add extra indentation — the child component
-       owns its own indent relative to itself.
+   Layout uses a 2-column grid at the row level:
+     • Left  column: minmax(0, 1fr) — ticket identity, always truncates cleanly.
+     • Right column: auto            — takes exactly the space its items need.
+   This prevents the priority / assignee / action area from ever being
+   squeezed by a long summary, and stops the priority-edit combobox + confirm
+   buttons from colliding with adjacent columns.
    ───────────────────────────────────────────────────────────────────────────── */
+.icon-wrapper {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
 
-/* ── Custom property anchors (all em → inherit from :host → from parent) ─── */
+/* ── Custom property anchors ─────────────────────────────────────────────── */
 :host {
     container-type: inline-size;
     container-name: ticket;
     display: block;
 
-    /*
-     * KEY SCALING ANCHOR
-     * Change this one value (via parent font-size) and the entire ticket
-     * — gaps, padding, badges, min-widths — scales proportionally.
-     */
     font-size: 1em;
 
-    /*
-     * Gap scale tokens — defined once, overridden in container queries below.
-     * Using custom properties means every consumer of --gap-row and
-     * --gap-col gets the update for free when the container shrinks.
-     *
-     * --gap-row  : horizontal gap between the main flex children inside .ticket-row
-     * --gap-col  : horizontal gap between columns inside .ticket-right
-     * --row-pad  : block (vertical) + inline (horizontal) padding of .ticket-row
-     */
-    --gap-row:  0.625em;   /* ~10px at 16px base — comfortable, not crowded    */
-    --gap-col:  1.25em;    /* ~20px — clear column separation in .ticket-right  */
-    --row-pad-block:  0.4375em;  /* 7px — tighter vertical rhythm               */
-    --row-pad-inline: 0.75em;    /* 12px — breathing room from the edge         */
+    --gap-row:        0.5em;
+    --gap-col:        0.5em;    /* gap between columns in .ticket-right        */
+    --row-pad-block:  0.375em;
+    --row-pad-inline: 0.625em;
 }
 
-/* ── Ticket row layout ───────────────────────────────────────────────────── */
+/* ── Ticket row: 2-column grid ───────────────────────────────────────────── */
 .ticket-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: stretch;
-    gap: var(--gap-row);
+    gap: 0 var(--gap-row);                      /* row-gap 0, column-gap for L↔R */
     padding: var(--row-pad-block) var(--row-pad-inline);
 
-    border-bottom: 1px solid #e8e7e6;          /* slightly softer than #dddbda  */
+    border-bottom: 1px solid #1a1a1a;
     background-color: #ffffff;
 
     width: 100%;
     box-sizing: border-box;
-    overflow: visible;                         /* allow combobox dropdowns to escape */
+    overflow: visible;
     min-width: 0;
-
-    /* Smooth hover without layout shift */
-    transition: background-color 0.12s ease;
 }
 
 .ticket-row:hover {
-    background-color: #f6f5f4;                 /* warmer, less stark than #f3f2f2 */
-}
-
-/* Every direct child stretches and centers its content */
-.ticket-row > *,
-.ticket-row > lightning-input,
-.ticket-row > lightning-button-icon,
-.ticket-row > lightning-combobox {
-    display: flex;
-    align-items: center;
-    align-self: stretch;
+    background-color: #f0efec;
 }
 
 /* ── Left section: checkbox, expand, identity ────────────────────────────── */
 .ticket-left {
     display: flex;
     align-items: center;
-    gap: var(--gap-row);                       /* recursive — uses same token     */
-    flex: 0 0 40%;
+    gap: var(--gap-row);
     min-width: 0;
-    overflow: hidden;
+    overflow: hidden;                           /* clips long summaries          */
 }
 
 /* ── Right section: state, epic, priority, assignee, actions ──────────────── */
 .ticket-right {
     display: flex;
     align-items: center;
-    gap: var(--gap-col);                       /* column-level gap, wider         */
-    flex: 0 0 60%;
+    gap: var(--gap-col);
     min-width: 0;
-    overflow: visible;                         /* allow combobox dropdowns to escape */
+    overflow: visible;                          /* allow combobox dropdowns      */
     justify-content: flex-end;
 }
 
@@ -98,14 +72,15 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    gap: 0.375em;                              /* tight — key, summary, edit btn  */
+    gap: 0.375em;
     flex: 1 1 0;
     min-width: 0;
     overflow: hidden;
 }
 
 .ticket-key {
-    font-weight: 600;
+    font-size: 0.9em;
+    font-weight: 700;
     color: #0176d3;
     white-space: nowrap;
     flex: 0 0 auto;
@@ -113,7 +88,8 @@
 }
 
 .ticket-summary {
-    color: #181818;
+    font-size: 0.875em;
+    color: #1a1a1a;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -126,14 +102,6 @@
     min-width: 0;
 }
 
-/*
- * ── Inline-edit button — lives inside .ticket-identity, right of summary ──
- *
- * Kept out of the flow until hover so it doesn't push the summary text
- * around. On .ticket-identity:hover it fades in and takes up its reserved
- * flex slot (flex: 0 0 auto).  Because it's inside .ticket-identity it
- * inherits the same gap token and is always optically adjacent to the text.
- */
 .edit-btn {
     display: flex;
     align-items: center;
@@ -142,17 +110,16 @@
 
     background: none;
     border: 1px solid transparent;
-    border-radius: 0.25em;
+    border-radius: 0;
     padding: 0.2em 0.3em;
     cursor: pointer;
     color: #706e6b;
-    font-size: 0.8125em;                       /* ~13px — icon-sized              */
+    font-size: 0.8125em;
     line-height: 1;
 
-    /* Hidden by default; shown on row hover */
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.1s ease, background-color 0.1s ease, border-color 0.1s ease;
+    transition: opacity 0.1s ease;
 }
 
 .ticket-row:hover .edit-btn,
@@ -162,9 +129,10 @@
 }
 
 .edit-btn:hover {
-    background-color: #f3f2f2;
-    border-color: #c9c7c5;
-    color: #3e3e3c;
+    background-color: #ffffff;
+    border-color: #1a1a1a;
+    box-shadow: 1px 1px 0 #1a1a1a;
+    color: #1a1a1a;
 }
 
 .edit-btn:focus-visible {
@@ -182,9 +150,16 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 7.5em;
+    flex: 0 0 6.5em;
     min-width: 0;
-    overflow: visible;  /* allow dropdown to escape parent overflow:hidden */
+    overflow: visible;
+}
+
+/* aoCombobox host already sets width:100% — these rules ensure the same
+   constraint is applied regardless of which tag ends up in the cell */
+.ticket-state c-ao-combobox,
+.ticket-assignee c-ao-combobox {
+    width: 100%;
 }
 
 /* ── Epic badge ──────────────────────────────────────────────────────────── */
@@ -192,17 +167,33 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 6em;
+    flex: 0 0 4.5em;
     min-width: 0;
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.1s ease;
+}
+
+.ticket-epic:hover {
+    opacity: 0.8;
+}
+
+.ticket-epic:hover .epic-missing-badge {
+    color: #ea001e;
 }
 
 .epic-badge {
-    background-color: #e8e7e6;
-    padding: 0.2em 0.45em;
-    border-radius: 0.25em;
-    font-size: 0.75em;
-    color: #3e3e3c;
+    border-radius: 0;
+    border: 1px solid #1a1a1a;
+    background-color: #ffffff;
+    padding: 0.1em 0.35em;
+    font-size: 0.6875em;
+    font-weight: 600;
+    color: #1a1a1a;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
     letter-spacing: 0.01em;
 }
 
@@ -210,8 +201,8 @@
     display: flex;
     align-items: center;
     gap: 0.25em;
+    font-size: 0.6875em;
     color: #fe9339;
-    font-size: 0.75em;
     white-space: nowrap;
 }
 
@@ -220,9 +211,9 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 6em;
+    flex: 0 0 auto;
     min-width: 0;
-    gap: 0.25em;
+    overflow: visible;
 }
 
 .priority-edit-container {
@@ -231,22 +222,39 @@
     gap: 0.25em;
 }
 
+/*
+ * Constrain the combobox inside the edit container so the confirm/cancel
+ * icon buttons are always visible and never pushed off-screen.
+ */
+.priority-edit-container c-ao-combobox {
+    flex: 0 0 5.5em;
+    width: 5.5em;
+    min-width: 0;
+}
+
 .priority-btn {
-    background: none;
-    border: 1px solid #dddbda;
-    border-radius: 0.25em;
-    padding: 0.2em 0.45em;
+    border-radius: 0;
+    border: 2px solid #1a1a1a;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    padding: 0.1em 0.4em;
     cursor: pointer;
-    font-size: 0.75em;
-    color: #3e3e3c;
-    min-width: 4em;
+    font-size: 0.6875em;
+    font-weight: 700;
+    text-transform: uppercase;
+    /* Fixed width so long priority labels don't expand the column */
+    width: 5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-align: center;
-    transition: background-color 0.1s ease, border-color 0.1s ease;
+    box-shadow: 2px 2px 0 #1a1a1a;
 }
 
 .priority-btn:hover {
-    background-color: #f3f2f2;
-    border-color: #c9c7c5;
+    background-color: #f0efec;
+    box-shadow: 1px 1px 0 #1a1a1a;
+    transform: translate(1px, 1px);
 }
 
 /* ── Assignee dropdown ───────────────────────────────────────────────────── */
@@ -254,9 +262,9 @@
     display: flex;
     align-items: center;
     align-self: stretch;
-    flex: 0 1 7.5em;
+    flex: 0 0 6.5em;
     min-width: 0;
-    overflow: visible;  /* allow dropdown to escape parent overflow:hidden */
+    overflow: visible;
 }
 
 /* ── Meta row (type badge, story points) ─────────────────────────────────── */
@@ -265,28 +273,31 @@
     gap: 0.5em;
     align-items: center;
 
-    padding-block: 0.2em 0.4em;
-    padding-inline-start: 3em;
+    padding-block: 0.15em 0.3em;
+    padding-inline-start: 2.75em;
     padding-inline-end: var(--row-pad-inline);
 
-    border-bottom: 1px solid #e8e7e6;
-    background-color: #ffffff;
+    border-bottom: 1px solid #1a1a1a;
+    background-color: #fafaf8;
 }
 
 .ticket-type-badge {
-    background-color: #d8edff;
+    border-radius: 0;
+    border: 2px solid #015ba7;
+    background-color: #ffffff;
     color: #015ba7;
-    padding: 0.125em 0.375em;
-    border-radius: 0.1875em;
-    font-size: 0.7em;
-    font-weight: 600;
+    padding: 0.1em 0.3em;
+    font-size: 0.625em;
+    font-weight: 700;
+    text-transform: uppercase;
     white-space: nowrap;
     letter-spacing: 0.02em;
+    box-shadow: 1px 1px 0 #015ba7;
 }
 
 .sp-badge {
-    color: #706e6b;
-    font-size: 0.75em;
+    font-size: 0.6875em;
+    color: #555;
     white-space: nowrap;
 }
 
@@ -295,28 +306,29 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.5em var(--row-pad-inline);
+    padding: 0.3em 0.5em;
     margin: 0.375em var(--row-pad-inline);
     background-color: #fff1f0;
-    border: 1px solid #ea001e;
-    border-radius: 0.25em;
+    border: 2px solid #ea001e;
+    border-radius: 0;
     color: #ea001e;
-    font-size: 0.875em;
+    font-size: 0.8125em;
+    box-shadow: 2px 2px 0 #ea001e;
 }
 
 /* ── Subtasks wrapper ────────────────────────────────────────────────────── */
 .subtasks-wrapper {
     padding-inline-start: 0;
-    background-color: #fafaf9;
-    border-inline-start: 0.2em solid #e5e5e5;
-    margin-inline-start: 1.5em;
+    background-color: #f5f4f2;
+    border-inline-start: 3px solid #1a1a1a;
+    margin-inline-start: 1.25em;
 }
 
 .no-subtasks {
-    padding: 0.5em 1em;
-    color: #706e6b;
-    font-style: italic;
-    font-size: 0.875em;
+    padding: 0.375em 0.75em;
+    color: #555;
+    font-style: normal;
+    font-size: 0.75em;
 }
 
 /* ── Modal error ─────────────────────────────────────────────────────────── */
@@ -327,37 +339,26 @@
 }
 
 /* ── Container queries ───────────────────────────────────────────────────── */
-/*
- * As the container shrinks, we:
- *   1. Progressively hide lower-priority columns (epic → priority → assignee).
- *   2. Step down both gap tokens so spacing stays proportional, not cramped.
- *
- * All values are em — they scale with :host's font-size, which scales with
- * the parent → fully recursive.
- */
-
-/* Medium container: compress column gap, hide epic */
 @container ticket (max-width: 48em) {
     :host {
-        --gap-col: 0.875em;                    /* tighter columns                 */
+        --gap-col: 0.375em;
         --row-pad-inline: 0.5em;
     }
 }
 
 @container ticket (max-width: 42em) {
     :host {
-        --gap-col: 0.75em;
+        --gap-col: 0.25em;
     }
     .ticket-epic {
         display: none;
     }
 }
 
-/* Small container: minimal gaps, hide priority */
 @container ticket (max-width: 34em) {
     :host {
         --gap-row: 0.375em;
-        --gap-col: 0.5em;
+        --gap-col: 0.25em;
         --row-pad-block: 0.3125em;
         --row-pad-inline: 0.375em;
     }
@@ -366,11 +367,10 @@
     }
 }
 
-/* Very small container: micro gaps, hide assignee */
 @container ticket (max-width: 26em) {
     :host {
         --gap-row: 0.25em;
-        --gap-col: 0.375em;
+        --gap-col: 0.25em;
     }
     .ticket-assignee {
         display: none;
@@ -382,7 +382,6 @@
     max-width: 30rem;
 }
 
-/* Epic Empty State */
 .epic-empty-state {
     display: flex;
     flex-direction: column;
@@ -398,14 +397,14 @@
 
 .epic-empty-state h3 {
     font-size: 1.125rem;
-    font-weight: 600;
-    color: #181818;
+    font-weight: 700;
+    color: #1a1a1a;
     margin: 0 0 0.5rem 0;
 }
 
 .epic-empty-state p {
     font-size: 0.875rem;
-    color: #706e6b;
+    color: #555;
     margin: 0 0 1.5rem 0;
     max-width: 24rem;
     line-height: 1.5;
@@ -414,17 +413,19 @@
 .create-first-epic-btn {
     background-color: #0176d3;
     color: #ffffff;
-    border: none;
-    border-radius: 0.25rem;
+    border: 2px solid #1a1a1a;
+    border-radius: 0;
     padding: 0.5rem 1.5rem;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    box-shadow: 3px 3px 0 #1a1a1a;
+    transition: box-shadow 0.1s ease, transform 0.1s ease;
 }
 
 .create-first-epic-btn:hover {
-    background-color: #015ba7;
+    box-shadow: 1px 1px 0 #1a1a1a;
+    transform: translate(2px, 2px);
 }
 
 .create-first-epic-btn:focus {
@@ -439,7 +440,7 @@
 
 .epic-hint {
     font-size: 0.875rem;
-    color: #3e3e3c;
+    color: #1a1a1a;
     margin-bottom: 1rem;
 }
 
@@ -448,7 +449,7 @@
     align-items: center;
     text-align: center;
     margin: 1.5rem 0;
-    color: #706e6b;
+    color: #555;
     font-size: 0.875rem;
 }
 
@@ -456,7 +457,7 @@
 .or-divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid #dddbda;
+    border-bottom: 1px solid #1a1a1a;
 }
 
 .or-divider span {
@@ -468,11 +469,10 @@
     border: none;
     color: #0176d3;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     padding: 0;
     text-decoration: underline;
-    transition: color 0.15s ease;
 }
 
 .create-epic-link:hover {
@@ -482,21 +482,6 @@
 .create-epic-link:focus {
     outline: 2px solid #0176d3;
     outline-offset: 2px;
-    border-radius: 0.125rem;
-}
-
-/* Make ticket-epic clickable */
-.ticket-epic {
-    cursor: pointer;
-    transition: opacity 0.15s ease;
-}
-
-.ticket-epic:hover {
-    opacity: 0.8;
-}
-
-.ticket-epic:hover .epic-missing-badge {
-    color: #ea001e;
 }
 
 /* ── Subtask row ─────────────────────────────────────────────────────────── */
@@ -504,39 +489,38 @@
     display: flex;
     align-items: center;
     gap: 0.375em;
-    padding-block: 0.4em;
-    padding-inline: 0.625em;
-    padding-inline-start: 1.5em;
-    border-bottom: 1px solid #e5e5e5;
-    background-color: #fafaf9;
-    transition: background-color 0.12s ease;
+    padding-block: 0.25em;
+    padding-inline: 0.5em;
+    padding-inline-start: 1.25em;
+    border-bottom: 1px solid #c8c6c4;
+    background-color: #f5f4f2;
 }
 
 .subtask-row:hover {
-    background-color: #f3f2f2;
+    background-color: #e8e7e4;
 }
 
-.subtask-row lightning-input[type="checkbox"] {
+.subtask-row c-ao-input[type="checkbox"] {
     flex: 0 0 auto;
 }
 
-/* ── Subtask summary ─────────────────────────────────────────────────────── */
+/* ── Subtask summary: takes all available space, truncates cleanly ───────── */
 .subtask-summary {
     display: flex;
     align-items: center;
     gap: 0.2em;
-    flex: 0 1 40%;
+    flex: 1 1 0;
     min-width: 0;
 }
 
 .summary-text {
-    color: #181818;
+    color: #1a1a1a;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1 1 0;
     min-width: 0;
-    font-size: 0.875em;
+    font-size: 0.8125em;
     line-height: 1.4;
 }
 
@@ -553,17 +537,20 @@
 /* ── Subtask state label ─────────────────────────────────────────────────── */
 .subtask-state {
     flex: 0 0 auto;
-    min-width: 4.5em;
-    font-size: 0.72em;
-    color: #706e6b;
+    min-width: 4em;
+    font-size: 0.6875em;
+    color: #555;
     text-align: center;
     white-space: nowrap;
+    font-weight: 600;
+    text-transform: uppercase;
     letter-spacing: 0.01em;
 }
 
-/* ── Subtask assignee combobox ───────────────────────────────────────────── */
-.subtask-row lightning-combobox {
-    flex: 0 1 9em;
+/* ── Subtask assignee: fixed width, never crowds out other items ─────────── */
+.subtask-row c-ao-combobox {
+    flex: 0 0 6.5em;
+    width: 6.5em;
     min-width: 0;
 }
 
@@ -588,7 +575,7 @@
     margin: 0.2em 0.5em;
     background-color: #fff1f0;
     border: 1px solid #ea001e;
-    border-radius: 0.25em;
+    border-radius: 0;
     color: #ea001e;
     font-size: 0.8em;
 }

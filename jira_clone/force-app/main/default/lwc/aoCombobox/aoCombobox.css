@@ -1,0 +1,91 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+/* ── Wrapper ─────────────────────────────────────────────────────────────── */
+.ao-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+    width: 100%;
+}
+
+.ao-select--compact {
+    gap: 0;
+}
+
+/* ── Label ───────────────────────────────────────────────────────────────── */
+.ao-select__label {
+    font-family: var(--ao-font-mono, 'Space Mono', ui-monospace, monospace);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #1a1a1a;
+    line-height: 1.2;
+}
+
+/* ── Select control: native <select> + custom arrow ─────────────────────── */
+.ao-select__control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.ao-select__native {
+    /* Strip OS chrome */
+    appearance: none;
+    -webkit-appearance: none;
+
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    /* Neobrutalism base */
+    border: 2px solid #1a1a1a;
+    border-radius: 0;
+    background-color: #ffffff;
+
+    font-family: var(--ao-font-mono, 'Space Mono', ui-monospace, monospace);
+    font-size: 0.8125rem;
+    color: #1a1a1a;
+
+    /* Right padding reserves space for the chevron */
+    padding: 0.3em 1.5em 0.3em 0.5em;
+    outline: none;
+    cursor: pointer;
+
+    transition: box-shadow 0.1s ease;
+}
+
+.ao-select__native:focus {
+    box-shadow: 2px 2px 0 #1a1a1a;
+    background-color: #fafaf8;
+}
+
+.ao-select__native:disabled {
+    background-color: #f5f4f2;
+    color: #706e6b;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Compact (label-hidden) variant — tighter padding, smaller font */
+.ao-select--compact .ao-select__native {
+    padding: 0.2em 1.25em 0.2em 0.375em;
+    font-size: 0.75rem;
+}
+
+/* ── Custom chevron ──────────────────────────────────────────────────────── */
+.ao-select__chevron {
+    position: absolute;
+    right: 0.35em;
+    pointer-events: none;
+    font-size: 0.75rem;
+    font-family: var(--ao-font-mono, 'Space Mono', ui-monospace, monospace);
+    color: #1a1a1a;
+    line-height: 1;
+    user-select: none;
+}

@@ -1,115 +1,109 @@
 /* ═════════════════════════════════════════════════════════════════════════════
-   MANAGE BACKLOG - Main Page Layout
+   MANAGE BACKLOG — Neobrutalism layout
    ═════════════════════════════════════════════════════════════════════════════ */
 
-/* Page wrapper - two column layout */
 .page-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
     padding: 1rem;
-    background-color: #f3f2f2;
+    background-color: #f0efec;
     min-height: 100vh;
+    box-sizing: border-box;
 }
 
-
-/* ═════════════════════════════════════════════════════════════════════════════
-   ERROR BOX
-   ═════════════════════════════════════════════════════════════════════════════ */
-.error-box {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background-color: #fff1f0;
-    border: 1px solid #ea001e;
-    border-radius: 0.25rem;
-    color: #ea001e;
-    margin-bottom: 1rem;
-}
-
-/* ═════════════════════════════════════════════════════════════════════════════
-   BULK ACTION BAR
-   ═════════════════════════════════════════════════════════════════════════════ */
-.bulk-bar {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    background-color: #d8edff;
-    border: 1px solid #1589ee;
-    border-radius: 0.25rem;
-    margin-bottom: 1rem;
-}
-
-.bulk-bar span {
-    font-weight: 600;
-    color: #015ba7;
-    flex: 1;
-}
-
-/* ═════════════════════════════════════════════════════════════════════════════
-   WORK CONTAINER (Sprints Section)
-   ═════════════════════════════════════════════════════════════════════════════ */
-.work-container {
-    flex: 2;
-    background-color: #ffffff;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 1rem;
-}
-
-.section-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #181818;
-    margin: 0 0 1rem 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #dddbda;
-}
-
-/* ═════════════════════════════════════════════════════════════════════════════
-   BACKLOG CONTAINER
-   ═════════════════════════════════════════════════════════════════════════════ */
+/* ── Section panels ──────────────────────────────────────────────────────── */
+.work-container,
 .backlog-container {
-    flex: 1;
-    min-width: 350px;
     background-color: #ffffff;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid #1a1a1a;
+    border-radius: 0;
+    box-shadow: 4px 4px 0 #1a1a1a;
     padding: 1rem;
 }
 
+/* ── Section heading ─────────────────────────────────────────────────────── */
+.section-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 0.875rem 0;
+    padding-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #1a1a1a;
+}
+
+/* ── Backlog header row ──────────────────────────────────────────────────── */
 .backlog-header {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #dddbda;
+    border-bottom: 2px solid #1a1a1a;
 }
 
 .backlog-header .section-title {
     flex: 1;
     margin: 0;
     border-bottom: none;
+    padding-bottom: 0;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════════
-   EMPTY STATES
-   ═════════════════════════════════════════════════════════════════════════════ */
+/* ── Empty state ─────────────────────────────────────────────────────────── */
 .empty-msg {
-    padding: 2rem;
+    padding: 1.25rem;
     text-align: center;
     color: #706e6b;
-    font-style: italic;
+    font-size: 0.8125rem;
+    border: 1px dashed #1a1a1a;
+    background-color: #fafaf8;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════════
-   MODAL ERROR
-   ═════════════════════════════════════════════════════════════════════════════ */
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.error-box {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    background-color: #fff1f0;
+    border: 2px solid #ea001e;
+    border-radius: 0;
+    box-shadow: 2px 2px 0 #ea001e;
+    color: #ea001e;
+    font-size: 0.8125rem;
+    margin-bottom: 0.875rem;
+}
+
+/* ── Bulk-action bar ─────────────────────────────────────────────────────── */
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    background-color: #d8edff;
+    border: 2px solid #1a1a1a;
+    border-radius: 0;
+    box-shadow: 2px 2px 0 #1a1a1a;
+    margin-bottom: 0.875rem;
+}
+
+.bulk-bar span {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #015ba7;
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* ── Modal error ─────────────────────────────────────────────────────────── */
 .modal-error {
     color: #ea001e;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
     margin-top: 0.5rem;
+    border-left: 3px solid #ea001e;
+    padding-left: 0.5rem;
 }

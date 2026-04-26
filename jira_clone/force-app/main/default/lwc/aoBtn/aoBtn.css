@@ -1,0 +1,144 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   aoBtn — design-system button for the Neobrutalism theme.
+   Covers both text buttons (replacing lightning-button) and icon buttons
+   (replacing lightning-button-icon) through the `bare` variant + iconName.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:host {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+.ao-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3em;
+
+    font-family: var(--ao-font-mono, 'Space Mono', ui-monospace, monospace);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
+
+    border-radius: 0;
+    cursor: pointer;
+
+    transition: box-shadow 0.1s ease, transform 0.1s ease, background-color 0.1s ease;
+}
+
+.ao-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ao-btn:focus-visible {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+}
+
+/* ── Variants ────────────────────────────────────────────────────────────── */
+
+/* primary — blue fill */
+.ao-btn--primary {
+    background-color: #0176d3;
+    color: #ffffff;
+    border: 2px solid #1a1a1a;
+    box-shadow: 2px 2px 0 #1a1a1a;
+}
+.ao-btn--primary:hover:not(:disabled) {
+    background-color: #015ba7;
+    box-shadow: 1px 1px 0 #1a1a1a;
+    transform: translate(1px, 1px);
+}
+
+/* secondary — white fill, dark border */
+.ao-btn--secondary {
+    background-color: #ffffff;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    box-shadow: 2px 2px 0 #1a1a1a;
+}
+.ao-btn--secondary:hover:not(:disabled) {
+    background-color: #f0efec;
+    box-shadow: 1px 1px 0 #1a1a1a;
+    transform: translate(1px, 1px);
+}
+
+/* danger — red border */
+.ao-btn--danger {
+    background-color: #ffffff;
+    color: #ea001e;
+    border: 2px solid #ea001e;
+    box-shadow: 2px 2px 0 #ea001e;
+}
+.ao-btn--danger:hover:not(:disabled) {
+    background-color: #fff1f0;
+    box-shadow: 1px 1px 0 #ea001e;
+    transform: translate(1px, 1px);
+}
+
+/* ghost — transparent until hovered */
+.ao-btn--ghost {
+    background-color: transparent;
+    color: #1a1a1a;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+.ao-btn--ghost:hover:not(:disabled) {
+    background-color: #f0efec;
+    border-color: #1a1a1a;
+    box-shadow: 1px 1px 0 #1a1a1a;
+}
+
+/* bare — replaces lightning-button-icon; minimal footprint */
+.ao-btn--bare {
+    background: none;
+    color: #706e6b;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+.ao-btn--bare:hover:not(:disabled) {
+    background-color: #f0efec;
+    border-color: #1a1a1a;
+    box-shadow: 1px 1px 0 #1a1a1a;
+    color: #1a1a1a;
+}
+
+/* ── Sizes ───────────────────────────────────────────────────────────────── */
+.ao-btn--sm {
+    font-size: 0.625rem;
+    padding: 0.2em 0.5em;
+}
+
+.ao-btn--md {
+    font-size: 0.6875rem;
+    padding: 0.3em 0.7em;
+}
+
+.ao-btn--lg {
+    font-size: 0.8125rem;
+    padding: 0.4em 1rem;
+}
+
+/* ── Icon-only: square, compact ──────────────────────────────────────────── */
+.ao-btn--icon-only {
+    padding: 0.25em;
+    min-width: 1.75em;
+    min-height: 1.75em;
+}
+
+.ao-btn--icon-only.ao-btn--sm {
+    min-width: 1.5em;
+    min-height: 1.5em;
+}
+
+/* Allow the lightning-icon inside to inherit current color */
+.ao-btn__icon {
+    --slds-g-color-neutral-base-100: currentColor;
+}

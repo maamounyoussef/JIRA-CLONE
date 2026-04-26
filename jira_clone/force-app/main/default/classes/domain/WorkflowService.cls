@@ -246,182 +246,128 @@ public with sharing class WorkflowService {
     // Use case methods
     public static void activateValidationRule(String validationRuleId) {
         try {
-            validateIdParameter(validationRuleId, 'Validation Rule Id');
-            
-            ValidationRule__c rule = getValidationRuleById(validationRuleId);
-            
-            if (rule.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
-                throw new ServiceException(
-                    'Validation Rule can only be activated from pending status'
-                );
-            }
-            
+            ValidationRule__c rule = DomainCompleteValidator.requireValidationRuleExists(validationRuleId);
+            DomainCompleteValidator.requireValidationRuleIsPending(rule);
+
             rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             updateRecord(rule);
         } catch (Exception ex) {
             throw new ServiceException('Error activating validation rule: ' + ex.getMessage());
         }
     }
-    
+
     public static void activateWorkflowTransition(String workflowTransitionId) {
         try {
-            validateIdParameter(workflowTransitionId, 'Workflow Transition Id');
-            
-            WorkflowTransition__c transition = getTransitionById(workflowTransitionId);
-            
-            if (transition.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
-                throw new ServiceException(
-                    'Workflow Transition can only be activated from pending status'
-                );
-            }
-            
+            WorkflowTransition__c transition = DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
+            DomainCompleteValidator.requireTransitionIsPending(transition);
+
             transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             updateRecord(transition);
         } catch (Exception ex) {
             throw new ServiceException('Error activating workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     public static ValidationRule__c addValidationRule(String workflowTransitionId, String ticketField, String validationType) {
         try {
-            validateIdParameter(workflowTransitionId, 'Workflow Transition Id');
-            
-            if (String.isBlank(ticketField)) {
-                throw new ServiceException('Ticket field is required');
-            }
-            
-            if (String.isBlank(validationType)) {
-                throw new ServiceException('Validation type is required');
-            }
-            
-            getWorkflowTransitionById(workflowTransitionId);
-            
+            DomainCompleteValidator.requireValidationRuleInputs(ticketField, validationType);
+            DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
+
             ValidationRule__c newRule = new ValidationRule__c();
             newRule.WorkflowTransition__c = workflowTransitionId;
             newRule.TicketField__c = ticketField;
             newRule.Type__c = validationType;
             newRule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING;
-            
+
             return insertValidationRule(newRule);
         } catch (Exception ex) {
             throw new ServiceException('Error adding validation rule: ' + ex.getMessage());
         }
     }
-    
+
     public static WorkflowTransition__c addWorkflowTransition(String workflowId, String name, String fromStatusId, String toStatusId) {
         try {
-            validateIdParameter(workflowId, 'Workflow Id');
-            
-            if (String.isBlank(name)) {
-                throw new ServiceException('Transition name is required');
-            }
-            
-            validateIdParameter(fromStatusId, 'From Status Id');
-            validateIdParameter(toStatusId, 'To Status Id');
-            
-            getWorkflowById(workflowId);
-            
-            List<Status__c> statuses = getStatusesById(
-                new List<String> { fromStatusId, toStatusId }
-            );
-            
-            if (statuses.size() != 2) {
-                throw new ServiceException('One or both statuses not found');
-            }
-            
-            if (transitionNameExists(workflowId, name)) {
-                throw new ServiceException('Transition name already exists in this workflow');
-            }
-            
+            DomainCompleteValidator.requireWorkflowExists(workflowId);
+            DomainCompleteValidator.requireTransitionName(name);
+            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatusId, toStatusId);
+            DomainCompleteValidator.requireTransitionNameUnique(workflowId, name);
+
+            // Both status records must exist
+            List<Status__c> statuses = getStatusesById(new List<String>{ fromStatusId, toStatusId });
+            if (statuses.size() != 2) throw new ServiceException('One or both statuses not found');
+
             WorkflowTransition__c newTransition = new WorkflowTransition__c();
             newTransition.Workflow__c = workflowId;
             newTransition.Name = name;
             newTransition.FromStatus__c = fromStatusId;
             newTransition.ToStatus__c = toStatusId;
             newTransition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING;
-            
+
             return insertWorkflowTransition(newTransition);
         } catch (Exception ex) {
             throw new ServiceException('Error adding workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     public static WorkflowTransition__c createWorkflowTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
         try {
-            validateNameParameter(name, 'Transition Name');
-            validateIdParameter(workflowId, 'Workflow Id');
-            validateIdParameter(fromStatusId, 'From Status Id');
-            validateIdParameter(toStatusId, 'To Status Id');
-            
-            getWorkflowById(workflowId);
-            
-            StatusService.getStatusById(fromStatusId);
-            StatusService.getStatusById(toStatusId);
-            
-            if (transitionNameExists(workflowId, name)) {
-                throw new ServiceException('Transition name already exists in this workflow');
-            }
-            
+            DomainCompleteValidator.requireWorkflowExists(workflowId);
+            DomainCompleteValidator.requireTransitionName(name);
+            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatusId, toStatusId);
+            DomainCompleteValidator.requireTransitionNameUnique(workflowId, name);
+
+            DomainCompleteValidator.requireStatusExists(fromStatusId);
+            DomainCompleteValidator.requireStatusExists(toStatusId);
+
             return createTransition(name, workflowId, fromStatusId, toStatusId, recordStatus);
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     public static Workflow__c createWorkflowWithValidation(String name, String projectId) {
         try {
-            validateNameParameter(name, 'Workflow Name');
-            validateIdParameter(projectId, 'Project Id');
-            
+            DomainCompleteValidator.requireWorkflowName(name);
+            DomainCompleteValidator.requireProjectExists(projectId);
+
             return createWorkflow(name, projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow: ' + ex.getMessage());
         }
     }
-    
+
     public static void deleteValidationRule(String validationRuleId) {
         try {
-            validateIdParameter(validationRuleId, 'Validation Rule Id');
-            
-            ValidationRule__c rule = getValidationRuleById(validationRuleId);
-            
+            ValidationRule__c rule = DomainCompleteValidator.requireValidationRuleExists(validationRuleId);
             rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
-            
             updateRecord(rule);
         } catch (Exception ex) {
             throw new ServiceException('Error deleting validation rule: ' + ex.getMessage());
         }
     }
-    
+
     public static void deleteWorkflowTransition(String workflowTransitionId) {
         try {
-            validateIdParameter(workflowTransitionId, 'Workflow Transition Id');
-            
-            WorkflowTransition__c transition = getTransitionById(workflowTransitionId);
-            
+            WorkflowTransition__c transition = DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
             transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
-            
             updateRecord(transition);
         } catch (Exception ex) {
             throw new ServiceException('Error deleting workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     public static List<Status__c> getProjectStatusesWithValidation(String projectId) {
         try {
-            validateIdParameter(projectId, 'Project Id');
-            
+            DomainCompleteValidator.requireProjectId(projectId);
             return getProjectStatuses(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving project statuses: ' + ex.getMessage());
         }
     }
-    
+
     public static WorkflowTransition__c getWorkflowTransitionByIdWithValidation(String transitionId) {
         try {
-            validateIdParameter(transitionId, 'Transition Id');
-            
-            return getTransitionById(transitionId);
+            return DomainCompleteValidator.requireTransitionExists(transitionId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving workflow transition: ' + ex.getMessage());
         }
@@ -429,8 +375,8 @@ public with sharing class WorkflowService {
     
     public static WorkflowConfigDTO getWorkflowConfig(String workflowId) {
         try {
-            validateIdParameter(workflowId, 'Workflow Id');
-            
+            DomainCompleteValidator.requireWorkflowId(workflowId);
+
             Workflow__c workflow = getWorkflowWithTransitions(workflowId);
             
             WorkflowConfigDTO config = new WorkflowConfigDTO();
@@ -470,8 +416,7 @@ public with sharing class WorkflowService {
     
     public static List<WorkflowTransition__c> loadWorkflowTransitions(String workflowId) {
         try {
-            validateIdParameter(workflowId, 'Workflow Id');
-            
+            DomainCompleteValidator.requireWorkflowId(workflowId);
             return getTransitionsByWorkflow(workflowId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading workflow transitions: ' + ex.getMessage());
@@ -488,10 +433,8 @@ public with sharing class WorkflowService {
     
     public static void updateWorkflow(String workflowId) {
         try {
-            validateIdParameter(workflowId, 'Workflow Id');
-            
-            getWorkflowById(workflowId);
-            
+            DomainCompleteValidator.requireWorkflowExists(workflowId);
+
             List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflowId);
             
             List<ValidationRule__c> pendingRules = getPendingRules(workflowId);
@@ -514,16 +457,4 @@ public with sharing class WorkflowService {
         }
     }
     
-    // Private helper methods
-    private static void validateIdParameter(String value, String paramName) {
-        if (String.isBlank(value)) {
-            throw new ServiceException(paramName + ' is required');
-        }
-    }
-    
-    private static void validateNameParameter(String value, String paramName) {
-        if (String.isBlank(value)) {
-            throw new ServiceException(paramName + ' is required');
-        }
-    }
 }

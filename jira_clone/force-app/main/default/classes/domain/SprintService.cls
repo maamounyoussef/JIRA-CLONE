@@ -65,11 +65,10 @@ public with sharing class SprintService {
     // Use case methods
     public static void completeSprint(String sprintId) {
         try {
-            Sprint__c sprint = findSprintById(sprintId);
-            if (sprint == null) throw new ServiceException('Sprint not found');
-            
+            Sprint__c sprint = DomainCompleteValidator.requireSprintExists(sprintId);
+            DomainCompleteValidator.requireSprintIsCompletable(sprint);
+
             sprint.RecordStatus__c = 'completed';
-            
             updateSprint(sprint);
         } catch (SprintException sex) {
             throw sex;
@@ -80,18 +79,9 @@ public with sharing class SprintService {
 
     public static Sprint__c createSprintWithValidation(Sprint__c sprint) {
         try {
-            if (sprint == null) {
-                throw new ServiceException('Sprint is required');
-            }
-            if (String.isBlank(sprint.Name)) {
-                throw new ServiceException('name is required');
-            }
-            if (String.isBlank(sprint.Project__c)) {
-                throw new ServiceException('projectId is required');
-            }
-            
-            ProjectService.getProjectById(sprint.Project__c);
-            
+            DomainCompleteValidator.requireSprintCreateInputs(sprint);
+            DomainCompleteValidator.requireProjectExists(sprint.Project__c);
+
             return createSprint(sprint);
         } catch (Exception ex) {
             throw new ServiceException('Error creating sprint: ' + ex.getMessage());
@@ -100,7 +90,6 @@ public with sharing class SprintService {
 
     public static void deleteSprint(String sprintId) {
         try {
-            if (String.isBlank(sprintId)) throw new ServiceException('sprintId is required');
             deleteSprintById(sprintId);
         } catch (SprintException sex) {
             throw sex;
@@ -123,17 +112,16 @@ public with sharing class SprintService {
 
     public static List<Sprint__c> loadSprints(String projectId) {
         try {
-            ProjectService.getProjectById(projectId);
+            DomainCompleteValidator.requireProjectExists(projectId);
             return getSprintsByProject(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading sprints: ' + ex.getMessage());
         }
     }
 
-
-        public static List<Sprint__c> loadFuturedSprints(String projectId) {
+    public static List<Sprint__c> loadFuturedSprints(String projectId) {
         try {
-            ProjectService.getProjectById(projectId);
+            DomainCompleteValidator.requireProjectExists(projectId);
             return getFuturedSprintsByProject(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading sprints: ' + ex.getMessage());
@@ -142,11 +130,11 @@ public with sharing class SprintService {
 
     public static void startSprint(String sprintId) {
         try {
-            Sprint__c sprint = findSprintById(sprintId);
-            if (sprint == null) throw new ServiceException('Sprint not found');
-            
+            Sprint__c sprint = DomainCompleteValidator.requireSprintExists(sprintId);
+            DomainCompleteValidator.requireSprintIsStartable(sprint);
+            DomainCompleteValidator.requireNoActiveSprintInProject(sprint.Project__c);
+
             sprint.RecordStatus__c = 'in_progress';
-            
             updateSprint(sprint);
         } catch (SprintException sex) {
             throw sex;
