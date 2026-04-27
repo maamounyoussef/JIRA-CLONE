@@ -249,6 +249,14 @@ export default class AoTicketItem extends LightningElement {
         }
     }
 
+    handleDragStart(event) {
+        event.dataTransfer.setData('text/plain', JSON.stringify({
+            ticketId    : this.ticket.Id,
+            sourceSprint: this.ticket.Sprint__c || null,
+        }));
+        event.dataTransfer.effectAllowed = 'move';
+    }
+
     // -- Confirm dialog --
     handleConfirm() {
         this.showConfirmDialog = false;

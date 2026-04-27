@@ -2,8 +2,9 @@ import { LightningElement, track } from 'lwc';
 import { loadStyle } from 'lightning/platformResourceLoader';
 import loadBacklogData     from '@salesforce/apex/ManageBacklogController.loadBacklogData';
 import loadBacklogTickets  from '@salesforce/apex/ManageBacklogController.loadBacklogTickets';
+import moveTicketToSprint  from '@salesforce/apex/ManageBacklogController.moveTicketToSprint';
+import moveTicketToBacklog from '@salesforce/apex/ManageBacklogController.moveTicketToBacklog';
 import deleteTickets       from '@salesforce/apex/ManageBacklogController.deleteTickets';
-import createTicket        from '@salesforce/apex/ManageBacklogController.createTicket';
 import createSprint        from '@salesforce/apex/ManageBacklogController.createSprint';
 import updateSprint        from '@salesforce/apex/ManageBacklogController.updateSprint';
 import completeSprint      from '@salesforce/apex/ManageBacklogController.completeSprint';
@@ -12,10 +13,9 @@ import startSprint         from '@salesforce/apex/ManageBacklogController.startS
 import loadTicketsBySprint from '@salesforce/apex/ManageBacklogController.loadTicketsBySprint';
 import aoThemeResource     from '@salesforce/resourceUrl/aoTheme';
 
-import { validateTicketName, validateTicketType } from './backlogTicketValidator';
-import { validateSprintForm }                     from './backlogSprintValidator';
+import { validateSprintForm } from './backlogSprintValidator';
 
-import { emptyTicket, formatTicket, enrichTickets } from './backlogTicketUtils';
+import { enrichTickets } from './backlogTicketUtils';
 import { emptySprintForm, formatSprint, calcEndDate, PAGE_SIZE }      from './backlogSprintUtils';
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -25,9 +25,13 @@ import { emptySprintForm, formatSprint, calcEndDate, PAGE_SIZE }      from './ba
 export default class ManageBacklog extends LightningElement {
 
     // ─── PROPERTIES & STATE ───────────────────────────────────────────────────
-    _projectId   = null;
-    isLoading    = false;
-    errorMessage = null;
+    _projectId          = null;
+    isLoading           = false;
+    errorMessage        = null;
+    _isBacklogDragOver  = false;
+    _draggingFromSprint = false;
+    _dragSourceSprintId = null;
+    _dragTargetSprintId = null;
 
     @track sprints           = [];
     @track backlogTickets    = [];
@@ -58,10 +62,9 @@ export default class ManageBacklog extends LightningElement {
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
     // ─── PROPERTIES & STATE ───────────────────────────────────────────────────
-    @track showCreateTicketModal = false;
-    newTicket          = emptyTicket();
-    _newTicketSprintId = null;
-    modalError         = null;
+    showSprintTicketModal  = false;
+    showBacklogTicketModal = false;
+    _activeSprintId        = null;
 
     @track
     _selectedTicketIds = new Set();
@@ -86,37 +89,12 @@ export default class ManageBacklog extends LightningElement {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 this.backlogTickets     = this.backlogTickets.filter(t => !ids.includes(t.Id));
                 this._selectedTicketIds = new Set();
-                this.sprints.filter(s => s.isExpanded).forEach(s => this._loadSprintTickets(s.Id, 0));
+                this.sprints = [...this.sprints.map(s => {
+                    const tickets = s.tickets.filter(t => !ids.includes(t.Id));
+                    return { ...s, tickets, hasTickets: tickets.length > 0 };
+                })];
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error deleting tickets'; });
-    }
-
-    // -- Create Ticket --
-    _executeCreateTicket() {
-        const { name, summary, description, storyPoint, ticketTypeId, currentStateId, priority } = this.newTicket;
-        createTicket({
-            name,
-            summary       : summary       || null,
-            description   : description   || null,
-            storyPoint    : storyPoint    ? parseInt(storyPoint, 10) : null,
-            ticketTypeId,
-            currentStateId,
-            priority      : priority      || null,
-            sprintId      : this._newTicketSprintId || null,
-            assignedToId  : null,
-            epicId        : null,
-        })
-            .then(res => {
-                if (!res.success) { this.modalError = res.message; return; }
-                if (!this._newTicketSprintId) {
-                    this.backlogTickets = [...this.backlogTickets, formatTicket(res.data, this.ticketTypeOptions, ticketTypeId)];
-                } else {
-                    this._loadSprintTickets(this._newTicketSprintId, 0);
-                }
-                this.showCreateTicketModal = false;
-                this.newTicket             = emptyTicket();
-            })
-            .catch(err => { this.modalError = err.body?.message || 'Error creating ticket'; });
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
@@ -135,9 +113,15 @@ export default class ManageBacklog extends LightningElement {
         this._updateTicketInSprints(ticketId, { isSelected: selected });
     }
 
-    handleTicketDeleted(event) {
+    handleBacklogTicketDeleted(event) {
         const { ticketId } = event.detail;
-        this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
+        this.backlogTickets = [...this.backlogTickets.filter(t => t.Id !== ticketId)];
+        this._selectedTicketIds.delete(ticketId);
+        this._selectedTicketIds = new Set(this._selectedTicketIds);
+    }
+
+    handleSprintTicketDeleted(event) {
+        const { ticketId } = event.detail;
         this._selectedTicketIds.delete(ticketId);
         this._selectedTicketIds = new Set(this._selectedTicketIds);
         this._updateTicketInSprints(ticketId, null);
@@ -206,30 +190,27 @@ export default class ManageBacklog extends LightningElement {
 
     // -- Create Ticket Modal --
     handleOpenCreateTicketForBacklog() {
-        this._newTicketSprintId    = null;
-        this.newTicket             = emptyTicket();
-        this.modalError            = null;
-        this.showCreateTicketModal = true;
+        this.showBacklogTicketModal = true;
     }
 
-    handleCloseCreateTicketModal() {
-        this.showCreateTicketModal = false;
+    handleSprintTicketCreated(event) {
+        const { ticket, sprintId } = event.detail;
+        const sprint = this.sprints.find(s => s.Id === sprintId);
+        if (sprint) {
+            const tickets = [...sprint.tickets, ticket];
+            this._updateSprint(sprintId, { tickets, hasTickets: true });
+        }
+        this.showSprintTicketModal = false;
     }
 
-    handleNewTicketChange(event) {
-        const field = event.target.dataset.field;
-        const val   = event.detail ? event.detail.value : event.target.value;
-        this.newTicket = { ...this.newTicket, [field]: val };
+    handleBacklogTicketCreated(event) {
+        this.backlogTickets        = [...this.backlogTickets, event.detail.ticket];
+        this.showBacklogTicketModal = false;
     }
 
-    handleCreateTicketSubmit() {
-        const nameError = validateTicketName(this.newTicket.name);
-        if (nameError) { this.modalError = nameError; return; }
-
-        const typeError = validateTicketType(this.newTicket.ticketTypeId);
-        if (typeError) { this.modalError = typeError; return; }
-
-        this._executeCreateTicket();
+    handleCreateTicketCancel() {
+        this.showSprintTicketModal  = false;
+        this.showBacklogTicketModal = false;
     }
 
     // ─── GETTERS ──────────────────────────────────────────────────────────────
@@ -323,10 +304,8 @@ export default class ManageBacklog extends LightningElement {
 
     // -- Sprint Action Buttons --
     handleSprintAddTicket(event) {
-        this._newTicketSprintId    = event.currentTarget.dataset.sprintId;
-        this.newTicket             = emptyTicket();
-        this.modalError            = null;
-        this.showCreateTicketModal = true;
+        this._activeSprintId       = event.currentTarget.dataset.sprintId;
+        this.showSprintTicketModal = true;
     }
 
     handleSprintEdit(event) {
@@ -437,6 +416,121 @@ export default class ManageBacklog extends LightningElement {
     handleCancelConfirm() {
         this.showConfirmDialog = false;
         this._pendingAction    = null;
+    }
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                         DRAG & DROP SECTION                               ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── GETTERS ──────────────────────────────────────────────────────────────
+    get backlogDropClass() {
+        return 'backlog-container' + (this._isBacklogDragOver ? ' drop-target-active' : '');
+    }
+
+    // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
+    handlePageDragStart(event) {
+        // getData returns empty string during dragstart — use DOM traversal instead
+        const sprintEl           = event.target.closest('[data-sprint-id]');
+        this._draggingFromSprint = !!sprintEl;
+        this._dragSourceSprintId = sprintEl ? sprintEl.dataset.sprintId : null;
+        this._dragTargetSprintId = null;
+    }
+
+    handlePageDragEnd() {
+        this._draggingFromSprint = false;
+        this._isBacklogDragOver  = false;
+        this._dragSourceSprintId = null;
+        this._dragTargetSprintId = null;
+        this.sprints = this.sprints.map(s => ({ ...s, dropTargetClass: 'sprint-container' }));
+    }
+
+    handleDragOver(event) {
+        event.preventDefault();
+        const overSprint = !!event.currentTarget.dataset.sprintId;
+        //dropEffect tells the browser what the cursor/UX should look like and what kind of drop is allowed
+        event.dataTransfer.dropEffect = (this._draggingFromSprint && overSprint) ? 'none' : 'move';
+    }
+
+    handleDragEnterSprint(event) {
+        if (this._draggingFromSprint) return;
+        const sprintId = event.currentTarget.dataset.sprintId;
+        this._dragTargetSprintId = sprintId;
+        this._updateSprint(sprintId, { dropTargetClass: 'sprint-container drop-target-active' });
+        this._isBacklogDragOver = false;
+    }
+
+    handleDragLeaveSprint(event) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            const sprintId = event.currentTarget.dataset.sprintId;
+            this._updateSprint(sprintId, { dropTargetClass: 'sprint-container' });
+        }
+    }
+
+    handleDragEnterBacklog() {
+        this._isBacklogDragOver  = true;
+        this._dragTargetSprintId = null;
+        this.sprints = this.sprints.map(s => ({ ...s, dropTargetClass: 'sprint-container' }));
+    }
+
+    handleDragLeaveBacklog(event) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            this._isBacklogDragOver = false;
+        }
+    }
+
+    handleDropOnSprint(event) {
+        event.preventDefault();
+        const targetSprintId = event.currentTarget.dataset.sprintId;
+        this._updateSprint(targetSprintId, { dropTargetClass: 'sprint-container' });
+        if (this._draggingFromSprint) return;
+        const raw = event.dataTransfer.getData('text/plain');
+        if (!raw) return;
+        const { ticketId } = JSON.parse(raw);
+        this._executeMoveTicketToSprint(ticketId, targetSprintId);
+    }
+
+    handleDropOnBacklog(event) {
+        event.preventDefault();
+        this._isBacklogDragOver = false;
+        if (!this._draggingFromSprint) return;
+        const raw = event.dataTransfer.getData('text/plain');
+        if (!raw) return;
+        const { ticketId } = JSON.parse(raw);
+        const sprint = this.sprints.find(s => s.Id === this._dragSourceSprintId);
+        const ticket = sprint?.tickets.find(t => t.Id === ticketId);
+        if (!ticket) return;
+        this._executeMoveTicketToBacklog(ticket);
+    }
+
+    // ─── APEX CALLS ───────────────────────────────────────────────────────────
+    _executeMoveTicketToSprint(ticketId, sprintId) {
+        moveTicketToSprint({ ticketId, sprintId })
+            .then(res => {
+                if (!res.success) { this.errorMessage = res.message; return; }
+                const movedTicket = this.backlogTickets.find(t => t.Id === ticketId);
+                this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
+                if (movedTicket) {
+                    const sprint = this.sprints.find(s => s.Id === sprintId);
+                    if (sprint && sprint.isExpanded) {
+                        this._updateSprint(sprintId, {
+                            tickets   : [...sprint.tickets, { ...movedTicket, isSelected: false }],
+                            hasTickets: true,
+                        });
+                    }
+                }
+            })
+            .catch(err => { this.errorMessage = err.body?.message || 'Error moving ticket to sprint'; });
+    }
+
+    _executeMoveTicketToBacklog(ticket) {
+        moveTicketToBacklog({ ticketId: ticket.Id })
+            .then(res => {
+                if (!res.success) { this.errorMessage = res.message; return; }
+                this._updateTicketInSprints(ticket.Id, null);
+                this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
+            })
+            .catch(err => { this.errorMessage = err.body?.message || 'Error moving ticket to backlog'; });
     }
 
 

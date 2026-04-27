@@ -34,34 +34,6 @@
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
-    <!-- Create Ticket Modal -->
-    <template if:true={showCreateTicketModal}>
-        <section role="dialog" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-                <header class="slds-modal__header">
-                    <h2>Create Ticket</h2>
-                </header>
-                <div class="slds-modal__content slds-p-around_medium">
-                    <c-ao-input label="Name"         required value={newTicket.name}          data-field="name"          onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-input label="Summary"                value={newTicket.summary}        data-field="summary"       onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-input label="Description"            value={newTicket.description}    data-field="description"   onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-input label="Story Points" type="number" value={newTicket.storyPoint} data-field="storyPoint"    onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-combobox label="Ticket Type" required value={newTicket.ticketTypeId}   options={ticketTypeOptions} data-field="ticketTypeId"   onchange={handleNewTicketChange}></c-ao-combobox>
-                    <c-ao-combobox label="State"      required value={newTicket.currentStateId} options={statusOptions}     data-field="currentStateId" onchange={handleNewTicketChange}></c-ao-combobox>
-                    <c-ao-combobox label="Priority"            value={newTicket.priority}        options={priorityOptions}   data-field="priority"       onchange={handleNewTicketChange}></c-ao-combobox>
-                    <template if:true={modalError}>
-                        <p class="modal-error">{modalError}</p>
-                    </template>
-                </div>
-                <div class="slds-modal__footer">
-                    <c-ao-btn label="Cancel" variant="ghost"   onclick={handleCloseCreateTicketModal}></c-ao-btn>
-                    <c-ao-btn label="Create" variant="primary" onclick={handleCreateTicketSubmit}></c-ao-btn>
-                </div>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
-
     <!-- Create / Edit Sprint Modal -->
     <template if:true={showSprintModal}>
         <section role="dialog" class="slds-modal slds-fade-in-open">
@@ -90,18 +62,33 @@
     <!-- ══════════════════════════════════════════
          MAIN LAYOUT
          ══════════════════════════════════════════ -->
-    <div class="page-wrapper">
+    <div class="page-wrapper" ondragstart={handlePageDragStart} ondragend={handlePageDragEnd}>
 
         <!-- ── WORK CONTAINER (Sprints) ─────────────────────────────── -->
         <div class="work-container">
             <h1 class="section-title">Work</h1>
+
+            <template if:true={showSprintTicketModal}>
+                <c-ao-create-ticket-modal
+                    sprint-id={_activeSprintId}
+                    status-options={statusOptions}
+                    ticket-type-options={ticketTypeOptions}
+                    priority-options={priorityOptions}
+                    onticketcreated={handleSprintTicketCreated}
+                    oncancel={handleCreateTicketCancel}>
+                </c-ao-create-ticket-modal>
+            </template>
 
             <template if:true={isLoading}>
                 <lightning-spinner alternative-text="Loading..."></lightning-spinner>
             </template>
 
             <template for:each={sprints} for:item="sprint">
-                <div key={sprint.Id} class="sprint-container">
+                <div key={sprint.Id} class={sprint.dropTargetClass} data-sprint-id={sprint.Id}
+                     ondragenter={handleDragEnterSprint}
+                     ondragleave={handleDragLeaveSprint}
+                     ondragover={handleDragOver}
+                     ondrop={handleDropOnSprint}>
 
                     <!-- Sprint Header -->
                     <div class="sprint-header">
@@ -140,7 +127,7 @@
                                 project-id={_projectId}
                                 epics={epics}
                                 onticketselect={handleTicketSelect}
-                                onticketdeleted={handleTicketDeleted}
+                                onticketdeleted={handleSprintTicketDeleted}
                                 onticketsummaryupdated={handleTicketSummaryUpdated}
                                 onticketpriorityupdated={handleTicketPriorityUpdated}
                                 onticketstateupdated={handleTicketStateUpdated}
@@ -188,12 +175,26 @@
         </div>
 
         <!-- ── BACKLOG CONTAINER ─────────────────────────────────────── -->
-        <div class="backlog-container">
+        <div class={backlogDropClass}
+             ondragenter={handleDragEnterBacklog}
+             ondragleave={handleDragLeaveBacklog}
+             ondragover={handleDragOver}
+             ondrop={handleDropOnBacklog}>
             <div class="backlog-header">
                 <h1 class="section-title">Backlog</h1>
                 <c-ao-btn label="+ Sprint" variant="secondary" onclick={handleOpenCreateSprint}></c-ao-btn>
                 <c-ao-btn label="+ Ticket" variant="primary"   onclick={handleOpenCreateTicketForBacklog}></c-ao-btn>
             </div>
+
+            <template if:true={showBacklogTicketModal}>
+                <c-ao-create-ticket-modal
+                    status-options={statusOptions}
+                    ticket-type-options={ticketTypeOptions}
+                    priority-options={priorityOptions}
+                    onticketcreated={handleBacklogTicketCreated}
+                    oncancel={handleCreateTicketCancel}>
+                </c-ao-create-ticket-modal>
+            </template>
 
             <template if:true={backlogIsLoading}>
                 <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
@@ -209,7 +210,7 @@
                     project-id={_projectId}
                     epics={epics}
                     onticketselect={handleTicketSelect}
-                    onticketdeleted={handleTicketDeleted}
+                    onticketdeleted={handleBacklogTicketDeleted}
                     onticketsummaryupdated={handleTicketSummaryUpdated}
                     onticketpriorityupdated={handleTicketPriorityUpdated}
                     onticketstateupdated={handleTicketStateUpdated}

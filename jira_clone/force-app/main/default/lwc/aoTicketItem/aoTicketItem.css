@@ -48,6 +48,15 @@
     background-color: #f0efec;
 }
 
+.ticket-row[draggable="true"] {
+    cursor: grab;
+}
+
+.ticket-row[draggable="true"]:active {
+    cursor: grabbing;
+    opacity: 0.75;
+}
+
 /* ── Left section: checkbox, expand, identity ────────────────────────────── */
 .ticket-left {
     display: flex;

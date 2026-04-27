@@ -1,0 +1,26 @@
+<template>
+    <section role="dialog" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <h2>Create Ticket</h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium">
+                <c-ao-input label="Name"         required value={ticket.name}          data-field="name"          onchange={handleChange}></c-ao-input>
+                <c-ao-input label="Summary"                value={ticket.summary}        data-field="summary"       onchange={handleChange}></c-ao-input>
+                <c-ao-input label="Description"            value={ticket.description}    data-field="description"   onchange={handleChange}></c-ao-input>
+                <c-ao-input label="Story Points" type="number" value={ticket.storyPoint} data-field="storyPoint"    onchange={handleChange}></c-ao-input>
+                <c-ao-combobox label="Ticket Type" required value={ticket.ticketTypeId}   options={ticketTypeOptions} data-field="ticketTypeId"   onchange={handleChange}></c-ao-combobox>
+                <c-ao-combobox label="State"      required value={ticket.currentStateId} options={statusOptions}     data-field="currentStateId" onchange={handleChange}></c-ao-combobox>
+                <c-ao-combobox label="Priority"            value={ticket.priority}        options={priorityOptions}   data-field="priority"       onchange={handleChange}></c-ao-combobox>
+                <template if:true={error}>
+                    <p class="modal-error">{error}</p>
+                </template>
+            </div>
+            <div class="slds-modal__footer">
+                <c-ao-btn label="Cancel" variant="ghost"   onclick={handleCancel}></c-ao-btn>
+                <c-ao-btn label="Create" variant="primary" onclick={handleSubmit}></c-ao-btn>
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

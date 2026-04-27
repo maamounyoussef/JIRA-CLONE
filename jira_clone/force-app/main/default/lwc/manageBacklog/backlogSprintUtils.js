@@ -32,5 +32,6 @@ export function formatSprint(raw) {
         isLastPage      : true,
         currentPage     : 1,
         offsetLabel     : 'No tickets',
+        dropTargetClass : 'sprint-container',
     };
 }

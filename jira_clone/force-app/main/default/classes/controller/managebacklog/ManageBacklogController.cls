@@ -384,6 +384,35 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
+    public static APIResponse moveTicketToSprint(String ticketId, String sprintId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(sprintId))  return new APIResponse(false, 'sprintId is required');
+            Ticket__c existing = TicketService.findTicketById(ticketId);
+            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+            existing.Sprint__c = sprintId;
+            Ticket__c updated = TicketService.updateTicket(existing);
+            return new APIResponse(true, 'Ticket moved to sprint', updated);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error moving ticket to sprint: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static APIResponse moveTicketToBacklog(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            Ticket__c existing = TicketService.findTicketById(ticketId);
+            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+            existing.Sprint__c = null;
+            Ticket__c updated = TicketService.updateTicket(existing);
+            return new APIResponse(true, 'Ticket moved to backlog', updated);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error moving ticket to backlog: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static APIResponse deleteTicket(String ticketId) {
         try {
             TicketService.deleteTickets(new List<String>{ticketId});

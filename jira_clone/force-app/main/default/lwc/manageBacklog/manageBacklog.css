@@ -213,3 +213,18 @@
     min-width: 3.5rem;
     text-align: center;
 }
+
+/* ── Drag-and-drop drop zones ─────────────────────────────────────────────── */
+.sprint-container.drop-target-active {
+    border-color: #0176d3;
+    box-shadow: 3px 3px 0 #0176d3;
+    background-color: #d8edff;
+    transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.backlog-container.drop-target-active {
+    border-color: #0176d3;
+    box-shadow: 4px 4px 0 #0176d3;
+    background-color: #d8edff;
+    transition: background-color 0.1s ease, border-color 0.1s ease;
+}
