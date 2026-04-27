@@ -1,5 +1,6 @@
 import { LightningElement, track } from 'lwc';
 import { loadStyle } from 'lightning/platformResourceLoader';
+import createTicket        from '@salesforce/apex/ManageBacklogController.createTicket';
 import loadBacklogData     from '@salesforce/apex/ManageBacklogController.loadBacklogData';
 import loadBacklogTickets  from '@salesforce/apex/ManageBacklogController.loadBacklogTickets';
 import moveTicketToSprint  from '@salesforce/apex/ManageBacklogController.moveTicketToSprint';
@@ -15,7 +16,7 @@ import aoThemeResource     from '@salesforce/resourceUrl/aoTheme';
 
 import { validateSprintForm } from './backlogSprintValidator';
 
-import { enrichTickets } from './backlogTicketUtils';
+import { enrichTickets, formatTicket } from './backlogTicketUtils';
 import { emptySprintForm, formatSprint, calcEndDate, PAGE_SIZE }      from './backlogSprintUtils';
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -193,19 +194,30 @@ export default class ManageBacklog extends LightningElement {
         this.showBacklogTicketModal = true;
     }
 
-    handleSprintTicketCreated(event) {
-        const { ticket, sprintId } = event.detail;
-        const sprint = this.sprints.find(s => s.Id === sprintId);
-        if (sprint) {
-            const tickets = [...sprint.tickets, ticket];
-            this._updateSprint(sprintId, { tickets, hasTickets: true });
-        }
-        this.showSprintTicketModal = false;
+    handleSprintTicketCreate(event) {
+        const data = event.detail;
+        createTicket(data)
+            .then(res => {
+                if (!res.success) { this.errorMessage = res.message; return; }
+                const ticket = formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId);
+                const sprint = this.sprints.find(s => s.Id === data.sprintId);
+                if (sprint) {
+                    this._updateSprint(data.sprintId, { tickets: [...sprint.tickets, ticket], hasTickets: true });
+                }
+                this.showSprintTicketModal = false;
+            })
+            .catch(err => { this.errorMessage = err.body?.message || 'Error creating ticket'; });
     }
 
-    handleBacklogTicketCreated(event) {
-        this.backlogTickets        = [...this.backlogTickets, event.detail.ticket];
-        this.showBacklogTicketModal = false;
+    handleBacklogTicketCreate(event) {
+        const data = event.detail;
+        createTicket(data)
+            .then(res => {
+                if (!res.success) { this.errorMessage = res.message; return; }
+                this.backlogTickets         = [...this.backlogTickets, formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId)];
+                this.showBacklogTicketModal = false;
+            })
+            .catch(err => { this.errorMessage = err.body?.message || 'Error creating ticket'; });
     }
 
     handleCreateTicketCancel() {
