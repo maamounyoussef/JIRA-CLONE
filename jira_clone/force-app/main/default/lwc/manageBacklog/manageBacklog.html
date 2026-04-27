@@ -42,13 +42,13 @@
                     <h2>Create Ticket</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <c-ao-input label="Name"         required value={newTicket.name}        data-field="name"          onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-input label="Summary"                value={newTicket.summary}      data-field="summary"       onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-input label="Description"            value={newTicket.description}  data-field="description"   onchange={handleNewTicketChange}></c-ao-input>
-                    <c-ao-input label="Story Points" type="number" value={newTicket.storyPoint} data-field="storyPoint" onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Name"         required value={newTicket.name}          data-field="name"          onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Summary"                value={newTicket.summary}        data-field="summary"       onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Description"            value={newTicket.description}    data-field="description"   onchange={handleNewTicketChange}></c-ao-input>
+                    <c-ao-input label="Story Points" type="number" value={newTicket.storyPoint} data-field="storyPoint"    onchange={handleNewTicketChange}></c-ao-input>
                     <c-ao-combobox label="Ticket Type" required value={newTicket.ticketTypeId}   options={ticketTypeOptions} data-field="ticketTypeId"   onchange={handleNewTicketChange}></c-ao-combobox>
                     <c-ao-combobox label="State"      required value={newTicket.currentStateId} options={statusOptions}     data-field="currentStateId" onchange={handleNewTicketChange}></c-ao-combobox>
-                    <c-ao-combobox label="Priority"            value={newTicket.priority}       options={priorityOptions}   data-field="priority"       onchange={handleNewTicketChange}></c-ao-combobox>
+                    <c-ao-combobox label="Priority"            value={newTicket.priority}        options={priorityOptions}   data-field="priority"       onchange={handleNewTicketChange}></c-ao-combobox>
                     <template if:true={modalError}>
                         <p class="modal-error">{modalError}</p>
                     </template>
@@ -70,7 +70,7 @@
                     <h2>{sprintModalTitle}</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <c-ao-input label="Name"           required value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></c-ao-input>
+                    <c-ao-input label="Name"            required value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></c-ao-input>
                     <c-ao-input label="Duration (days)" required type="number" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></c-ao-input>
                     <c-ao-input label="Start Date"      required type="date"   value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></c-ao-input>
                     <c-ao-input label="Goal"            required value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></c-ao-input>
@@ -79,7 +79,7 @@
                     </template>
                 </div>
                 <div class="slds-modal__footer">
-                    <c-ao-btn label="Cancel"                variant="ghost"   onclick={handleCloseSprintModal}></c-ao-btn>
+                    <c-ao-btn label="Cancel"                 variant="ghost"   onclick={handleCloseSprintModal}></c-ao-btn>
                     <c-ao-btn label={sprintModalSubmitLabel} variant="primary" onclick={handleSprintSubmit}></c-ao-btn>
                 </div>
             </div>
@@ -101,25 +101,85 @@
             </template>
 
             <template for:each={sprints} for:item="sprint">
-                <c-ao-sprint-container
-                    key={sprint.Id}
-                    data-sprint-id={sprint.Id}
-                    sprint={sprint}
-                    status-options={statusOptions}
-                    member-options={memberOptions}
-                    priority-options={priorityOptions}
-                    ticket-type-options={ticketTypeOptions}
-                    project-id={_projectId}
-                    epics={epics}
-                    onsprintedit={handleSprintEdit}
-                    onsprintdelete={handleSprintDelete}
-                    onsprintcomplete={handleSprintComplete}
-                    onsprintstart={handleSprintStart}
-                    onsprintaddticket={handleSprintAddTicket}
-                    onticketselect={handleTicketSelect}
-                    onticketdeleted={handleTicketDeleted}
-                    onticketupdated={handleTicketUpdated}>
-                </c-ao-sprint-container>
+                <div key={sprint.Id} class="sprint-container">
+
+                    <!-- Sprint Header -->
+                    <div class="sprint-header">
+                        <button class="toggle-btn" data-sprint-id={sprint.Id} onclick={handleToggle}>
+                            <lightning-icon icon-name={sprint.chevronIcon} size="x-small"></lightning-icon>
+                        </button>
+                        <span class="sprint-name">{sprint.Name}</span>
+                        <span class="sprint-dates">{sprint.StartDate__c} → {sprint.endDate}</span>
+                        <span class="sprint-status-badge">{sprint.RecordStatus__c}</span>
+                        <template if:false={sprint.isComplete}>
+                            <c-ao-btn label="Start"    variant="primary"   data-sprint-id={sprint.Id} onclick={handleSprintStart}></c-ao-btn>
+                        </template>
+                        <c-ao-btn label="Complete" variant="secondary" data-sprint-id={sprint.Id} onclick={handleSprintComplete}></c-ao-btn>
+                        <c-ao-btn label="Edit"     variant="secondary" data-sprint-id={sprint.Id} onclick={handleSprintEdit}></c-ao-btn>
+                        <c-ao-btn label="Delete"   variant="danger"    data-sprint-id={sprint.Id} onclick={handleSprintDelete}></c-ao-btn>
+                        <c-ao-btn label="+ Ticket" variant="ghost"     data-sprint-id={sprint.Id} onclick={handleSprintAddTicket}></c-ao-btn>
+                    </div>
+
+                    <!-- Collapsible Body -->
+                    <template if:true={sprint.isExpanded}>
+                        <template if:true={sprint.Goal__c}>
+                            <p class="sprint-goal">{sprint.Goal__c}</p>
+                        </template>
+
+                        <template if:true={sprint.isLoadingTickets}>
+                            <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
+                        </template>
+
+                        <template for:each={sprint.tickets} for:item="ticket">
+                            <c-ao-ticket-item
+                                key={ticket.Id}
+                                ticket={ticket}
+                                status-options={statusOptions}
+                                member-options={memberOptions}
+                                priority-options={priorityOptions}
+                                project-id={_projectId}
+                                epics={epics}
+                                onticketselect={handleTicketSelect}
+                                onticketdeleted={handleTicketDeleted}
+                                onticketsummaryupdated={handleTicketSummaryUpdated}
+                                onticketpriorityupdated={handleTicketPriorityUpdated}
+                                onticketstateupdated={handleTicketStateUpdated}
+                                oncreateepicforticket={handleCreateEpicForTicketModal}
+                                onupdateticket={handleUpdateTicket}>
+                            </c-ao-ticket-item>
+                        </template>
+
+                        <template if:false={sprint.hasTickets}>
+                            <template if:false={sprint.isLoadingTickets}>
+                                <p class="empty-sprint">No tickets in this sprint.</p>
+                            </template>
+                        </template>
+
+                        <!-- Pagination Footer -->
+                        <div class="pagination-footer">
+                            <c-ao-btn
+                                icon-name="utility:chevronleft"
+                                variant="secondary"
+                                size="sm"
+                                title="Previous page"
+                                disabled={sprint.isFirstPage}
+                                data-sprint-id={sprint.Id}
+                                onclick={handleSprintPrevPage}>
+                            </c-ao-btn>
+                            <span class="page-indicator">Page {sprint.currentPage}</span>
+                            <c-ao-btn
+                                icon-name="utility:chevronright"
+                                variant="secondary"
+                                size="sm"
+                                title="Next page"
+                                disabled={sprint.isLastPage}
+                                data-sprint-id={sprint.Id}
+                                onclick={handleSprintNextPage}>
+                            </c-ao-btn>
+                        </div>
+                    </template>
+
+                </div>
             </template>
 
             <template if:false={hasSprints}>
@@ -135,8 +195,8 @@
                 <c-ao-btn label="+ Ticket" variant="primary"   onclick={handleOpenCreateTicketForBacklog}></c-ao-btn>
             </div>
 
-            <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+            <template if:true={backlogIsLoading}>
+                <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
             </template>
 
             <template for:each={backlogTickets} for:item="ticket">
@@ -150,13 +210,40 @@
                     epics={epics}
                     onticketselect={handleTicketSelect}
                     onticketdeleted={handleTicketDeleted}
-                    onticketupdated={handleTicketUpdated}>
+                    onticketsummaryupdated={handleTicketSummaryUpdated}
+                    onticketpriorityupdated={handleTicketPriorityUpdated}
+                    onticketstateupdated={handleTicketStateUpdated}
+                    oncreateepicforticket={handleCreateEpicForTicketModal}
+                    onupdateticket={handleUpdateTicket}>
                 </c-ao-ticket-item>
             </template>
 
             <template if:false={hasBacklogTickets}>
-                <p class="empty-msg">No tickets in backlog.</p>
+                <template if:false={backlogIsLoading}>
+                    <p class="empty-msg">No tickets in backlog.</p>
+                </template>
             </template>
+
+            <!-- Backlog Pagination Footer -->
+            <div class="pagination-footer">
+                <c-ao-btn
+                    icon-name="utility:chevronleft"
+                    variant="secondary"
+                    size="sm"
+                    title="Previous page"
+                    disabled={backlogIsFirstPage}
+                    onclick={handleBacklogPrevPage}>
+                </c-ao-btn>
+                <span class="page-indicator">{backlogOffsetLabel}</span>
+                <c-ao-btn
+                    icon-name="utility:chevronright"
+                    variant="secondary"
+                    size="sm"
+                    title="Next page"
+                    disabled={backlogIsLastPage}
+                    onclick={handleBacklogNextPage}>
+                </c-ao-btn>
+            </div>
         </div>
 
     </div>

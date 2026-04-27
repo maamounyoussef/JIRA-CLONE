@@ -49,10 +49,7 @@ export default class AoTicketItem extends LightningElement {
 
     @track showEpicModal       = false;
     @track showCreateEpicModal = false;
-    @track epicOptions         = [];
     @track selectedEpicId      = '';
-    @track hasEpics            = false;
-    @track isLoadingEpics      = false;
 
     newEpic = emptyEpic();
 
@@ -85,7 +82,7 @@ export default class AoTicketItem extends LightningElement {
             .then(res => {
                 if (failed(res, msg => { this.errorMessage = msg; })) return;
                 this.isEditingSummary = false;
-                this._notifyUpdate('Summary__c', summary);
+                this._notifySummaryUpdated(summary);
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error updating summary'; });
     }
@@ -97,7 +94,7 @@ export default class AoTicketItem extends LightningElement {
             .then(res => {
                 if (failed(res, msg => { this.errorMessage = msg; })) return;
                 this.isEditingPriority = false;
-                this._notifyUpdate('Priority__c', priority);
+                this._notifyPriorityUpdated(priority);
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error updating priority'; });
     }
@@ -108,7 +105,7 @@ export default class AoTicketItem extends LightningElement {
         updateTicketState({ ticketId, stateId })
             .then(res => {
                 if (failed(res, msg => { this.errorMessage = msg; })) return;
-                this._notifyUpdate('CurrentState__c', stateId);
+                this._notifyStateUpdated(stateId);
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error updating state'; });
     }
@@ -167,10 +164,8 @@ export default class AoTicketItem extends LightningElement {
         updateTicketEpic({ ticketId, epicId })
             .then(res => {
                 if (failed(res, msg => { this.modalError = msg; })) return;
-                const selected = this.epicOptions.find(e => e.value === epicId);
-                this.ticket = { ...this.ticket, Epic__c: epicId, epicName: selected ? selected.label.split(' - ')[0] : '' };
                 this.showEpicModal = false;
-                this._notifyUpdate('Epic__c', epicId);
+                this._dispatchUpdateTicket(ticketId, epicId);
             })
             .catch(err => { this.modalError = err.body?.message || 'Error updating epic parent'; });
     }
@@ -179,6 +174,7 @@ export default class AoTicketItem extends LightningElement {
         const { name, summary, description, startDate, endDate } = this.newEpic;
         const error = validateNewEpic(this.newEpic);
         if (error) { this.modalError = error; return; }
+        let createdEpic;
         createEpic({
             name,
             summary,
@@ -189,14 +185,16 @@ export default class AoTicketItem extends LightningElement {
         })
         .then(res => {
             if (failed(res, msg => { this.modalError = msg; })) return;
-            return updateTicketEpic({ ticketId: this.ticket.Id, epicId: res.data.Id });
+            createdEpic = res.data;
+            return updateTicketEpic({ ticketId: this.ticket.Id, epicId: createdEpic.Id });
         })
         .then(res => {
+            if (!createdEpic) return;
             if (res && failed(res, msg => { this.modalError = msg; })) return;
             if (res) {
-                this.ticket = { ...this.ticket, Epic__c: res.data.Epic__c, epicName: this.newEpic.name };
+                this.ticket = { ...this.ticket, Epic__c: createdEpic.Id, epicName: createdEpic.Name };
                 this.showCreateEpicModal = false;
-                this._notifyUpdate('Epic__c', res.data.Epic__c);
+                this._dispatchCreateEpicForTicket(this.ticket.Id, createdEpic);
             }
         })
         .catch(err => { this.modalError = err.body?.message || 'Error creating epic'; });
@@ -213,7 +211,7 @@ export default class AoTicketItem extends LightningElement {
         this.dispatchEvent(new CustomEvent('ticketselect', {
             bubbles  : true,
             composed : true,
-            detail   : { ticketId: this.ticket.Id, selected: event.target.checked },
+            detail   : { ticketId: this.ticket.Id, selected: event.detail.checked },
         }));
     }
 
@@ -223,7 +221,7 @@ export default class AoTicketItem extends LightningElement {
         this.isEditingSummary = true;
     }
 
-    handleSummaryDraftChange(event) { this.summaryDraft = event.target.value; }
+    handleSummaryDraftChange(event) { this.summaryDraft = event.detail.value; }
 
     handleCancelEditSummary() {
         this.isEditingSummary = false;
@@ -267,9 +265,6 @@ export default class AoTicketItem extends LightningElement {
     handleOpenEpicModal() {
         this.modalError     = null;
         this.selectedEpicId = this.ticket.Epic__c || '';
-        const epics         = this.epics || [];
-        this.hasEpics       = epics.length > 0;
-        this.epicOptions    = formatEpicsAsOptions(epics);
         this.showEpicModal  = true;
     }
 
@@ -297,9 +292,7 @@ export default class AoTicketItem extends LightningElement {
     handleCloseCreateEpicModal() {
         this.showCreateEpicModal = false;
         this.modalError          = null;
-        if (this.epicOptions.length > 0 || !this.hasEpics) {
-            this.showEpicModal = true;
-        }
+        this.showEpicModal       = true;
     }
 
     handleNewEpicChange(event) {
@@ -314,6 +307,8 @@ export default class AoTicketItem extends LightningElement {
     get hasSubtasks()          { return this.subtasks.length > 0; }
     get spLabel()              { return this.ticket.StoryPoint__c != null ? this.ticket.StoryPoint__c : '—'; }
     get priorityLabel()        { return this.ticket.Priority__c || '—'; }
+    get hasEpics()             { return (this.epics || []).length > 0; }
+    get epicOptions()          { return formatEpicsAsOptions(this.epics || []); }
     get epicModalTitle()       { return this.hasEpics ? 'Update Epic Parent' : 'No Epics Available'; }
     get isEpicAssignDisabled() { return !this.selectedEpicId; }
 
@@ -423,7 +418,7 @@ export default class AoTicketItem extends LightningElement {
     }
 
     handleSubtaskSummaryDraftChange(event) {
-        this._patchSubtask(event.currentTarget.dataset.id, { summaryDraft: event.target.value });
+        this._patchSubtask(event.currentTarget.dataset.id, { summaryDraft: event.detail.value });
     }
 
     handleSubtaskCancelEditSummary(event) {
@@ -462,12 +457,43 @@ export default class AoTicketItem extends LightningElement {
         this.subtasks = this.subtasks.map(s => s.Id === id ? { ...s, ...patch } : s);
     }
 
-    //  INCLUDE PATHER CALL
-    _notifyUpdate(field, value) {
-        this.dispatchEvent(new CustomEvent('ticketupdated', {
+    _notifySummaryUpdated(summary) {
+        this.dispatchEvent(new CustomEvent('ticketsummaryupdated', {
             bubbles  : true,
             composed : true,
-            detail   : { ticketId: this.ticket.Id, field, value },
+            detail   : { ticketId: this.ticket.Id, Summary__c: summary },
+        }));
+    }
+
+    _notifyPriorityUpdated(priority) {
+        this.dispatchEvent(new CustomEvent('ticketpriorityupdated', {
+            bubbles  : true,
+            composed : true,
+            detail   : { ticketId: this.ticket.Id, Priority__c: priority },
+        }));
+    }
+
+    _notifyStateUpdated(stateId) {
+        this.dispatchEvent(new CustomEvent('ticketstateupdated', {
+            bubbles  : true,
+            composed : true,
+            detail   : { ticketId: this.ticket.Id, CurrentState__c: stateId },
+        }));
+    }
+
+    _dispatchUpdateTicket(ticketId, epicId) {
+        this.dispatchEvent(new CustomEvent('updateticket', {
+            bubbles : true,
+            composed: true,
+            detail  : { ticketId, epicId },
+        }));
+    }
+
+    _dispatchCreateEpicForTicket(ticketId, epic) {
+        this.dispatchEvent(new CustomEvent('createepicforticket', {
+            bubbles : true,
+            composed: true,
+            detail  : { ticketId, epic },
         }));
     }
 }

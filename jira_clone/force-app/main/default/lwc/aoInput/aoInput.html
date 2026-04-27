@@ -1,45 +1,23 @@
 <template>
-
-    <!-- ── Checkbox variant ───────────────────────────────────────────────── -->
-    <template if:true={isCheckbox}>
-        <label class="ao-check">
-            <input
-                class="ao-check__native"
-                type="checkbox"
-                checked={checked}
-                disabled={disabled}
-                onchange={handleCheckboxChange}
-            />
-            <span class="ao-check__box" aria-hidden="true"></span>
-            <template if:true={label}>
-                <span class="ao-check__label">{label}</span>
-            </template>
-        </label>
-    </template>
-
-    <!-- ── Text / number / date variant ──────────────────────────────────── -->
-    <template if:false={isCheckbox}>
-        <div class={fieldClass}>
-            <template if:true={showLabel}>
-                <span class="ao-field__label">
-                    {label}<template if:true={required}><span class="ao-field__required" aria-hidden="true"> *</span></template>
-                </span>
-            </template>
-            <input
-                class="ao-field__input"
-                type={type}
-                value={value}
-                placeholder={placeholder}
-                disabled={disabled}
-                required={required}
-                readonly={readonly}
-                min={min}
-                max={max}
-                step={step}
-                aria-label={ariaLabel}
-                oninput={handleInput}
-            />
-        </div>
-    </template>
-
+    <div class={fieldClass}>
+        <template if:true={showLabel}>
+            <span class="ao-field__label">
+                {label}<template if:true={required}><span class="ao-field__required" aria-hidden="true"> *</span></template>
+            </span>
+        </template>
+        <input
+            class="ao-field__input"
+            type={resolvedType}
+            value={value}
+            placeholder={placeholder}
+            disabled={disabled}
+            required={required}
+            readonly={readonly}
+            min={min}
+            max={max}
+            step={step}
+            aria-label={ariaLabel}
+            oninput={handleInput}
+        />
+    </div>
 </template>

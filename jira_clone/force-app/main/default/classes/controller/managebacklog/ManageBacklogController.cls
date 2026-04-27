@@ -18,13 +18,15 @@ public with sharing class ManageBacklogController {
             List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(projectId);
             List<ProjectMember__c> members = ProjectService.loadProjectMembers(projectId);
             List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
+            List<Ticket__c> backlogTickets = TicketService.loadBacklogTickets(projectId, 0, null);
 
             Map<String, Object> data = new Map<String, Object>{
-                'sprints' => sprints,
-                'status' => statuses,
-                'ticketTypes' => ticketTypes,
-                'members' => members,
-                'epics' => epics
+                'sprints'        => sprints,
+                'status'         => statuses,
+                'ticketTypes'    => ticketTypes,
+                'members'        => members,
+                'epics'          => epics,
+                'backlogTickets' => backlogTickets
             };
 
             return new APIResponse(true, 'Backlog data loaded', data);
@@ -216,6 +218,17 @@ public with sharing class ManageBacklogController {
             return new APIResponse(true, 'Sprint started');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error starting sprint: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadBacklogTickets(String projectId, Integer offset, Integer pageSize) {
+        try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            List<Ticket__c> tickets = TicketService.loadBacklogTickets(projectId, offset, pageSize);
+            return new APIResponse(true, 'Backlog tickets loaded', tickets);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading backlog tickets: ' + ex.getMessage());
         }
     }
 

@@ -1,0 +1,15 @@
+<template>
+    <label class="ao-check">
+        <input
+            class="ao-check__native"
+            type="checkbox"
+            checked={checked}
+            disabled={disabled}
+            onchange={handleChange}
+        />
+        <span class="ao-check__box" aria-hidden="true"></span>
+        <template if:true={label}>
+            <span class="ao-check__label">{label}</span>
+        </template>
+    </label>
+</template>

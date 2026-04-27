@@ -185,11 +185,10 @@
         <!-- LEFT: checkbox, expand, identity -->
         <div class="ticket-left">
 
-            <c-ao-input
-                type="checkbox"
+            <c-ao-checkbox
                 checked={ticket.isSelected}
                 onchange={handleSelect}>
-            </c-ao-input>
+            </c-ao-checkbox>
 
             <div class="icon-wrapper">
                 <c-ao-btn
@@ -357,12 +356,11 @@
                 <div key={sub.Id}>
                     <div class="subtask-row">
 
-                        <c-ao-input
-                            type="checkbox"
+                        <c-ao-checkbox
                             checked={sub.isSelected}
                             data-id={sub.Id}
                             onchange={handleSubtaskSelect}>
-                        </c-ao-input>
+                        </c-ao-checkbox>
 
                         <div class="subtask-summary">
                             <template if:false={sub.isEditingSummary}>

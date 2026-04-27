@@ -1,0 +1,71 @@
+:host {
+    display: inline-flex;
+}
+
+.ao-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+}
+
+/* Visually hidden native input — screen readers still use it */
+.ao-check__native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Custom checkbox box */
+.ao-check__box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    border: 2px solid #1a1a1a;
+    border-radius: 0;
+    background-color: #ffffff;
+    transition: background-color 0.1s ease;
+}
+
+/* Checked: black fill with white checkmark */
+.ao-check__native:checked + .ao-check__box {
+    background-color: #1a1a1a;
+}
+
+.ao-check__native:checked + .ao-check__box::after {
+    content: '';
+    display: block;
+    width: 0.25em;
+    height: 0.45em;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    transform: rotate(40deg) translateY(-10%);
+}
+
+.ao-check__native:focus-visible + .ao-check__box {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+}
+
+.ao-check__native:disabled + .ao-check__box {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.ao-check__label {
+    font-family: var(--ao-font-mono, 'Space Mono', ui-monospace, monospace);
+    font-size: 0.875rem;
+    color: #1a1a1a;
+    line-height: 1.4;
+}

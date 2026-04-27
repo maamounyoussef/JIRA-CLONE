@@ -23,3 +23,16 @@ export function formatTicket(rawTicket, ticketTypeOptions, ticketTypeId) {
         isSelected    : false,
     };
 }
+
+export function enrichTickets(tickets, epics, ticketTypeOptions, memberOptions) {
+    const epicMap       = Object.fromEntries((epics             || []).map(e => [e.Id,    e.Name]));
+    const ticketTypeMap = Object.fromEntries((ticketTypeOptions || []).map(o => [o.value, o.label]));
+    const memberMap     = Object.fromEntries((memberOptions     || []).map(m => [m.value, m.label]));
+    return tickets.map(t => ({
+        ...t,
+        epicName      : epicMap[t.Epic__c]              || '',
+        ticketTypeName: ticketTypeMap[t.Ticket_Type__c] || '',
+        assigneeName  : memberMap[t.AssignedTo__c]      || '',
+        isSelected    : false,
+    }));
+}

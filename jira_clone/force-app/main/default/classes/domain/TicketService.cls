@@ -161,6 +161,38 @@ public with sharing class TicketService {
         }
     }
 
+    public static List<Ticket__c> getBacklogTicketsByProject(String projectId, Integer offset, Integer pageSize) {
+        try {
+            List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :projectId];
+            if (types.isEmpty()) return new List<Ticket__c>();
+            List<Id> typeIds = new List<Id>();
+            for (TicketType__c t : types) typeIds.add(t.Id);
+
+            Integer currentOffset   = DomainCompleteValidator.safeOffset(offset);
+            Integer currentPageSize = DomainCompleteValidator.safePageSize(pageSize, DEFAULT_PAGE_SIZE);
+            return [
+                SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
+                       AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
+                       StartDate__c, EndDate__c
+                FROM Ticket__c
+                WHERE Ticket_Type__c IN :typeIds AND RecordStatus__c = 'active' AND Sprint__c = null
+                ORDER BY Priority__c ASC, EndDate__c DESC
+                LIMIT :currentPageSize OFFSET :currentOffset
+            ];
+        } catch (Exception ex) {
+            throw new ServiceException('Error querying backlog tickets: ' + ex.getMessage());
+        }
+    }
+
+    public static List<Ticket__c> loadBacklogTickets(String projectId, Integer offset, Integer pageSize) {
+        try {
+            DomainCompleteValidator.requireProjectExists(projectId);
+            return getBacklogTicketsByProject(projectId, offset, pageSize);
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading backlog tickets: ' + ex.getMessage());
+        }
+    }
+
     public static List<Ticket__c> getActiveTicketsBySprintOrderByPriorityAsc(Id sprintId, Integer offset, Integer pageSize) {
         try {
                     if (String.isBlank(sprintId)) throw new ServiceException('sprintId is required');
