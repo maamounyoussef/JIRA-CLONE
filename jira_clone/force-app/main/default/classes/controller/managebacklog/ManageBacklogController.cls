@@ -20,13 +20,22 @@ public with sharing class ManageBacklogController {
             List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
             List<Ticket__c> backlogTickets = TicketService.loadBacklogTickets(projectId, 0, null);
 
+            List<Map<String, String>> priorityOptions = new List<Map<String, String>>();
+            priorityOptions.add(new Map<String, String>{ 'label' => '—', 'value' => '' });
+            for (Schema.PicklistEntry e : Ticket__c.Priority__c.getDescribe().getPicklistValues()) {
+                if (e.isActive()) {
+                    priorityOptions.add(new Map<String, String>{ 'label' => e.getLabel(), 'value' => e.getValue() });
+                }
+            }
+
             Map<String, Object> data = new Map<String, Object>{
-                'sprints'        => sprints,
-                'status'         => statuses,
-                'ticketTypes'    => ticketTypes,
-                'members'        => members,
-                'epics'          => epics,
-                'backlogTickets' => backlogTickets
+                'sprints'         => sprints,
+                'status'          => statuses,
+                'ticketTypes'     => ticketTypes,
+                'members'         => members,
+                'epics'           => epics,
+                'backlogTickets'  => backlogTickets,
+                'priorityOptions' => priorityOptions
             };
 
             return new APIResponse(true, 'Backlog data loaded', data);

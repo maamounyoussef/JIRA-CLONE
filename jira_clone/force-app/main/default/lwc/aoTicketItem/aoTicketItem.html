@@ -349,6 +349,13 @@
     <!-- ── Subtasks ─────────────────────────────────────────────────────── -->
     <template if:true={isExpanded}>
         <div class="subtasks-wrapper">
+            <template if:true={hasSelectedSubtasks}>
+                <div class="subtask-bulk-bar">
+                    <span class="bulk-count">{selectedSubtaskCount} selected</span>
+                    <c-ao-btn label="Delete" variant="danger" size="sm" onclick={handleBulkDeleteSubtasks}></c-ao-btn>
+                    <c-ao-btn label="Cancel" variant="ghost"  size="sm" onclick={handleBulkCancelSelect}></c-ao-btn>
+                </div>
+            </template>
             <template if:true={isLoadingSubtasks}>
                 <lightning-spinner alternative-text="Loading subtasks..." size="small"></lightning-spinner>
             </template>

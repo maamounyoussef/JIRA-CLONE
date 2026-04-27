@@ -484,6 +484,23 @@
     outline-offset: 2px;
 }
 
+/* ── Subtask bulk action bar ─────────────────────────────────────────────── */
+.subtask-bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.3em 0.75em;
+    background-color: #e8f0fe;
+    border-bottom: 2px solid #1a1a1a;
+}
+
+.bulk-count {
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #1a1a1a;
+    flex: 1 1 auto;
+}
+
 /* ── Subtask row ─────────────────────────────────────────────────────────── */
 .subtask-row {
     display: flex;

@@ -15,7 +15,7 @@ import aoThemeResource     from '@salesforce/resourceUrl/aoTheme';
 import { validateTicketName, validateTicketType } from './backlogTicketValidator';
 import { validateSprintForm }                     from './backlogSprintValidator';
 
-import { emptyTicket, formatTicket, enrichTickets, PRIORITY_OPTIONS } from './backlogTicketUtils';
+import { emptyTicket, formatTicket, enrichTickets } from './backlogTicketUtils';
 import { emptySprintForm, formatSprint, calcEndDate, PAGE_SIZE }      from './backlogSprintUtils';
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -35,7 +35,7 @@ export default class ManageBacklog extends LightningElement {
     @track memberOptions     = [];
     @track ticketTypeOptions = [];
     @track epics             = [];
-    priorityOptions          = PRIORITY_OPTIONS;
+    @track priorityOptions   = [];
 
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
     connectedCallback() {
@@ -450,9 +450,10 @@ export default class ManageBacklog extends LightningElement {
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
 
-                const { sprints = [], status = [], members = [], epics = [], ticketTypes = [], backlogTickets = [] } = res.data;
+                const { sprints = [], status = [], members = [], epics = [], ticketTypes = [], backlogTickets = [], priorityOptions = [] } = res.data;
 
                 this.epics             = epics;
+                this.priorityOptions   = priorityOptions;
                 this.statusOptions     = status.map(s => ({ label: s.Name, value: s.Id }));
                 this.memberOptions     = members.map(m => ({ label: m.Name, value: m.Id }));
                 this.ticketTypeOptions = ticketTypes.map(t => ({ label: t.Name, value: t.Id }));

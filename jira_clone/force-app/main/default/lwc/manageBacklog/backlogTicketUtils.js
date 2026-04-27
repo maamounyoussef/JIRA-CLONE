@@ -3,14 +3,6 @@
  * Utility functions for the ticket domain.
  */
 
-export const PRIORITY_OPTIONS = [
-    { label: '—',        value: ''         },
-    { label: 'Low',      value: 'Low'      },
-    { label: 'Medium',   value: 'Medium'   },
-    { label: 'High',     value: 'High'     },
-    { label: 'Critical', value: 'Critical' },
-];
-
 export function emptyTicket() {
     return { name: '', summary: '', description: '', storyPoint: null, ticketTypeId: '', currentStateId: '', priority: '' };
 }

@@ -1,11 +1,3 @@
-export const PRIORITY_OPTIONS = [
-    { label: '—',        value: ''         },
-    { label: 'Low',      value: 'Low'      },
-    { label: 'Medium',   value: 'Medium'   },
-    { label: 'High',     value: 'High'     },
-    { label: 'Critical', value: 'Critical' },
-];
-
 export function emptyEpic() {
     return { name: '', summary: '', description: '', startDate: '', endDate: '' };
 }

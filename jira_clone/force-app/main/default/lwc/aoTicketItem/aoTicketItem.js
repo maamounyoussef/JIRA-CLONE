@@ -13,8 +13,9 @@ import createEpic           from '@salesforce/apex/ManageBacklogController.creat
 import updateSubtaskSummary from '@salesforce/apex/ManageBacklogController.updateSubtaskSummary';
 import assignSubtask        from '@salesforce/apex/ManageBacklogController.assignSubtask';
 import deleteSubtask        from '@salesforce/apex/ManageBacklogController.deleteSubtask';
+import deleteSubtasks       from '@salesforce/apex/ManageBacklogController.deleteSubtasks';
 import { validateSummary, validateSubtask, validateEpicSelection, validateNewEpic } from './ticketValidator';
-import { PRIORITY_OPTIONS, emptyEpic, formatMembersAsOptions, formatEpicsAsOptions, toISODateOrNull, failed } from './ticketUtils';
+import { emptyEpic, formatMembersAsOptions, formatEpicsAsOptions, toISODateOrNull, failed } from './ticketUtils';
 import { emptySubtask, enrichSubtask, buildSubtaskComboboxOptions } from './subtaskUtils';
 
 export default class AoTicketItem extends LightningElement {
@@ -28,7 +29,7 @@ export default class AoTicketItem extends LightningElement {
     @api ticket          = {};
     @api statusOptions   = [];
     @api memberOptions   = [];
-    @api priorityOptions = PRIORITY_OPTIONS;
+    @api priorityOptions = [];
     @api projectId       = '';
     @api epics           = [];
 
@@ -330,6 +331,7 @@ export default class AoTicketItem extends LightningElement {
     @track isExpanded        = false;
     @track isLoadingSubtasks = false;
     @track subtasks          = [];
+    @track selectedSubtaskIds = [];
 
     @track modalError             = null;
     @track showCreateSubtaskModal = false;
@@ -403,11 +405,30 @@ export default class AoTicketItem extends LightningElement {
     // ─── EVENT HANDLERS ──────────────────────────────────────────────────────
 
     handleSubtaskSelect(event) {
-        this.dispatchEvent(new CustomEvent('subtaskselect', {
-            bubbles  : true,
-            composed : true,
-            detail   : { subtaskId: event.currentTarget.dataset.id, selected: event.target.checked },
-        }));
+        const id      = event.currentTarget.dataset.id;
+        const checked = event.detail.checked;
+        this._patchSubtask(id, { isSelected: checked });
+        this.selectedSubtaskIds = checked
+            ? [...this.selectedSubtaskIds, id]
+            : this.selectedSubtaskIds.filter(sid => sid !== id);
+    }
+
+    handleBulkCancelSelect() {
+        this.selectedSubtaskIds = [];
+        this.subtasks = this.subtasks.map(s => ({ ...s, isSelected: false }));
+    }
+
+    handleBulkDeleteSubtasks() {
+        const ids = [...this.selectedSubtaskIds];
+        this._confirm(`Delete ${ids.length} subtask${ids.length > 1 ? 's' : ''}?`, () => {
+            deleteSubtasks({ subtaskIds: ids })
+                .then(res => {
+                    if (failed(res, msg => { this.errorMessage = msg; })) return;
+                    this.selectedSubtaskIds = [];
+                    return refreshApex(this._wiredResult);
+                })
+                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting subtasks'; });
+        });
     }
 
     // -- Summary --
@@ -442,6 +463,11 @@ export default class AoTicketItem extends LightningElement {
         const val   = event.detail ? event.detail.value : event.target.value;
         this.newSubtask = { ...this.newSubtask, [field]: val };
     }
+
+    // ─── GETTERS ─────────────────────────────────────────────────────────────
+
+    get hasSelectedSubtasks()  { return this.selectedSubtaskIds.length > 0; }
+    get selectedSubtaskCount() { return this.selectedSubtaskIds.length; }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                           PRIVATE   HELPER                               ║
