@@ -120,6 +120,7 @@
                         <template for:each={sprint.tickets} for:item="ticket">
                             <c-ao-ticket-item
                                 key={ticket.Id}
+                                data-ticket-id={ticket.Id}
                                 ticket={ticket}
                                 status-options={statusOptions}
                                 member-options={memberOptions}
@@ -127,12 +128,18 @@
                                 project-id={_projectId}
                                 epics={epics}
                                 onticketselect={handleTicketSelect}
-                                onticketdeleted={handleSprintTicketDeleted}
-                                onticketsummaryupdated={handleTicketSummaryUpdated}
-                                onticketpriorityupdated={handleTicketPriorityUpdated}
-                                onticketstateupdated={handleTicketStateUpdated}
-                                oncreateepicforticket={handleCreateEpicForTicketModal}
-                                onupdateticket={handleUpdateTicket}>
+                                onticketdelete={handleTicketDelete}
+                                onticketsummaryupdate={handleTicketSummaryUpdate}
+                                onticketpriorityupdate={handleTicketPriorityUpdate}
+                                onticketstatechange={handleTicketStateChange}
+                                onticketassigneechange={handleTicketAssigneeChange}
+                                onticketepicupdate={handleTicketEpicUpdate}
+                                onepiccreateforticket={handleEpicCreateForTicket}
+                                onsubtaskcreate={handleSubtaskCreate}
+                                onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
+                                onsubtaskassigneechange={handleSubtaskAssigneeChange}
+                                onsubtaskdelete={handleSubtaskDelete}
+                                onsubtasksbulkdelete={handleSubtasksBulkDelete}>
                             </c-ao-ticket-item>
                         </template>
 
@@ -203,6 +210,7 @@
             <template for:each={backlogTickets} for:item="ticket">
                 <c-ao-ticket-item
                     key={ticket.Id}
+                    data-ticket-id={ticket.Id}
                     ticket={ticket}
                     status-options={statusOptions}
                     member-options={memberOptions}
@@ -210,12 +218,18 @@
                     project-id={_projectId}
                     epics={epics}
                     onticketselect={handleTicketSelect}
-                    onticketdeleted={handleBacklogTicketDeleted}
-                    onticketsummaryupdated={handleTicketSummaryUpdated}
-                    onticketpriorityupdated={handleTicketPriorityUpdated}
-                    onticketstateupdated={handleTicketStateUpdated}
-                    oncreateepicforticket={handleCreateEpicForTicketModal}
-                    onupdateticket={handleUpdateTicket}>
+                    onticketdelete={handleTicketDelete}
+                    onticketsummaryupdate={handleTicketSummaryUpdate}
+                    onticketpriorityupdate={handleTicketPriorityUpdate}
+                    onticketstatechange={handleTicketStateChange}
+                    onticketassigneechange={handleTicketAssigneeChange}
+                    onticketepicupdate={handleTicketEpicUpdate}
+                    onepiccreateforticket={handleEpicCreateForTicket}
+                    onsubtaskcreate={handleSubtaskCreate}
+                    onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
+                    onsubtaskassigneechange={handleSubtaskAssigneeChange}
+                    onsubtaskdelete={handleSubtaskDelete}
+                    onsubtasksbulkdelete={handleSubtasksBulkDelete}>
                 </c-ao-ticket-item>
             </template>
 

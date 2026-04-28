@@ -13,6 +13,10 @@ export default class AoCreateTicketModal extends LightningElement {
     @track ticket = _empty();
     error = null;
 
+    @api
+    get errors() { return this.error; }
+    set errors(value) { this.error = value; }
+
     handleChange(event) {
         const field = event.target.dataset.field;
         const val   = event.detail ? event.detail.value : event.target.value;

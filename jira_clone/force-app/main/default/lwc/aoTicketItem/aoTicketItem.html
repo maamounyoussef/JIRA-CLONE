@@ -300,9 +300,7 @@
                     placeholder="─"
                     value={ticket.AssignedTo__c}
                     options={comboboxAssigneeOptions}
-                    onchange={handleAssigneeChange}
-                    onclick={handleLoadMembers}
-                    onfocus={handleLoadMembers}>
+                    onchange={handleAssigneeChange}>
                 </c-ao-combobox>
             </div>
 
@@ -415,9 +413,7 @@
                             value={sub.Assignee__c}
                             options={sub.subtaskComboboxOptions}
                             data-id={sub.Id}
-                            onchange={handleSubtaskAssigneeChange}
-                            onfocus={handleLoadMembers}
-                            onclick={handleLoadMembers}>
+                            onchange={handleSubtaskAssigneeChange}>
                         </c-ao-combobox>
 
                         <c-ao-btn

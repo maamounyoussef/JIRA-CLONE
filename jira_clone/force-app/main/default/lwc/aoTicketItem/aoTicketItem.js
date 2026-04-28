@@ -1,22 +1,9 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { refreshApex } from '@salesforce/apex';
-import updateTicketSummary  from '@salesforce/apex/ManageBacklogController.updateTicketSummary';
-import updateTicketPriority from '@salesforce/apex/ManageBacklogController.updateTicketPriority';
-import updateTicketState    from '@salesforce/apex/ManageBacklogController.updateTicketState';
-import updateTicketEpic     from '@salesforce/apex/ManageBacklogController.updateTicketEpic';
-import assignTicket         from '@salesforce/apex/ManageBacklogController.assignTicket';
-import deleteTicket         from '@salesforce/apex/ManageBacklogController.deleteTicket';
-import loadSubtasks         from '@salesforce/apex/ManageBacklogController.loadSubtasks';
-import createSubtask        from '@salesforce/apex/ManageBacklogController.createSubtask';
-import loadMembers          from '@salesforce/apex/ManageBacklogController.loadMembers';
-import createEpic           from '@salesforce/apex/ManageBacklogController.createEpic';
-import updateSubtaskSummary from '@salesforce/apex/ManageBacklogController.updateSubtaskSummary';
-import assignSubtask        from '@salesforce/apex/ManageBacklogController.assignSubtask';
-import deleteSubtask        from '@salesforce/apex/ManageBacklogController.deleteSubtask';
-import deleteSubtasks       from '@salesforce/apex/ManageBacklogController.deleteSubtasks';
+import loadSubtasks    from '@salesforce/apex/ManageBacklogController.loadSubtasks';
 import { validateSummary, validateSubtask, validateEpicSelection, validateNewEpic } from './ticketValidator';
-import { emptyEpic, formatMembersAsOptions, formatEpicsAsOptions, toISODateOrNull, failed } from './ticketUtils';
-import { emptySubtask, enrichSubtask, buildSubtaskComboboxOptions } from './subtaskUtils';
+import { emptyEpic, formatEpicsAsOptions, toISODateOrNull, failed }                 from './ticketUtils';
+import { emptySubtask, enrichSubtask, buildSubtaskComboboxOptions }                 from './subtaskUtils';
 
 export default class AoTicketItem extends LightningElement {
 
@@ -28,10 +15,21 @@ export default class AoTicketItem extends LightningElement {
 
     @api ticket          = {};
     @api statusOptions   = [];
-    @api memberOptions   = [];
     @api priorityOptions = [];
     @api projectId       = '';
     @api epics           = [];
+
+    _memberOptions = [];
+
+    @api
+    get memberOptions() { return this._memberOptions; }
+    set memberOptions(value) {
+        this._memberOptions = value || [];
+        this.subtasks = this.subtasks.map(s => ({
+            ...s,
+            subtaskComboboxOptions: buildSubtaskComboboxOptions(s.Assignee__c, s.assigneeName, this._memberOptions),
+        }));
+    }
 
     @track isEditingSummary  = false;
     @track summaryDraft      = '';
@@ -39,10 +37,8 @@ export default class AoTicketItem extends LightningElement {
     @track isEditingPriority = false;
     @track priorityDraft     = '';
 
-    @track errorMessage          = null;
-    @track assigneeMemberOptions = [];
-    @track isLoadingMembers      = false;
-    @track hasLoadedMembers      = false;
+    @track errorMessage = null;
+    @track modalError   = null;
 
     @track showConfirmDialog = false;
     confirmMessage           = '';
@@ -56,7 +52,6 @@ export default class AoTicketItem extends LightningElement {
 
     // ─── WIRE ────────────────────────────────────────────────────────────────
 
-    // Fires once on connect; re-runs only when refreshApex(_wiredResult) is called.
     @wire(loadSubtasks, { ticketId: '$ticket.Id' })
     wiredSubtasks(result) {
         this._wiredResult      = result;
@@ -68,152 +63,95 @@ export default class AoTicketItem extends LightningElement {
         }
         if (result.data) {
             if (failed(result.data, msg => { this.errorMessage = msg; })) return;
-            this.subtasks = (result.data.data || []).map(s => enrichSubtask(s, this.statusOptions, this.memberOptions));
+            this.subtasks = (result.data.data || []).map(s => enrichSubtask(s, this.statusOptions, this._memberOptions));
         }
     }
 
-    // ─── APEX CALLS ──────────────────────────────────────────────────────────
+    // ─── PUBLIC API ──────────────────────────────────────────────────────────
+
+    _errors = null;
+
+    // null → success: close whichever modal is open
+    // string → error: show inside the open modal
+    @api
+    get errors() { return this._errors; }
+    set errors(value) {
+        this._errors = value;
+        if (value === null) {
+            if (this.showCreateSubtaskModal) this.isExpanded = true;
+            this.showCreateSubtaskModal = false;
+            this.showEpicModal          = false;
+            this.showCreateEpicModal    = false;
+            this.modalError             = null;
+        } else {
+            this.modalError = value;
+        }
+    }
+
+    // non-modal errors from parent Apex calls (shown on the ticket row, not the page banner)
+    @api
+    get ticketError() { return this.errorMessage; }
+    set ticketError(value) { this.errorMessage = value; }
+
+    @api refreshSubtasks() {
+        return refreshApex(this._wiredResult);
+    }
+
+    // ─── EVENT DISPATCHERS ───────────────────────────────────────────────────
 
     handleSaveSummary() {
-        const ticketId = this.ticket.Id;
-        const summary  = this.summaryDraft;
-        const error    = validateSummary(summary);
+        const summary = this.summaryDraft;
+        const error   = validateSummary(summary);
         if (error) { this.errorMessage = error; return; }
-        updateTicketSummary({ ticketId, summary })
-            .then(res => {
-                if (failed(res, msg => { this.errorMessage = msg; })) return;
-                this.isEditingSummary = false;
-                this._notifySummaryUpdated(summary);
-            })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error updating summary'; });
+        this.isEditingSummary = false;
+        this._dispatch('ticketsummaryupdate', { ticketId: this.ticket.Id, summary });
     }
 
     handleSavePriority() {
-        const ticketId = this.ticket.Id;
-        const priority = this.priorityDraft;
-        updateTicketPriority({ ticketId, priority })
-            .then(res => {
-                if (failed(res, msg => { this.errorMessage = msg; })) return;
-                this.isEditingPriority = false;
-                this._notifyPriorityUpdated(priority);
-            })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error updating priority'; });
+        this.isEditingPriority = false;
+        this._dispatch('ticketpriorityupdate', { ticketId: this.ticket.Id, priority: this.priorityDraft });
     }
 
     handleStateChange(event) {
-        const ticketId = this.ticket.Id;
-        const stateId  = event.detail.value;
-        updateTicketState({ ticketId, stateId })
-            .then(res => {
-                if (failed(res, msg => { this.errorMessage = msg; })) return;
-                this._notifyStateUpdated(stateId);
-            })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error updating state'; });
-    }
-
-    handleLoadMembers() {
-        if (this.hasLoadedMembers || this.isLoadingMembers || !this.projectId) return;
-        this.isLoadingMembers = true;
-        loadMembers({ projectId: this.projectId })
-            .then(res => {
-                if (failed(res, msg => { this.errorMessage = msg; })) return;
-                const members              = formatMembersAsOptions(res.data);
-                this.assigneeMemberOptions = members;
-                this.hasLoadedMembers      = true;
-                this.subtasks = this.subtasks.map(s => ({
-                    ...s,
-                    subtaskComboboxOptions: buildSubtaskComboboxOptions(s.Assignee__c, s.assigneeName, members),
-                }));
-            })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error loading members'; })
-            .finally(() => { this.isLoadingMembers = false; });
+        this._dispatch('ticketstatechange', { ticketId: this.ticket.Id, stateId: event.detail.value });
     }
 
     handleAssigneeChange(event) {
-        const ticketId = this.ticket.Id;
-        const memberId = event.detail.value;
-        assignTicket({ ticketId, memberId })
-            .then(res => {
-                if (failed(res, msg => { this.errorMessage = msg; })) return;
-                const selected = this.assigneeMemberOptions.find(m => m.value === memberId);
-                this.ticket = { ...this.ticket, AssignedTo__c: memberId, assigneeName: selected ? selected.label : '' };
-            })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error assigning ticket'; });
+        this._dispatch('ticketassigneechange', { ticketId: this.ticket.Id, memberId: event.detail.value });
     }
 
-    //  INCLUDE PATHER CALL
     handleDeleteClick() {
         this._confirm('Are you sure you want to delete this ticket?', () => {
-            deleteTicket({ ticketId: this.ticket.Id })
-                .then(res => {
-                    if (failed(res, msg => { this.errorMessage = msg; })) return;
-                    this.dispatchEvent(new CustomEvent('ticketdeleted', {
-                        bubbles  : true,
-                        composed : true,
-                        detail   : { ticketId: this.ticket.Id },
-                    }));
-                })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting ticket'; });
+            this._dispatch('ticketdelete', { ticketId: this.ticket.Id });
         });
     }
 
     handleAssignEpic() {
         const error = validateEpicSelection(this.selectedEpicId);
         if (error) { this.modalError = error; return; }
-        const ticketId = this.ticket.Id;
-        const epicId   = this.selectedEpicId;
-        updateTicketEpic({ ticketId, epicId })
-            .then(res => {
-                if (failed(res, msg => { this.modalError = msg; })) return;
-                this.showEpicModal = false;
-                this._dispatchUpdateTicket(ticketId, epicId);
-            })
-            .catch(err => { this.modalError = err.body?.message || 'Error updating epic parent'; });
+        this._dispatch('ticketepicupdate', { ticketId: this.ticket.Id, epicId: this.selectedEpicId });
     }
 
     handleCreateEpicSubmit() {
-        const { name, summary, description, startDate, endDate } = this.newEpic;
         const error = validateNewEpic(this.newEpic);
         if (error) { this.modalError = error; return; }
-        let createdEpic;
-        createEpic({
+        const { name, summary, description, startDate, endDate } = this.newEpic;
+        this._dispatch('epiccreateforticket', {
+            ticketId   : this.ticket.Id,
             name,
             summary,
-            projectId  : this.projectId,
             description: description || null,
             startDate  : toISODateOrNull(startDate),
             endDate    : toISODateOrNull(endDate),
-        })
-        .then(res => {
-            if (failed(res, msg => { this.modalError = msg; })) return;
-            createdEpic = res.data;
-            return updateTicketEpic({ ticketId: this.ticket.Id, epicId: createdEpic.Id });
-        })
-        .then(res => {
-            if (!createdEpic) return;
-            if (res && failed(res, msg => { this.modalError = msg; })) return;
-            if (res) {
-                this.ticket = { ...this.ticket, Epic__c: createdEpic.Id, epicName: createdEpic.Name };
-                this.showCreateEpicModal = false;
-                this._dispatchCreateEpicForTicket(this.ticket.Id, createdEpic);
-            }
-        })
-        .catch(err => { this.modalError = err.body?.message || 'Error creating epic'; });
+        });
     }
 
     // ─── EVENT HANDLERS ──────────────────────────────────────────────────────
 
-    handleToggleSubtasks() {
-        this.isExpanded = !this.isExpanded;
-    }
+    handleToggleSubtasks() { this.isExpanded = !this.isExpanded; }
 
-    //  INCLUDE PATHER CALL
     handleSelect(event) {
-        this.dispatchEvent(new CustomEvent('ticketselect', {
-            bubbles  : true,
-            composed : true,
-            detail   : { ticketId: this.ticket.Id, selected: event.detail.checked },
-        }));
+        this._dispatch('ticketselect', { ticketId: this.ticket.Id, selected: event.detail.checked });
     }
 
     // -- Summary --
@@ -324,10 +262,10 @@ export default class AoTicketItem extends LightningElement {
     get comboboxAssigneeOptions() {
         if (this.ticket.AssignedTo__c && this.ticket.assigneeName) {
             const current    = { label: this.ticket.assigneeName, value: this.ticket.AssignedTo__c };
-            const hasCurrent = this.assigneeMemberOptions.some(o => o.value === this.ticket.AssignedTo__c);
-            if (!hasCurrent) return [current, ...this.assigneeMemberOptions];
+            const hasCurrent = this._memberOptions.some(o => o.value === this.ticket.AssignedTo__c);
+            if (!hasCurrent) return [current, ...this._memberOptions];
         }
-        return this.assigneeMemberOptions;
+        return this._memberOptions;
     }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -336,40 +274,29 @@ export default class AoTicketItem extends LightningElement {
 
     // ─── PROPERTIES & STATE ──────────────────────────────────────────────────
 
-    @track isExpanded        = false;
-    @track isLoadingSubtasks = false;
-    @track subtasks          = [];
-    @track selectedSubtaskIds = [];
-
-    @track modalError             = null;
+    @track isExpanded             = false;
+    @track isLoadingSubtasks      = false;
+    @track subtasks               = [];
+    @track selectedSubtaskIds     = [];
     @track showCreateSubtaskModal = false;
 
     _wiredResult = null;
+    newSubtask   = emptySubtask();
 
-    newSubtask = emptySubtask();
-
-    // ─── APEX CALLS ──────────────────────────────────────────────────────────
+    // ─── EVENT DISPATCHERS ───────────────────────────────────────────────────
 
     handleCreateSubtaskSubmit() {
-        const { summary, description, assigneeId, currentStateId, storyPoint } = this.newSubtask;
         const error = validateSubtask(this.newSubtask);
         if (error) { this.modalError = error; return; }
-        createSubtask({
-            summary,
+        const { summary, description, assigneeId, currentStateId, storyPoint } = this.newSubtask;
+        this._dispatch('subtaskcreate', {
             ticketId      : this.ticket.Id,
+            summary,
             description   : description    || null,
             assigneeId    : assigneeId     || null,
             currentStateId: currentStateId || null,
             storyPoint    : storyPoint ? parseInt(storyPoint, 10) : null,
-            startDate     : null,
-        })
-        .then(res => {
-            if (failed(res, msg => { this.modalError = msg; })) return;
-            this.showCreateSubtaskModal = false;
-            this.isExpanded             = true;
-            return refreshApex(this._wiredResult);
-        })
-        .catch(err => { this.modalError = err.body?.message || 'Error creating subtask'; });
+        });
     }
 
     handleSubtaskSaveSummary(event) {
@@ -378,35 +305,22 @@ export default class AoTicketItem extends LightningElement {
         const summary = sub.summaryDraft;
         const error   = validateSummary(summary);
         if (error) { this._patchSubtask(id, { subtaskError: error }); return; }
-        updateSubtaskSummary({ subtaskId: id, summary })
-            .then(res => {
-                if (failed(res, msg => this._patchSubtask(id, { subtaskError: msg }))) return;
-                this._patchSubtask(id, { isEditingSummary: false, Summary__c: summary, subtaskError: null });
-            })
-            .catch(err => this._patchSubtask(id, { subtaskError: err.body?.message || 'Error updating summary' }));
+        this._patchSubtask(id, { isEditingSummary: false, Summary__c: summary, subtaskError: null });
+        this._dispatch('subtasksummaryupdate', { subtaskId: id, summary });
     }
 
     handleSubtaskAssigneeChange(event) {
         const id       = event.currentTarget.dataset.id;
         const memberId = event.detail.value;
-        assignSubtask({ subtaskId: id, memberId })
-            .then(res => {
-                if (failed(res, msg => this._patchSubtask(id, { subtaskError: msg }))) return;
-                const selected = this.assigneeMemberOptions.find(m => m.value === memberId);
-                this._patchSubtask(id, { Assignee__c: memberId, assigneeName: selected ? selected.label : '' });
-            })
-            .catch(err => this._patchSubtask(id, { subtaskError: err.body?.message || 'Error assigning subtask' }));
+        const selected = this._memberOptions.find(m => m.value === memberId);
+        this._patchSubtask(id, { Assignee__c: memberId, assigneeName: selected ? selected.label : '' });
+        this._dispatch('subtaskassigneechange', { subtaskId: id, memberId });
     }
 
     handleSubtaskDeleteClick(event) {
         const id = event.currentTarget.dataset.id;
         this._confirm('Delete this subtask?', () => {
-            deleteSubtask({ subtaskId: id })
-                .then(res => {
-                    if (failed(res, msg => this._patchSubtask(id, { subtaskError: msg }))) return;
-                    refreshApex(this._wiredResult);
-                })
-                .catch(err => this._patchSubtask(id, { subtaskError: err.body?.message || 'Error deleting subtask' }));
+            this._dispatch('subtaskdelete', { subtaskId: id });
         });
     }
 
@@ -429,13 +343,8 @@ export default class AoTicketItem extends LightningElement {
     handleBulkDeleteSubtasks() {
         const ids = [...this.selectedSubtaskIds];
         this._confirm(`Delete ${ids.length} subtask${ids.length > 1 ? 's' : ''}?`, () => {
-            deleteSubtasks({ subtaskIds: ids })
-                .then(res => {
-                    if (failed(res, msg => { this.errorMessage = msg; })) return;
-                    this.selectedSubtaskIds = [];
-                    return refreshApex(this._wiredResult);
-                })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting subtasks'; });
+            this.selectedSubtaskIds = [];
+            this._dispatch('subtasksbulkdelete', { subtaskIds: ids });
         });
     }
 
@@ -491,43 +400,7 @@ export default class AoTicketItem extends LightningElement {
         this.subtasks = this.subtasks.map(s => s.Id === id ? { ...s, ...patch } : s);
     }
 
-    _notifySummaryUpdated(summary) {
-        this.dispatchEvent(new CustomEvent('ticketsummaryupdated', {
-            bubbles  : true,
-            composed : true,
-            detail   : { ticketId: this.ticket.Id, Summary__c: summary },
-        }));
-    }
-
-    _notifyPriorityUpdated(priority) {
-        this.dispatchEvent(new CustomEvent('ticketpriorityupdated', {
-            bubbles  : true,
-            composed : true,
-            detail   : { ticketId: this.ticket.Id, Priority__c: priority },
-        }));
-    }
-
-    _notifyStateUpdated(stateId) {
-        this.dispatchEvent(new CustomEvent('ticketstateupdated', {
-            bubbles  : true,
-            composed : true,
-            detail   : { ticketId: this.ticket.Id, CurrentState__c: stateId },
-        }));
-    }
-
-    _dispatchUpdateTicket(ticketId, epicId) {
-        this.dispatchEvent(new CustomEvent('updateticket', {
-            bubbles : true,
-            composed: true,
-            detail  : { ticketId, epicId },
-        }));
-    }
-
-    _dispatchCreateEpicForTicket(ticketId, epic) {
-        this.dispatchEvent(new CustomEvent('createepicforticket', {
-            bubbles : true,
-            composed: true,
-            detail  : { ticketId, epic },
-        }));
+    _dispatch(name, detail) {
+        this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, detail }));
     }
 }

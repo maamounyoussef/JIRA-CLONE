@@ -316,4 +316,92 @@ createTicketModal
 
 ---
 
+### Step 11 — New Problem: The Modal Does Not Know If the Request Succeeded
 
+Step 10 solved reusability — but introduced a new gap.
+
+The modal dispatches an event and hands off control to the parent.
+From that point, the modal is blind: it does not know whether the Apex call succeeded or failed.
+
+```
+createTicketModal
+  |__ dispatches event → ManageBacklogPage → ManageBacklogController
+                                                        |
+                                           success? fail? ← modal has no visibility here
+```
+
+**The problem has two sides:**
+
+- On **failure** — the error must be shown inside the modal, not on the parent page.
+  The modal is still open, the user is still looking at it.
+  Displaying the error on the parent behind the modal makes no sense.
+
+- On **success** — the parent simply sets `show` to `false`, closing the modal.
+  No explicit signal is needed — the disappearance of the modal is the confirmation.
+
+---
+
+**The solution: `@api errors` with getter and setter**
+
+The parent passes the error down to the modal through a public `@api` property.
+
+```
+ManageBacklogPage
+  |__ calls Apex
+  |__ on fail  → sets this.errors = error  → flows down into modal via @api errors
+  |__ on success → sets this.show = false   → modal closes, no error needed
+```
+
+**Why getter and setter, not a plain `@api` property:**
+
+A plain `@api` property would work for passing data down —
+but a setter allows the modal to react the moment the value changes:
+clear a previous error, scroll to the error message, reset a spinner, or trigger an animation.
+
+```javascript
+// In createTicketModal.js
+
+_errors;
+
+@api
+get errors() {
+    return this._errors;
+}
+
+set errors(value) {
+    this._errors = value;
+    // React to the incoming error:
+    // scroll to error, stop spinner, highlight fields, etc.
+}
+```
+
+```javascript
+// In ManageBacklogPage.js
+
+errors; // bound to modal via errors={errors}
+
+async handleTicketCreate(event) {
+    try {
+        await createTicket({ data: event.detail });
+        this.show = false;      // success: close the modal
+    } catch (error) {
+        this.errors = error;    // fail: push error into modal
+    }
+}
+```
+
+```html
+<!-- In manageBacklogPage.html -->
+
+<c-create-ticket-modal
+    if:true={show}
+    errors={errors}
+    oncreateticket={handleTicketCreate}>
+</c-create-ticket-modal>
+```
+
+**Why this works:**
+- The modal stays responsible for displaying its own errors — consistent with it owning the UI
+- The parent stays responsible for calling Apex and reacting to the outcome — consistent with the architecture
+- Success requires no extra signal — closing the modal is the signal
+- The setter gives the modal a reactive hook without breaking encapsulation
