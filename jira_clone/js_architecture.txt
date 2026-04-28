@@ -60,3 +60,81 @@ When splitting fields and methods between domain sections, apply these rules:
   - Modal state (showXxxModal, modalError, newXxx) belongs to the domain
     the modal is for.
   - Shared error state (e.g. errorMessage) belongs to the primary domain.
+
+──────────────────────────────────────────────
+MODAL COMPONENT STRUCTURE:
+──────────────────────────────────────────────
+
+import { LightningElement, api, track } from 'lwc';
+
+function _empty() {
+    return {
+        field1 : '',
+        field2 : '',
+        field3 : null,
+    };
+}
+
+export default class AoXxxModal extends LightningElement {
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                           FORM SECTION                                   ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── PROPERTIES & STATE ──────────────────────────────────────────────────
+
+    // -- Context (read-only inputs from parent) --
+    @api contextId   = null;
+    @api optionsA    = [];
+    @api optionsB    = [];
+
+    // -- Form state --
+    @track formData = _empty();
+
+    // -- Error bridge --
+    _error = null;
+
+    @api
+    get errors()        { return this._error; }
+    set errors(value)   { this._error = value; }
+
+    // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
+
+    // -- Input --
+    handleChange(event) {
+        const field = event.target.dataset.field;
+        const val   = event.detail ? event.detail.value : event.target.value;
+        this.formData = { ...this.formData, [field]: val };
+    }
+
+    // -- Actions --
+    // -- Example: -- 
+    handleCancel() {
+        this.dispatchEvent(new CustomEvent('cancel'));
+    }
+
+    handleSubmit() {
+        if (!this._validate()) return;
+        this.dispatchEvent(new CustomEvent('domainaction', { detail: this._payload() }));
+    }
+
+    // ─── GETTERS ──────────────────────────────────────────────────────────────
+
+    get hasError() { return !!this._error; }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                         PRIVATE HELPERS                                  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    _validate() {
+        this._error = null;
+        // if (!this.formData.field1?.trim()) { this._error = 'Field1 is required.'; return false; }
+        return true;
+    }
+
+    _payload() {
+        // const { field1, field2, field3 } = this.formData;
+        // return { field1, field2: field2 || null, field3, contextId: this.contextId };
+        return { ...this.formData };
+    }
+}
