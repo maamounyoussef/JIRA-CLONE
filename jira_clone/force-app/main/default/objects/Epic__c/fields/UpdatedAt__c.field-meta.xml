@@ -3,7 +3,7 @@
     <fullName>UpdatedAt__c</fullName>
     <description>Last update timestamp</description>
     <label>Updated At</label>
-    <required>false</required>
+    <required>true</required>
     <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

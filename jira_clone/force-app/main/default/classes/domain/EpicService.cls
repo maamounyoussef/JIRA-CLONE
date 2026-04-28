@@ -3,7 +3,7 @@
  * Consolidates all usecases and repository methods for Epic domain
  */
 public with sharing class EpicService {
-    
+
     // Repository methods
     public static List<Epic__c> findEpicsByProject(String projectId) {
         try {
@@ -53,28 +53,13 @@ public with sharing class EpicService {
             throw new ServiceException('Error updating epic: ' + ex.getMessage());
         }
     }
-    
+
     // Use case methods
     public static Epic__c createEpicWithValidation(Epic__c epic) {
         try {
-            if (epic == null) {
-                throw new ServiceException('Epic is required');
-            }
-            if (String.isBlank(epic.Name)) {
-                throw new ServiceException('name is required');
-            }
-            if (String.isBlank(epic.Summary__c)) {
-                throw new ServiceException('summary is required');
-            }
-            if (String.isBlank(epic.Project__c)) {
-                throw new ServiceException('projectId is required');
-            }
-            
-            List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :epic.Project__c LIMIT 1];
-            if (projects.isEmpty()) {
-                throw new ServiceException('Project not found');
-            }
-            
+            DomainCompleteValidator.requireProjectExists(epic.Project__c);
+            epic.CreatedAt__c = DateTime.now();
+            epic.UpdatedAt__c = DateTime.now();
             return createEpic(epic);
         } catch (Exception ex) {
             throw new ServiceException('Error creating epic: ' + ex.getMessage());
@@ -83,10 +68,6 @@ public with sharing class EpicService {
 
     public static Epic__c getEpicById(String epicId) {
         try {
-            if (String.isBlank(epicId)) {
-                throw new ServiceException('epicId is required');
-            }
-            
             return findEpicById(epicId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving epic: ' + ex.getMessage());
@@ -95,14 +76,7 @@ public with sharing class EpicService {
 
     public static List<Epic__c> getEpicsByProject(String projectId) {
         try {
-            if (String.isBlank(projectId)) {
-                throw new ServiceException('projectId is required');
-            }
-            List<Project__c> projects = [SELECT Id FROM Project__c WHERE Id = :projectId LIMIT 1];
-            if (projects.isEmpty()) {
-                throw new ServiceException('Project not found');
-            }
-            
+            DomainCompleteValidator.requireProjectExists(projectId);
             return findEpicsByProject(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading epics: ' + ex.getMessage());
@@ -111,21 +85,8 @@ public with sharing class EpicService {
 
     public static Epic__c updateEpicWithValidation(Epic__c epic) {
         try {
-            if (epic == null) {
-                throw new ServiceException('Epic is required');
-            }
-            if (String.isBlank(epic.Id)) {
-                throw new ServiceException('epicId is required');
-            }
-            if (String.isBlank(epic.Name)) {
-                throw new ServiceException('name is required');
-            }
-            
-            Epic__c existing = findEpicById(epic.Id);
-            if (existing == null) {
-                throw new ServiceException('Epic not found: ' + epic.Id);
-            }
-            
+            DomainCompleteValidator.requireEpicExists(epic.Id);
+            epic.UpdatedAt__c = DateTime.now();
             return updateEpic(epic);
         } catch (Exception ex) {
             throw new ServiceException('Error updating epic: ' + ex.getMessage());

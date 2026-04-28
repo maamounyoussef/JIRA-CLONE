@@ -7,7 +7,7 @@
     <referenceTo>TicketType__c</referenceTo>
     <relationshipLabel>Tickets</relationshipLabel>
     <relationshipName>Tickets</relationshipName>
-    <required>false</required>
+    <required>true</required>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

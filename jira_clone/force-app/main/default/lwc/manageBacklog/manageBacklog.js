@@ -26,7 +26,8 @@ import deleteSubtask         from '@salesforce/apex/ManageBacklogController.dele
 import deleteSubtasks        from '@salesforce/apex/ManageBacklogController.deleteSubtasks';
 import aoThemeResource       from '@salesforce/resourceUrl/aoTheme';
 
-import { validateSprintForm } from './backlogSprintValidator';
+import { validateSprintForm }        from './backlogSprintValidator';
+import { validatePriorityForUpdate } from './backlogTicketValidator';
 
 import { enrichTickets, formatTicket } from './backlogTicketUtils';
 import { emptySprintForm, formatSprint, calcEndDate, PAGE_SIZE } from './backlogSprintUtils';
@@ -163,6 +164,8 @@ export default class ManageBacklog extends LightningElement {
     handleTicketPriorityUpdate(event) {
         const { ticketId, priority } = event.detail;
         const ticketItem             = event.target;
+        const error = validatePriorityForUpdate(priority);
+        if (error) { ticketItem.ticketError = error; return; }
         updateTicketPriority({ ticketId, priority })
             .then(res => {
                 if (!res.success) { ticketItem.ticketError = res.message; return; }

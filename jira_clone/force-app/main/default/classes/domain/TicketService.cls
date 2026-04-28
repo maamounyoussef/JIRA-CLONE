@@ -46,20 +46,24 @@ public with sharing class TicketService {
 
     public static Ticket__c createTicket(Ticket__c ticket) {
         try {
-            // Ticket_Type__c is required — validate it is active and resolve the project
-            TicketType__c ticketType = DomainCompleteValidator.requireTicketHasValidTicketType(ticket.Ticket_Type__c);
+            TicketType__c ticketType = DomainCompleteValidator.requireTicketTypeExists(ticket.Ticket_Type__c);
             String projectId = ticketType.Project__c;
 
-            // Project must exist (TicketType.Project__c is a required lookup)
             DomainCompleteValidator.requireProjectExists(projectId);
 
-            // Optional relationship fields: validate only when provided
             DomainCompleteValidator.requireOptionalEpicActive(ticket.Epic__c);
             DomainCompleteValidator.requireOptionalSprintExists(ticket.Sprint__c);
             DomainCompleteValidator.requireOptionalProjectMemberActive(ticket.AssignedTo__c);
-            DomainCompleteValidator.requireOptionalProjectMemberActive(ticket.Creator__c);
 
-            // CurrentState__c is required on Ticket__c — default to Todo when blank or invalid
+            if (String.isBlank(ticket.Creator__c)) {
+                ProjectMember__c creator = DomainCompleteValidator.requireCurrentUserMemberForProject(projectId);
+                ticket.Creator__c = creator.Id;
+            } else {
+                DomainCompleteValidator.requireProjectMemberActive(ticket.Creator__c);
+            }
+
+            if (String.isBlank(ticket.Priority__c)) ticket.Priority__c = 'Medium';
+
             if (String.isBlank(ticket.CurrentState__c)) {
                 ticket.CurrentState__c = getTodoStatus(projectId).Id;
             } else {
@@ -121,9 +125,7 @@ public with sharing class TicketService {
 
     public static Ticket__c assignTicket(String ticketId, String memberId) {
         try {
-            DomainCompleteValidator.requireTicketAssignInputs(ticketId, memberId);
             Ticket__c existing = DomainCompleteValidator.requireTicketExists(ticketId);
-            // Assignee must be an active project member (has RecordStatus__c)
             DomainCompleteValidator.requireProjectMemberActive(memberId);
 
             existing.AssignedTo__c = memberId;
@@ -135,7 +137,6 @@ public with sharing class TicketService {
 
     public static void deleteTickets(List<String> ticketIds) {
         try {
-            DomainCompleteValidator.requireTicketIds(ticketIds);
             deleteTicketsByIds(ticketIds);
         } catch (Exception ex) {
             throw new ServiceException('Error deleting tickets: ' + ex.getMessage());
@@ -144,7 +145,6 @@ public with sharing class TicketService {
 
     public static Ticket__c getTicketById(String ticketId) {
         try {
-            DomainCompleteValidator.requireTicketId(ticketId);
             return findTicketById(ticketId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving ticket: ' + ex.getMessage());
@@ -153,7 +153,6 @@ public with sharing class TicketService {
 
     public static List<Ticket__c> loadActiveTicketsOrderByPriorityAsc(String projectId) {
         try {
-            // Project must exist before querying its tickets
             DomainCompleteValidator.requireProjectExists(projectId);
             return getActiveTicketsByProjectOrderByPriorityAsc(projectId);
         } catch (Exception ex) {
@@ -195,7 +194,7 @@ public with sharing class TicketService {
 
     public static List<Ticket__c> getActiveTicketsBySprintOrderByPriorityAsc(Id sprintId, Integer offset, Integer pageSize) {
         try {
-                    if (String.isBlank(sprintId)) throw new ServiceException('sprintId is required');
+            if (String.isBlank(sprintId)) throw new ServiceException('sprintId is required');
 
             Integer currentOffset   = DomainCompleteValidator.safeOffset(offset);
             Integer currentPageSize = DomainCompleteValidator.safePageSize(pageSize, DEFAULT_PAGE_SIZE);
@@ -238,9 +237,7 @@ public with sharing class TicketService {
 
     public static Ticket__c updateTicketPriority(String ticketId, String priority) {
         try {
-            DomainCompleteValidator.requireTicketPriorityInputs(ticketId, priority);
             Ticket__c existing = DomainCompleteValidator.requireTicketExists(ticketId);
-
             existing.Priority__c = priority;
             return updateTicket(existing);
         } catch (Exception ex) {
@@ -250,11 +247,8 @@ public with sharing class TicketService {
 
     public static Ticket__c updateTicketState(String ticketId, String stateId) {
         try {
-            DomainCompleteValidator.requireTicketStateInputs(ticketId, stateId);
-            // CurrentState__c references Status__c — verify the state record exists
             DomainCompleteValidator.requireOptionalStatusExists(stateId);
             Ticket__c existing = DomainCompleteValidator.requireTicketExists(ticketId);
-
             existing.CurrentState__c = stateId;
             return updateTicket(existing);
         } catch (Exception ex) {
@@ -264,9 +258,7 @@ public with sharing class TicketService {
 
     public static Ticket__c updateTicketSummary(String ticketId, String summary) {
         try {
-            DomainCompleteValidator.requireTicketSummaryInputs(ticketId, summary);
             Ticket__c existing = DomainCompleteValidator.requireTicketExists(ticketId);
-
             existing.Summary__c = summary;
             return updateTicket(existing);
         } catch (Exception ex) {
@@ -276,10 +268,7 @@ public with sharing class TicketService {
 
     public static Ticket__c updateTicketWithValidation(Ticket__c ticket) {
         try {
-            DomainCompleteValidator.requireTicketUpdateInputs(ticket);
-            // Confirm the record still exists and is not soft-deleted
             DomainCompleteValidator.requireTicketExists(ticket.Id);
-
             return updateTicket(ticket);
         } catch (Exception ex) {
             throw new ServiceException('Error updating ticket: ' + ex.getMessage());
@@ -321,9 +310,7 @@ public with sharing class TicketService {
 
     public static Subtask__c createSubtask(Subtask__c s) {
         try {
-            // Ticket__c is required on Subtask__c — validate the parent ticket is active
             DomainCompleteValidator.requireTicketExists(s.Ticket__c);
-            // Optional relationship fields: validate only when provided
             DomainCompleteValidator.requireOptionalProjectMemberActive(s.Assignee__c);
             DomainCompleteValidator.requireOptionalStatusExists(s.CurrentState__c);
 
@@ -368,9 +355,7 @@ public with sharing class TicketService {
 
     public static Subtask__c assignSubtask(String subtaskId, String memberId) {
         try {
-            DomainCompleteValidator.requireSubtaskAssignInputs(subtaskId, memberId);
             Subtask__c existing = DomainCompleteValidator.requireSubtaskExists(subtaskId);
-            // Assignee must be an active project member (has RecordStatus__c)
             DomainCompleteValidator.requireProjectMemberActive(memberId);
 
             existing.Assignee__c = memberId;
@@ -382,7 +367,6 @@ public with sharing class TicketService {
 
     public static void deleteSubtasks(List<String> subtaskIds) {
         try {
-            DomainCompleteValidator.requireSubtaskIds(subtaskIds);
             deleteSubtasksByIds(subtaskIds);
         } catch (Exception ex) {
             throw new ServiceException('Error deleting subtasks: ' + ex.getMessage());
@@ -391,7 +375,6 @@ public with sharing class TicketService {
 
     public static List<Subtask__c> getSubtasksByTicket(String ticketId) {
         try {
-            DomainCompleteValidator.requireTicketId(ticketId);
             return findSubtasksByTicket(ticketId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading subtasks: ' + ex.getMessage());
@@ -400,9 +383,7 @@ public with sharing class TicketService {
 
     public static Subtask__c updateSubtaskSummary(String subtaskId, String summary) {
         try {
-            DomainCompleteValidator.requireSubtaskSummaryInputs(subtaskId, summary);
             Subtask__c s = DomainCompleteValidator.requireSubtaskExists(subtaskId);
-
             s.Summary__c = summary;
             return updateSubtask(s);
         } catch (Exception ex) {
@@ -412,10 +393,7 @@ public with sharing class TicketService {
 
     public static Subtask__c updateSubtaskWithValidation(Subtask__c subtask) {
         try {
-            DomainCompleteValidator.requireSubtaskUpdateInputs(subtask);
-            // Confirm the record still exists and is not soft-deleted
             DomainCompleteValidator.requireSubtaskExists(subtask.Id);
-
             return updateSubtask(subtask);
         } catch (Exception ex) {
             throw new ServiceException('Error updating subtask: ' + ex.getMessage());
@@ -480,7 +458,6 @@ public with sharing class TicketService {
 
     public static List<TicketType__c> loadTicketTypes(String projectId) {
         try {
-            // Project must exist — ticket types live under a project
             DomainCompleteValidator.requireProjectExists(projectId);
             return getTicketTypesByProject(projectId);
         } catch (Exception ex) {
@@ -490,7 +467,6 @@ public with sharing class TicketService {
 
     public static TicketType__c getTicketTypeByIdWithValidation(String ticketTypeId) {
         try {
-            DomainCompleteValidator.requireTicketTypeId(ticketTypeId);
             return getTicketTypeById(ticketTypeId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving ticket type: ' + ex.getMessage());
@@ -499,8 +475,6 @@ public with sharing class TicketService {
 
     public static TicketType__c getTicketTypeByNameWithValidation(String ticketTypeName, String projectId) {
         try {
-            // Validate both inputs are non-blank before querying
-            DomainCompleteValidator.requireTicketTypeNameInputs(ticketTypeName, projectId);
             return getTicketTypeByName(ticketTypeName, projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving ticket type: ' + ex.getMessage());
@@ -509,10 +483,8 @@ public with sharing class TicketService {
 
     public static TicketType__c createTicketTypeWithValidation(String name, String description, String iconUrl, String workflowId, String projectId) {
         try {
-            // name, workflowId, and projectId are all required (Workflow__c is required on TicketType__c)
-            DomainCompleteValidator.requireTicketTypeCreateInputs(name, workflowId, projectId);
-            // Project must exist before attaching a ticket type to it
-            DomainCompleteValidator.requireProjectExistsForTicketType(projectId);
+            DomainCompleteValidator.requireProjectExists(projectId);
+            DomainCompleteValidator.requireWorkflowBelongsToProject(workflowId, projectId);
             return createTicketType(name, description, iconUrl, workflowId, projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error creating ticket type: ' + ex.getMessage());

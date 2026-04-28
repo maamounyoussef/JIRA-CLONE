@@ -3,7 +3,7 @@
     <fullName>Type__c</fullName>
     <description>Link type</description>
     <label>Type</label>
-    <required>false</required>
+    <required>true</required>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>

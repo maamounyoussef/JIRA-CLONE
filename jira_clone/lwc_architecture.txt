@@ -12,7 +12,7 @@ COMPONENT TYPES:
     - The ONLY component allowed to call Apex.
     - Receives events from child components and reacts to them.
 
-  TYPE 2 — CHILD COMPONENT (Modal / Reusable)
+  TYPE 2 — CHILD COMPONENT (Modal AND Reusable)
     - Reusable across multiple pages.
     - NEVER calls Apex. NEVER imports @salesforce/apex.
     - Communicates upward exclusively via CustomEvents.
@@ -198,6 +198,56 @@ IMPORT CONVENTION IN MAIN JS:
     2. Events imports         (child components only — from myChildComponentEvents.js)
     3. Validator imports      (one per domain)
     4. Utils imports          (one per domain)
+
+──────────────────────────────────────────────
+VALIDATION RESPONSIBILITY RULES:
+──────────────────────────────────────────────
+
+  The location where validation must be called depends on where the action
+  is triggered and whether the component that owns the action is reusable.
+
+  RULE 1 — REUSABLE CHILD COMPONENT (standalone, self-contained):
+    - Validation must be called inside the child component itself,
+      before dispatching any event.
+    - The child validates its own data in its main JS, using its own
+      validator files, then dispatches only if validation passes.
+    - The parent must NOT re-validate data that originated in a reusable child.
+    - This keeps the child truly self-contained and independently usable.
+
+    Pattern:
+      handleSubmit() {
+          const error = validateMyEntity(this.formData);
+          if (error) { /* show error, return */ }
+          dispatchMyEvent(this, this.formData);   // only reached if valid
+      }
+
+  RULE 2 — NON-REUSABLE MODAL OR INLINE FORM OWNED BY THE PAGE COMPONENT:
+    - When a modal or form is declared entirely within a page component
+      (not a separate child component), its submit handler lives in the
+      page component's main JS.
+    - Validation must be called in the page component's main JS,
+      before the Apex call, using the page component's own validator files.
+    - There is no dispatch involved — the page component calls Apex directly
+      after a successful validation.
+
+    Pattern:
+      handleInlineSubmit() {
+          const error = validateMyEntity(this.formData);
+          if (error) { /* show error, return */ }
+          callApexMethod({ data: this.formData });  // only reached if valid
+      }
+
+  SUMMARY TABLE:
+
+    Scenario                                  Validate Where?       Then What?
+    ───────────────────────────────────────── ───────────────────── ──────────────────────
+    Reusable child component (self-contained) Inside the child JS   Dispatch event upward
+    Non-reusable modal/form in page component Inside the page JS    Call Apex directly
+
+  KEY PRINCIPLE:
+    Validation always lives in the same file as the action it guards.
+    If the action is a dispatch → validate in the child.
+    If the action is an Apex call → validate in the page component.
 
 ──────────────────────────────────────────────
 COMPONENT TYPE COMPARISON:

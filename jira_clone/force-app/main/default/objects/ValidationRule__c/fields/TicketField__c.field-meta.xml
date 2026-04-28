@@ -5,7 +5,7 @@
     <externalId>false</externalId>
     <label>Ticket Field</label>
     <length>100</length>
-    <required>false</required>
+    <required>true</required>
     <trackTrending>false</trackTrending>
     <type>Text</type>
     <unique>false</unique>

@@ -2,11 +2,18 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Type__c</fullName>
     <description>Validation rule type</description>
-    <externalId>false</externalId>
     <label>Type</label>
-    <length>100</length>
-    <required>false</required>
+    <required>true</required>
     <trackTrending>false</trackTrending>
-    <type>Text</type>
-    <unique>false</unique>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Not Equals</fullName>
+                <default>true</default>
+                <label>Not Equals</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
 </CustomField>

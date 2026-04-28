@@ -11,7 +11,6 @@ public with sharing class ManageBacklogController {
 
             ProjectService.getProjectById(projectId);
 
-            // Saga step 1: load future sprints
             List<Sprint__c> sprints = SprintService.loadFuturedSprints(projectId);
 
             List<Status__c> statuses = StatusService.loadStatuses(projectId);
@@ -59,6 +58,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectByName(String projectName) {
         try {
+            if (String.isBlank(projectName)) return new APIResponse(false, 'projectName is required');
             Project__c project = ProjectService.getProjectByNameWithValidation(projectName);
             return new APIResponse(true, 'Project retrieved successfully', project);
         } catch (Exception ex) {
@@ -69,6 +69,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             List<Status__c> statuses = StatusService.getStatusesByProjectWithValidation(projectId);
             return new APIResponse(true, 'Project statuses retrieved successfully', statuses);
         } catch (Exception ex) {
@@ -94,6 +95,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getEpicsByProject(String projectId) {
         try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
             return new APIResponse(true, 'Epics retrieved successfully', epics);
         } catch (Exception ex) {
@@ -104,6 +106,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getEpicById(String epicId) {
         try {
+            if (String.isBlank(epicId)) return new APIResponse(false, 'epicId is required');
             Epic__c epic = EpicService.getEpicById(epicId);
             return new APIResponse(true, 'Epic retrieved successfully', epic);
         }  catch (Exception ex) {
@@ -159,6 +162,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            if (duration == null) return new APIResponse(false, 'duration is required');
+            if (String.isBlank(goal)) return new APIResponse(false, 'goal is required');
 
             Sprint__c sprint = new Sprint__c();
             sprint.Name = name;
@@ -255,6 +260,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadTicketTypes(String projectId) {
         try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(projectId);
             return new APIResponse(true, 'Ticket Types loaded successfully', ticketTypes);
         }catch (Exception ex) {
@@ -265,6 +271,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
+            if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
             TicketType__c ticketType = TicketService.getTicketTypeByIdWithValidation(ticketTypeId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
         }  catch (Exception ex) {
@@ -275,6 +282,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeByName(String ticketTypeName, String projectId) {
         try {
+            if (String.isBlank(ticketTypeName)) return new APIResponse(false, 'ticketTypeName is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             TicketType__c ticketType = TicketService.getTicketTypeByNameWithValidation(ticketTypeName, projectId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
         }catch (Exception ex) {
@@ -286,6 +295,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse createTicketType(String name, String description, String iconUrl, String workflowId, String projectId) {
         try {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(description)) return new APIResponse(false, 'description is required');
+            if (String.isBlank(iconUrl)) return new APIResponse(false, 'iconUrl is required');
             if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
@@ -300,8 +311,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse createTicket(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String sprintId, String priority) {
         try {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
-            // if (String.isBlank(currentStateId)) return new APIResponse(false, 'currentStateId is required');
 
             Ticket__c ticket = new Ticket__c();
             ticket.Name = name;
@@ -346,6 +357,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateTicketSummary(String ticketId, String summary) {
         try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             Ticket__c updated = TicketService.updateTicketSummary(ticketId, summary);
             return new APIResponse(true, 'Ticket summary updated', updated);
         } catch (Exception ex) {
@@ -356,6 +369,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateTicketPriority(String ticketId, String priority) {
         try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(priority)) return new APIResponse(false, 'priority is required');
             Ticket__c updated = TicketService.updateTicketPriority(ticketId, priority);
             return new APIResponse(true, 'Ticket priority updated', updated);
         }catch (Exception ex) {
@@ -366,6 +381,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse assignTicket(String ticketId, String memberId) {
         try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(memberId)) return new APIResponse(false, 'memberId is required');
             Ticket__c updated = TicketService.assignTicket(ticketId, memberId);
             return new APIResponse(true, 'Ticket assignee updated', updated);
         } catch (Exception ex) {
@@ -376,6 +393,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateTicketState(String ticketId, String stateId) {
         try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(stateId)) return new APIResponse(false, 'stateId is required');
             Ticket__c updated = TicketService.updateTicketState(ticketId, stateId);
             return new APIResponse(true, 'Ticket state updated', updated);
         } catch (Exception ex) {
@@ -415,6 +434,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteTicket(String ticketId) {
         try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             TicketService.deleteTickets(new List<String>{ticketId});
             return new APIResponse(true, 'Ticket deleted');
         } catch (Exception ex) {
@@ -425,6 +445,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteTickets(List<String> ticketIds) {
         try {
+            if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
             TicketService.deleteTickets(ticketIds);
             return new APIResponse(true, 'Tickets deleted');
         }  catch (Exception ex) {
@@ -435,6 +456,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadSubtasks(String ticketId) {
         try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             List<Subtask__c> subs = TicketService.getSubtasksByTicket(ticketId);
             return new APIResponse(true, 'Subtasks loaded', subs);
         } catch (Exception ex) {
@@ -469,6 +491,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse updateSubtaskSummary(String subtaskId, String summary) {
         try {
+            if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
+            if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             Subtask__c updated = TicketService.updateSubtaskSummary(subtaskId, summary);
             return new APIResponse(true, 'Subtask summary updated', updated);
         } catch (Exception ex) {
@@ -500,6 +524,8 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse assignSubtask(String subtaskId, String memberId) {
         try {
+            if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
+            if (String.isBlank(memberId)) return new APIResponse(false, 'memberId is required');
             Subtask__c updated = TicketService.assignSubtask(subtaskId, memberId);
             return new APIResponse(true, 'Subtask assignee updated', updated);
         } catch (Exception ex) {
@@ -510,6 +536,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSubtask(String subtaskId) {
         try {
+            if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
             TicketService.deleteSubtasks(new List<String>{subtaskId});
             return new APIResponse(true, 'Subtask deleted');
         } catch (Exception ex) {
@@ -520,6 +547,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled
     public static APIResponse deleteSubtasks(List<String> subtaskIds) {
         try {
+            if (subtaskIds == null || subtaskIds.isEmpty()) return new APIResponse(false, 'subtaskIds are required');
             TicketService.deleteSubtasks(subtaskIds);
             return new APIResponse(true, 'Subtasks deleted');
         } catch (Exception ex) {
@@ -545,6 +573,7 @@ public with sharing class ManageBacklogController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadMembers(String projectId) {
         try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             List<ProjectMember__c> members = ProjectService.loadProjectMembers(projectId);
             return new APIResponse(true, 'Project members loaded successfully', members);
         } catch (Exception ex) {

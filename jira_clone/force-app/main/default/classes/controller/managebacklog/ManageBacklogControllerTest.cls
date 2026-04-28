@@ -18,9 +18,19 @@ public class ManageBacklogControllerTest {
             Name = 'Bug',
             Project__c = project.Id,
             Workflow__c = workflow.Id,
-            RecordStatus__c = 'active'
+            RecordStatus__c = 'active',
+            Description__c = 'Bug ticket type',
+            IconUrl__c = 'https://example.com/bug.png'
         );
         insert ttBug;
+
+        User member = [SELECT Id FROM User WHERE Id = '005d200000OIH2zAAH' LIMIT 1];
+        ProjectMember__c pm = new ProjectMember__c(
+            User__c = member.Id,
+            Project__c = project.Id,
+            RecordStatus__c = 'active'
+        );
+        insert pm;
     }
 
     private static Id getTicketTypeId(String name) {
@@ -41,12 +51,12 @@ public class ManageBacklogControllerTest {
             'Fix login bug', // summary
             typeId,          // ticketTypeId
             '',            // currentStateId — intentionally missing
-            null,            // description
+            'description',            // description
             null,            // storyPoint
             null,            // assignedToId
             null,            // epicId
             null,            // sprintId
-            null             // priority
+            'Critical'             // priority
         );
         Test.stopTest();
 
@@ -60,6 +70,34 @@ public class ManageBacklogControllerTest {
             LIMIT 1
         ];
         System.assertEquals(getTodoStatusId(), created.CurrentState__c, 'Trigger should default CurrentState__c to Todo');
+    }
+
+    @isTest
+    static void testCreateTicket_Success() {
+        Id typeId   = getTicketTypeId('Bug');
+        Id statusId = getTodoStatusId();
+
+        Test.startTest();
+        APIResponse res = ManageBacklogController.createTicket(
+            'TCK-100',          // name
+            'Fix null pointer',  // summary
+            typeId,              // ticketTypeId
+            statusId,            // currentStateId
+            null,                // description
+            null,                // storyPoint
+            null,                // assignedToId
+            null,                // epicId
+            null,                // sprintId
+            null                 // priority
+        );
+        Test.stopTest();
+
+        System.assertEquals(true, res.success, 'createTicket should succeed');
+        System.assertNotEquals(null, res.data, 'Created ticket should be returned');
+
+        Ticket__c created = [SELECT Id, Name, Summary__c, CurrentState__c FROM Ticket__c WHERE Name = 'TCK-100' LIMIT 1];
+        System.assertEquals('Fix null pointer', created.Summary__c, 'Summary should match');
+        System.assertEquals(statusId, created.CurrentState__c, 'CurrentState should match the provided statusId');
     }
 
     // @isTest

@@ -217,6 +217,7 @@
                     <c-ao-input
                         value={summaryDraft}
                         class="summary-input"
+                        required
                         onchange={handleSummaryDraftChange}>
                     </c-ao-input>
                     <c-ao-btn
@@ -325,7 +326,15 @@
 
     <!-- Meta row -->
     <div class="ticket-meta-row">
-        <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
+        <template if:true={hasTicketType}>
+            <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
+        </template>
+        <template if:false={hasTicketType}>
+            <span class="ticket-type-missing-badge">
+                <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                No Type
+            </span>
+        </template>
         <span class="sp-badge">SP: {spLabel}</span>
     </div>
 

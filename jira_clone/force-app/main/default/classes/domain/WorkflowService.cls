@@ -270,7 +270,6 @@ public with sharing class WorkflowService {
 
     public static ValidationRule__c addValidationRule(String workflowTransitionId, String ticketField, String validationType) {
         try {
-            DomainCompleteValidator.requireValidationRuleInputs(ticketField, validationType);
             DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
 
             ValidationRule__c newRule = new ValidationRule__c();
@@ -288,9 +287,7 @@ public with sharing class WorkflowService {
     public static WorkflowTransition__c addWorkflowTransition(String workflowId, String name, String fromStatusId, String toStatusId) {
         try {
             DomainCompleteValidator.requireWorkflowExists(workflowId);
-            DomainCompleteValidator.requireTransitionName(name);
             DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatusId, toStatusId);
-            DomainCompleteValidator.requireTransitionNameUnique(workflowId, name);
 
             // Both status records must exist
             List<Status__c> statuses = getStatusesById(new List<String>{ fromStatusId, toStatusId });
@@ -312,9 +309,7 @@ public with sharing class WorkflowService {
     public static WorkflowTransition__c createWorkflowTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
         try {
             DomainCompleteValidator.requireWorkflowExists(workflowId);
-            DomainCompleteValidator.requireTransitionName(name);
             DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatusId, toStatusId);
-            DomainCompleteValidator.requireTransitionNameUnique(workflowId, name);
 
             DomainCompleteValidator.requireStatusExists(fromStatusId);
             DomainCompleteValidator.requireStatusExists(toStatusId);
@@ -327,7 +322,6 @@ public with sharing class WorkflowService {
 
     public static Workflow__c createWorkflowWithValidation(String name, String projectId) {
         try {
-            DomainCompleteValidator.requireWorkflowName(name);
             DomainCompleteValidator.requireProjectExists(projectId);
 
             return createWorkflow(name, projectId);
@@ -358,7 +352,6 @@ public with sharing class WorkflowService {
 
     public static List<Status__c> getProjectStatusesWithValidation(String projectId) {
         try {
-            DomainCompleteValidator.requireProjectId(projectId);
             return getProjectStatuses(projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving project statuses: ' + ex.getMessage());

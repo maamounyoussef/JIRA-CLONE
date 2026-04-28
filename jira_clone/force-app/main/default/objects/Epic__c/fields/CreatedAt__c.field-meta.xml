@@ -3,7 +3,7 @@
     <fullName>CreatedAt__c</fullName>
     <description>Creation timestamp</description>
     <label>Created At</label>
-    <required>false</required>
+    <required>true</required>
     <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

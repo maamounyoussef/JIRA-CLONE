@@ -1,5 +1,7 @@
 import { LightningElement, api, track } from 'lwc';
 
+import { validateTicketCreate } from './ticketValidator';
+
 function _empty() {
     return { name: '', summary: '', description: '', storyPoint: null, ticketTypeId: '', currentStateId: '', priority: '' };
 }
@@ -28,8 +30,8 @@ export default class AoCreateTicketModal extends LightningElement {
     }
 
     handleSubmit() {
-        if (!this.ticket.name?.trim()) { this.error = 'Name is required.';       return; }
-        if (!this.ticket.ticketTypeId) { this.error = 'Ticket Type is required.'; return; }
+        const error = validateTicketCreate(this.ticket);
+        if (error) { this.error = error; return; }
 
         const { name, summary, description, storyPoint, ticketTypeId, currentStateId, priority } = this.ticket;
         this.dispatchEvent(new CustomEvent('ticketcreate', {

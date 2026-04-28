@@ -100,7 +100,7 @@ export default class AoTicketItem extends LightningElement {
     // ─── EVENT DISPATCHERS ───────────────────────────────────────────────────
 
     handleSaveSummary() {
-        const summary = this.summaryDraft;
+        const summary = (this.summaryDraft || '').trim();
         const error   = validateSummary(summary);
         if (error) { this.errorMessage = error; return; }
         this.isEditingSummary = false;
@@ -258,6 +258,7 @@ export default class AoTicketItem extends LightningElement {
     get epicOptions()          { return formatEpicsAsOptions(this.epics || []); }
     get epicModalTitle()       { return this.hasEpics ? 'Update Epic Parent' : 'No Epics Available'; }
     get isEpicAssignDisabled() { return !this.selectedEpicId; }
+    get hasTicketType()        { return !!this.ticket.ticketTypeName; }
 
     get comboboxAssigneeOptions() {
         if (this.ticket.AssignedTo__c && this.ticket.assigneeName) {
@@ -302,7 +303,7 @@ export default class AoTicketItem extends LightningElement {
     handleSubtaskSaveSummary(event) {
         const id      = event.currentTarget.dataset.id;
         const sub     = this.subtasks.find(s => s.Id === id);
-        const summary = sub.summaryDraft;
+        const summary = (sub.summaryDraft || '').trim();
         const error   = validateSummary(summary);
         if (error) { this._patchSubtask(id, { subtaskError: error }); return; }
         this._patchSubtask(id, { isEditingSummary: false, Summary__c: summary, subtaskError: null });

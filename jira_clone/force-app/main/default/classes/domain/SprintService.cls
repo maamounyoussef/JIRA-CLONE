@@ -3,7 +3,7 @@
  * Consolidates all usecases and repository methods for Sprint domain
  */
 public with sharing class SprintService {
-    
+
     // Repository methods
     public static Sprint__c findSprintById(String sprintId) {
         try {
@@ -61,7 +61,7 @@ public with sharing class SprintService {
             throw new ServiceException('Error deleting sprint: ' + ex.getMessage());
         }
     }
-    
+
     // Use case methods
     public static void completeSprint(String sprintId) {
         try {
@@ -79,9 +79,7 @@ public with sharing class SprintService {
 
     public static Sprint__c createSprintWithValidation(Sprint__c sprint) {
         try {
-            DomainCompleteValidator.requireSprintCreateInputs(sprint);
             DomainCompleteValidator.requireProjectExists(sprint.Project__c);
-
             return createSprint(sprint);
         } catch (Exception ex) {
             throw new ServiceException('Error creating sprint: ' + ex.getMessage());
@@ -145,19 +143,7 @@ public with sharing class SprintService {
 
     public static Sprint__c updateSprintWithValidation(Sprint__c sprint) {
         try {
-            if (sprint == null) {
-                throw new ServiceException('Sprint is required');
-            }
-            if (String.isBlank(sprint.Id)) {
-                throw new ServiceException('sprintId is required');
-            }
-            if (String.isBlank(sprint.Name)) {
-                throw new ServiceException('name is required');
-            }
-            
-            Sprint__c existing = findSprintById(sprint.Id);
-            if (existing == null) throw new ServiceException('Sprint not found');
-            
+            DomainCompleteValidator.requireSprintExists(sprint.Id);
             return updateSprint(sprint);
         } catch (SprintException sex) {
             throw sex;
