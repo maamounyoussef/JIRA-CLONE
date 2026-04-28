@@ -62,7 +62,7 @@ When splitting fields and methods between domain sections, apply these rules:
   - Shared error state (e.g. errorMessage) belongs to the primary domain.
 
 ──────────────────────────────────────────────
-MODAL COMPONENT STRUCTURE:
+REUSABLE MODAL COMPONENT STRUCTURE:
 ──────────────────────────────────────────────
 
 import { LightningElement, api, track } from 'lwc';
@@ -101,7 +101,7 @@ export default class AoXxxModal extends LightningElement {
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
 
     // -- Input --
-    handleChange(event) {
+    handleChange(event) { 
         const field = event.target.dataset.field;
         const val   = event.detail ? event.detail.value : event.target.value;
         this.formData = { ...this.formData, [field]: val };

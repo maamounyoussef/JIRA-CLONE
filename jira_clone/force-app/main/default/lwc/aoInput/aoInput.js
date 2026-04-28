@@ -48,6 +48,10 @@ export default class AoInput extends LightningElement {
      */
     @api variant;
 
+    get resolvedType() {
+        return this.type || 'text';
+    }
+
     get showLabel() {
         return !!this.label && this.variant !== 'label-hidden';
     }

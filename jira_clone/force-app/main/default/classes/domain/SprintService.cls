@@ -66,7 +66,7 @@ public with sharing class SprintService {
     public static void completeSprint(String sprintId) {
         try {
             Sprint__c sprint = DomainCompleteValidator.requireSprintExists(sprintId);
-            DomainCompleteValidator.requireSprintIsCompletable(sprint);
+            // DomainCompleteValidator.requireSprintIsCompletable(sprint);
 
             sprint.RecordStatus__c = 'completed';
             updateSprint(sprint);
@@ -132,7 +132,7 @@ public with sharing class SprintService {
         try {
             Sprint__c sprint = DomainCompleteValidator.requireSprintExists(sprintId);
             DomainCompleteValidator.requireSprintIsStartable(sprint);
-            DomainCompleteValidator.requireNoActiveSprintInProject(sprint.Project__c);
+            // DomainCompleteValidator.requireNoActiveSprintInProject(sprint.Project__c);
 
             sprint.RecordStatus__c = 'in_progress';
             updateSprint(sprint);

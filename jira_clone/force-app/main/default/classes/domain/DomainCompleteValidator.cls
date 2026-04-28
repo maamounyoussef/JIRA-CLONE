@@ -405,15 +405,15 @@ public with sharing class DomainCompleteValidator {
      * Only one sprint per project can be in_progress at a time.
      * Prevents starting a new sprint when another is already running.
      */
-    public static void requireNoActiveSprintInProject(String projectId) {
-        requireProjectId(projectId);
-        List<Sprint__c> active = [
-            SELECT Id FROM Sprint__c
-            WHERE Project__c = :projectId AND RecordStatus__c = 'in_progress'
-            LIMIT 1
-        ];
-        if (!active.isEmpty()) throw new ServiceException('Project already has an active sprint in progress');
-    }
+    // public static void requireNoActiveSprintInProject(String projectId) {
+    //     requireProjectId(projectId);
+    //     List<Sprint__c> active = [
+    //         SELECT Id FROM Sprint__c
+    //         WHERE Project__c = :projectId AND RecordStatus__c = 'in_progress'
+    //         LIMIT 1
+    //     ];
+    //     if (!active.isEmpty()) throw new ServiceException('Project already has an active sprint in progress');
+    // }
 
     // ═══════════════════════════════════════════════════════════════
     // STATUS

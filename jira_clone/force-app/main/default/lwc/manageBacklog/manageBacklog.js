@@ -378,6 +378,7 @@ export default class ManageBacklog extends LightningElement {
     sprintModalSubmitLabel  = 'Create';
     sprintForm              = emptySprintForm();
     _editingSprintId        = null;
+    @track modalError = null;
 
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
     // -- Update Sprint --
@@ -492,9 +493,7 @@ export default class ManageBacklog extends LightningElement {
             completeSprint({ sprintId })
                 .then(res => {
                     if (!res.success) { this.errorMessage = res.message; return; }
-                    this.sprints = this.sprints.map(s =>
-                        s.Id === sprintId ? { ...s, RecordStatus__c: 'complete', isComplete: true } : s
-                    );
+                    this.sprints = this.sprints.filter(s => s.Id !== sprintId);
                 })
                 .catch(err => { this.errorMessage = err.body?.message || 'Error completing sprint'; });
         });
