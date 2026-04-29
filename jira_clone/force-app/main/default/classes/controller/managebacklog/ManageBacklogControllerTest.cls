@@ -83,7 +83,7 @@ public class ManageBacklogControllerTest {
             'Fix null pointer',  // summary
             typeId,              // ticketTypeId
             statusId,            // currentStateId
-            null,                // description
+            'description',                // description
             null,                // storyPoint
             null,                // assignedToId
             null,                // epicId
@@ -98,6 +98,54 @@ public class ManageBacklogControllerTest {
         Ticket__c created = [SELECT Id, Name, Summary__c, CurrentState__c FROM Ticket__c WHERE Name = 'TCK-100' LIMIT 1];
         System.assertEquals('Fix null pointer', created.Summary__c, 'Summary should match');
         System.assertEquals(statusId, created.CurrentState__c, 'CurrentState should match the provided statusId');
+    }
+
+
+
+
+     @isTest
+    static void deleteTickets() {
+        Project__c project = [SELECT Id FROM Project__c LIMIT 1];
+        TicketType__c tt = [SELECT Id FROM TicketType__c LIMIT 1];
+        Status__c status = [SELECT Id FROM Status__c WHERE Name = 'todo' LIMIT 1];
+        ProjectMember__c pm = [SELECT Id FROM ProjectMember__c LIMIT 1];
+
+        List<Ticket__c> tickets = new List<Ticket__c>();
+
+        for (Integer i = 0; i < 5; i++) {
+            tickets.add(new Ticket__c(
+                Name = 'Test Ticket ' + i,
+                Ticket_Type__c = tt.Id,
+                CurrentState__c = status.Id,
+                RecordStatus__c = 'active',
+                Creator__c = pm.Id, // 🔥 correct mapping
+                Summary__c = 'Test summary ' + i,
+                Description__c = 'Test description ' + i
+            ));
+        }
+
+        insert tickets;
+        // collect IDs dynamically (not hardcoded!)
+        List<Id> ticketIds = new List<Id>();
+        for (Ticket__c t : tickets) {
+            ticketIds.add(t.Id);
+        }
+
+        // WHEN: delete tickets
+        Test.startTest();
+        APIResponse res = ManageBacklogController.deleteTickets(ticketIds);
+        Test.stopTest();
+
+        // THEN: verify they are soft deleted
+        List<Ticket__c> deletedTickets = [
+            SELECT Id, RecordStatus__c
+            FROM Ticket__c
+            WHERE Id IN :ticketIds
+        ];
+
+        for (Ticket__c t : deletedTickets) {
+            System.assertEquals('delete', t.RecordStatus__c, 'Ticket should be marked as deleted');
+        }
     }
 
     // @isTest

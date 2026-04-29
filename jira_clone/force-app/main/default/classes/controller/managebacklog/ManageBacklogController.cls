@@ -129,7 +129,7 @@ public with sharing class ManageBacklogController {
             if (startDate != null) epic.StartDate__c = startDate;
             if (endDate != null) epic.EndDate__c = endDate;
 
-            Epic__c created = EpicService.createEpic(epic);
+            Epic__c created = EpicService.createEpicWithValidation(epic);
             return new APIResponse(true, 'Epic created successfully', created);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating epic: ' + ex.getMessage());

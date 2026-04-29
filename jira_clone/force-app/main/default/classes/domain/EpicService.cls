@@ -32,17 +32,6 @@ public with sharing class EpicService {
         }
     }
 
-    public static Epic__c createEpic(Epic__c epic) {
-        try {
-            insert epic;
-            return epic;
-        } catch (DmlException dex) {
-            throw new ServiceException('DML error creating epic: ' + dex.getMessage());
-        } catch (Exception ex) {
-            throw new ServiceException('Error creating epic: ' + ex.getMessage());
-        }
-    }
-
     public static Epic__c updateEpic(Epic__c epic) {
         try {
             update epic;
@@ -60,7 +49,8 @@ public with sharing class EpicService {
             DomainCompleteValidator.requireProjectExists(epic.Project__c);
             epic.CreatedAt__c = DateTime.now();
             epic.UpdatedAt__c = DateTime.now();
-            return createEpic(epic);
+            insert epic;
+            return epic;
         } catch (Exception ex) {
             throw new ServiceException('Error creating epic: ' + ex.getMessage());
         }

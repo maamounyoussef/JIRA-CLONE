@@ -368,7 +368,6 @@ public with sharing class WorkflowService {
     
     public static WorkflowConfigDTO getWorkflowConfig(String workflowId) {
         try {
-            DomainCompleteValidator.requireWorkflowId(workflowId);
 
             Workflow__c workflow = getWorkflowWithTransitions(workflowId);
             
@@ -409,7 +408,6 @@ public with sharing class WorkflowService {
     
     public static List<WorkflowTransition__c> loadWorkflowTransitions(String workflowId) {
         try {
-            DomainCompleteValidator.requireWorkflowId(workflowId);
             return getTransitionsByWorkflow(workflowId);
         } catch (Exception ex) {
             throw new ServiceException('Error loading workflow transitions: ' + ex.getMessage());

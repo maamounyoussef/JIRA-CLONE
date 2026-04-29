@@ -51,6 +51,46 @@ public with sharing class TicketService {
 
             DomainCompleteValidator.requireProjectExists(projectId);
 
+            // DomainCompleteValidator.requireOptionalEpicActive(ticket.Epic__c);
+            // DomainCompleteValidator.requireOptionalSprintExists(ticket.Sprint__c);
+            // DomainCompleteValidator.requireOptionalProjectMemberActive(ticket.AssignedTo__c);
+
+            if (String.isBlank(ticket.Creator__c)) {
+                ProjectMember__c creator = DomainCompleteValidator.requireCurrentUserMemberForProject(projectId);
+                ticket.Creator__c = creator.Id;
+            } else {
+                DomainCompleteValidator.requireProjectMemberActive(ticket.Creator__c);
+            }
+
+            if (String.isBlank(ticket.Priority__c)) ticket.Priority__c = 'Medium';
+
+            if (String.isBlank(ticket.CurrentState__c)) {
+                ticket.CurrentState__c = getTodoStatus(projectId).Id;
+            } else {
+                List<Status__c> existing = [SELECT Id FROM Status__c WHERE Id = :ticket.CurrentState__c LIMIT 1];
+                if (existing.isEmpty()) {
+                    ticket.CurrentState__c = getTodoStatus(projectId).Id;
+                }
+            }
+
+            ticket.RecordStatus__c = 'active';
+            insert ticket;
+            return ticket;
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error creating ticket: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error creating ticket: ' + ex.getMessage());
+        }
+    }
+
+
+        public static Ticket__c createFullTicket(Ticket__c ticket) {
+        try {
+            TicketType__c ticketType = DomainCompleteValidator.requireTicketTypeExists(ticket.Ticket_Type__c);
+            String projectId = ticketType.Project__c;
+
+            DomainCompleteValidator.requireProjectExists(projectId);
+
             DomainCompleteValidator.requireOptionalEpicActive(ticket.Epic__c);
             DomainCompleteValidator.requireOptionalSprintExists(ticket.Sprint__c);
             DomainCompleteValidator.requireOptionalProjectMemberActive(ticket.AssignedTo__c);
@@ -107,7 +147,7 @@ public with sharing class TicketService {
 
     public static void deleteTicketsByIds(List<String> ids) {
         try {
-            List<Ticket__c> found = [SELECT Id, RecordStatus__c FROM Ticket__c WHERE Id IN :ids];
+            List<Ticket__c> found = [SELECT Id, RecordStatus__c, Ticket_Type__c, Description__c, Creator__c FROM Ticket__c WHERE Id IN :ids];
             if (!found.isEmpty()) {
                 for (Ticket__c t : found) t.RecordStatus__c = 'delete';
                 update found;

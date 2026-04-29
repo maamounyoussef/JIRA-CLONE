@@ -238,7 +238,6 @@ public with sharing class DomainCompleteValidator {
     // ═══════════════════════════════════════════════════════════════
 
     public static Workflow__c requireWorkflowExists(String workflowId) {
-        requireWorkflowId(workflowId);
         List<Workflow__c> rows = [
             SELECT Id, Name, Project__c
             FROM Workflow__c
