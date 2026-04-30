@@ -3,111 +3,97 @@
  * Consolidates all usecases and repository methods for Workflow domain
  */
 public with sharing class WorkflowService {
-    
+
     // Repository methods from WorkflowRepository
     public static Workflow__c getWorkflowWithTransitions(String workflowId) {
         List<Workflow__c> workflows = [
-            SELECT 
-                Id, 
-                Name, 
+            SELECT
+                Id,
+                Name,
                 Project__c,
                 (
-                    SELECT 
-                        Id, 
-                        Name, 
-                        FromStatus__c, 
-                        ToStatus__c, 
-                        RecordStatus__c, 
+                    SELECT
+                        Id,
+                        Name,
+                        FromStatus__c,
+                        ToStatus__c,
+                        RecordStatus__c,
                         Workflow__c
-                    FROM WorkflowTransitions__r 
+                    FROM WorkflowTransitions__r
                     WHERE RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
                     ORDER BY RecordStatus__c DESC, CreatedDate ASC
                 )
-            FROM Workflow__c 
-            WHERE Id = :workflowId 
+            FROM Workflow__c
+            WHERE Id = :workflowId
             LIMIT 1
         ];
         return workflows[0];
     }
-    
+
     public static Workflow__c getWorkflow(String workflowId) {
         List<Workflow__c> workflows = [
             SELECT Id, Name, Project__c
-            FROM Workflow__c 
-            WHERE Id = :workflowId 
+            FROM Workflow__c
+            WHERE Id = :workflowId
             LIMIT 1
         ];
-        
+
         if (workflows.isEmpty()) {
             throw new ServiceException('Workflow not found');
         }
-        
+
         return workflows[0];
     }
-    
-    public static Workflow__c getWorkflowById(String workflowId) {
-        List<Workflow__c> workflows = [
-            SELECT Id, Name, Project__c
-            FROM Workflow__c 
-            WHERE Id = :workflowId 
-            LIMIT 1
-        ];
-        
-        if (workflows.isEmpty()) {
-            throw new ServiceException('Workflow not found');
-        }
-        
-        return workflows[0];
-    }
-    
+
+
     public static WorkflowTransition__c getWorkflowTransitionById(String transitionId) {
         List<WorkflowTransition__c> transitions = [
-            SELECT Id, Workflow__c 
-            FROM WorkflowTransition__c 
+            SELECT Id, Workflow__c
+            FROM WorkflowTransition__c
             WHERE Id = :transitionId
             AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
             LIMIT 1
         ];
-        
+
         if (transitions.isEmpty()) {
             throw new ServiceException('Workflow Transition not found');
         }
-        
+
         return transitions[0];
     }
-    
+
     public static ValidationRule__c getValidationRuleById(String ruleId) {
         List<ValidationRule__c> rules = [
             SELECT Id, RecordStatus__c, WorkflowTransition__c
-            FROM ValidationRule__c 
-            WHERE Id = :ruleId 
+            FROM ValidationRule__c
+            WHERE Id = :ruleId
             LIMIT 1
         ];
-        
+
         if (rules.isEmpty()) {
             throw new ServiceException('Validation Rule not found');
         }
-        
+
         return rules[0];
     }
-    
+
     public static List<Status__c> getStatusesById(List<String> statusIds) {
         return [
-            SELECT Id 
-            FROM Status__c 
+            SELECT Id
+            FROM Status__c
             WHERE Id IN :statusIds
         ];
     }
-    
+
     public static List<Status__c> getProjectStatuses(String projectId) {
         return [
             SELECT Id, Name, Project__c
-            FROM Status__c 
+            FROM Status__c
             WHERE Project__c = :projectId
             ORDER BY Name ASC
         ];
     }
-    
+
     public static List<Workflow__c> getAllWorkflows() {
         return [
             SELECT Id, Name, Project__c
@@ -115,7 +101,7 @@ public with sharing class WorkflowService {
             ORDER BY Name ASC
         ];
     }
-    
+
     public static Workflow__c createWorkflow(String name, String projectId) {
         try {
             Workflow__c workflow = new Workflow__c(
@@ -128,27 +114,27 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error creating workflow: ' + ex.getMessage());
         }
     }
-    
+
     public static List<WorkflowTransition__c> getPendingTransitions(String workflowId) {
         return [
-            SELECT Id, RecordStatus__c 
-            FROM WorkflowTransition__c 
-            WHERE Workflow__c = :workflowId 
+            SELECT Id, RecordStatus__c
+            FROM WorkflowTransition__c
+            WHERE Workflow__c = :workflowId
               AND RecordStatus__c = :WorkflowConstants.RECORD_STATUS_PENDING
         ];
     }
-    
+
     public static List<ValidationRule__c> getPendingRules(String workflowId) {
         return [
-            SELECT Id, RecordStatus__c 
-            FROM ValidationRule__c 
+            SELECT Id, RecordStatus__c
+            FROM ValidationRule__c
             WHERE WorkflowTransition__c IN (
                 SELECT Id FROM WorkflowTransition__c WHERE Workflow__c = :workflowId AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
             )
               AND RecordStatus__c = :WorkflowConstants.RECORD_STATUS_PENDING
         ];
     }
-    
+
     public static ValidationRule__c insertValidationRule(ValidationRule__c rule) {
         try {
             insert rule;
@@ -157,7 +143,7 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error inserting validation rule: ' + ex.getMessage());
         }
     }
-    
+
     public static WorkflowTransition__c insertWorkflowTransition(WorkflowTransition__c transition) {
         try {
             insert transition;
@@ -166,7 +152,7 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error inserting workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     public static void updateRecord(SObject record) {
         try {
             update record;
@@ -174,7 +160,7 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error updating record: ' + ex.getMessage());
         }
     }
-    
+
     public static void updateRecords(List<SObject> records) {
         try {
             update records;
@@ -182,11 +168,11 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error updating records: ' + ex.getMessage());
         }
     }
-    
+
     // Repository methods from WorkflowTransitionRepository
     public static List<WorkflowTransition__c> getTransitionsByWorkflow(String workflowId) {
         return [
-            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c, 
+            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c,
                    FromStatus__r.Name, ToStatus__r.Name, RecordStatus__c, CreatedDate
             FROM WorkflowTransition__c
             WHERE Workflow__c = :workflowId
@@ -194,24 +180,24 @@ public with sharing class WorkflowService {
             ORDER BY Name ASC
         ];
     }
-    
+
     public static WorkflowTransition__c getTransitionById(String transitionId) {
         List<WorkflowTransition__c> transitions = [
-            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c, 
+            SELECT Id, Name, Workflow__c, FromStatus__c, ToStatus__c,
                    FromStatus__r.Name, ToStatus__r.Name, RecordStatus__c, CreatedDate
             FROM WorkflowTransition__c
             WHERE Id = :transitionId
             AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
-        
+
         if (transitions.isEmpty()) {
             throw new ServiceException('Workflow Transition not found');
         }
-        
+
         return transitions[0];
     }
-    
+
     public static WorkflowTransition__c createTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
         try {
             WorkflowTransition__c transition = new WorkflowTransition__c(
@@ -227,28 +213,11 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error creating workflow transition: ' + ex.getMessage());
         }
     }
-    
-    public static Boolean transitionNameExists(String workflowId, String name) {
-        if (String.isBlank(workflowId) || String.isBlank(name)) {
-            return false;
-        }
-        List<WorkflowTransition__c> found = [
-            SELECT Id
-            FROM WorkflowTransition__c
-            WHERE Workflow__c = :workflowId
-            AND Name = :name
-            AND RecordStatus__c != 'deleted'
-            LIMIT 1
-        ];
-        return !found.isEmpty();
-    }
-    
-    // Use case methods
-    public static void activateValidationRule(String validationRuleId) {
-        try {
-            ValidationRule__c rule = DomainCompleteValidator.requireValidationRuleExists(validationRuleId);
-            DomainCompleteValidator.requireValidationRuleIsPending(rule);
 
+    // Use case methods
+    public static void activateValidationRule(ValidationRule__c rule) {
+        try {
+            DomainCompleteValidator.requireValidationRuleIsPending(rule);
             rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             updateRecord(rule);
         } catch (Exception ex) {
@@ -256,11 +225,9 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static void activateWorkflowTransition(String workflowTransitionId) {
+    public static void activateWorkflowTransition(WorkflowTransition__c transition) {
         try {
-            WorkflowTransition__c transition = DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
             DomainCompleteValidator.requireTransitionIsPending(transition);
-
             transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             updateRecord(transition);
         } catch (Exception ex) {
@@ -268,12 +235,10 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static ValidationRule__c addValidationRule(String workflowTransitionId, String ticketField, String validationType) {
+    public static ValidationRule__c addValidationRule(WorkflowTransition__c transition, String ticketField, String validationType) {
         try {
-            DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
-
             ValidationRule__c newRule = new ValidationRule__c();
-            newRule.WorkflowTransition__c = workflowTransitionId;
+            newRule.WorkflowTransition__c = transition.Id;
             newRule.TicketField__c = ticketField;
             newRule.Type__c = validationType;
             newRule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING;
@@ -284,20 +249,15 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static WorkflowTransition__c addWorkflowTransition(String workflowId, String name, String fromStatusId, String toStatusId) {
+    public static WorkflowTransition__c addWorkflowTransition(Workflow__c workflow, String name, Status__c fromStatus, Status__c toStatus) {
         try {
-            DomainCompleteValidator.requireWorkflowExists(workflowId);
-            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatusId, toStatusId);
-
-            // Both status records must exist
-            List<Status__c> statuses = getStatusesById(new List<String>{ fromStatusId, toStatusId });
-            if (statuses.size() != 2) throw new ServiceException('One or both statuses not found');
+            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatus.Id, toStatus.Id);
 
             WorkflowTransition__c newTransition = new WorkflowTransition__c();
-            newTransition.Workflow__c = workflowId;
+            newTransition.Workflow__c = workflow.Id;
             newTransition.Name = name;
-            newTransition.FromStatus__c = fromStatusId;
-            newTransition.ToStatus__c = toStatusId;
+            newTransition.FromStatus__c = fromStatus.Id;
+            newTransition.ToStatus__c = toStatus.Id;
             newTransition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING;
 
             return insertWorkflowTransition(newTransition);
@@ -306,15 +266,11 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static WorkflowTransition__c createWorkflowTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
+    public static WorkflowTransition__c createWorkflowTransition(String name, Workflow__c workflow, Status__c fromStatus, Status__c toStatus, String recordStatus) {
         try {
-            DomainCompleteValidator.requireWorkflowExists(workflowId);
-            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatusId, toStatusId);
+            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatus.Id, toStatus.Id);
 
-            DomainCompleteValidator.requireStatusExists(fromStatusId);
-            DomainCompleteValidator.requireStatusExists(toStatusId);
-
-            return createTransition(name, workflowId, fromStatusId, toStatusId, recordStatus);
+            return createTransition(name, workflow.Id, fromStatus.Id, toStatus.Id, recordStatus);
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow transition: ' + ex.getMessage());
         }
@@ -322,17 +278,14 @@ public with sharing class WorkflowService {
 
     public static Workflow__c createWorkflowWithValidation(String name, String projectId) {
         try {
-            DomainCompleteValidator.requireProjectExists(projectId);
-
             return createWorkflow(name, projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow: ' + ex.getMessage());
         }
     }
 
-    public static void deleteValidationRule(String validationRuleId) {
+    public static void deleteValidationRule(ValidationRule__c rule) {
         try {
-            ValidationRule__c rule = DomainCompleteValidator.requireValidationRuleExists(validationRuleId);
             rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
             updateRecord(rule);
         } catch (Exception ex) {
@@ -340,9 +293,8 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static void deleteWorkflowTransition(String workflowTransitionId) {
+    public static void deleteWorkflowTransition(WorkflowTransition__c transition) {
         try {
-            WorkflowTransition__c transition = DomainCompleteValidator.requireTransitionExists(workflowTransitionId);
             transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
             updateRecord(transition);
         } catch (Exception ex) {
@@ -350,48 +302,40 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static List<Status__c> getProjectStatusesWithValidation(String projectId) {
-        try {
-            return getProjectStatuses(projectId);
-        } catch (Exception ex) {
-            throw new ServiceException('Error retrieving project statuses: ' + ex.getMessage());
-        }
-    }
-
     public static WorkflowTransition__c getWorkflowTransitionByIdWithValidation(String transitionId) {
         try {
-            return DomainCompleteValidator.requireTransitionExists(transitionId);
+            return getTransitionById(transitionId);
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving workflow transition: ' + ex.getMessage());
         }
     }
-    
-    public static WorkflowConfigDTO getWorkflowConfig(String workflowId) {
+
+    public static WorkflowConfigDTO getWorkflowConfig(Workflow__c workflow) {
         try {
 
-            Workflow__c workflow = getWorkflowWithTransitions(workflowId);
-            
+            Workflow__c full = getWorkflowWithTransitions(workflow.Id);
+
             WorkflowConfigDTO config = new WorkflowConfigDTO();
-            
-            config.workflow.id = workflow.Id;
-            config.workflow.name = workflow.Name;
-            
-            if (workflow.WorkflowTransitions__r != null) {
-                for (WorkflowTransition__c transition : workflow.WorkflowTransitions__r) {
+
+            config.workflow.id = full.Id;
+            config.workflow.name = full.Name;
+
+            if (full.WorkflowTransitions__r != null) {
+                for (WorkflowTransition__c transition : full.WorkflowTransitions__r) {
                     WorkflowConfigDTO.TransitionInfo transInfo = new WorkflowConfigDTO.TransitionInfo();
                     transInfo.id = transition.Id;
                     transInfo.name = transition.Name;
                     transInfo.fromStatus = transition.FromStatus__c;
                     transInfo.toStatus = transition.ToStatus__c;
                     transInfo.recordStatus = transition.RecordStatus__c;
-                    
+
                     config.workflow.transitions.add(transInfo);
                 }
             }
-            
-            if (workflow.Project__c != null) {
-                List<Status__c> projectStatuses = getProjectStatuses(workflow.Project__c);
-                
+
+            if (full.Project__c != null) {
+                List<Status__c> projectStatuses = getProjectStatuses(full.Project__c);
+
                 for (Status__c status : projectStatuses) {
                     WorkflowConfigDTO.StatusInfo statusInfo = new WorkflowConfigDTO.StatusInfo();
                     statusInfo.id = status.Id;
@@ -399,21 +343,21 @@ public with sharing class WorkflowService {
                     config.projectStatus.add(statusInfo);
                 }
             }
-            
+
             return config;
         } catch (Exception ex) {
             throw new ServiceException('Error retrieving workflow: ' + ex.getMessage());
         }
     }
-    
-    public static List<WorkflowTransition__c> loadWorkflowTransitions(String workflowId) {
+
+    public static List<WorkflowTransition__c> loadWorkflowTransitions(Workflow__c workflow) {
         try {
-            return getTransitionsByWorkflow(workflowId);
+            return getTransitionsByWorkflow(workflow.Id);
         } catch (Exception ex) {
             throw new ServiceException('Error loading workflow transitions: ' + ex.getMessage());
         }
     }
-    
+
     public static List<Workflow__c> loadWorkflows() {
         try {
             return getAllWorkflows();
@@ -421,31 +365,29 @@ public with sharing class WorkflowService {
             throw new ServiceException('Error loading workflows: ' + ex.getMessage());
         }
     }
-    
-    public static void updateWorkflow(String workflowId) {
-        try {
-            DomainCompleteValidator.requireWorkflowExists(workflowId);
 
-            List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflowId);
-            
-            List<ValidationRule__c> pendingRules = getPendingRules(workflowId);
-            
+    public static void updateWorkflow(Workflow__c workflow) {
+        try {
+            List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflow.Id);
+
+            List<ValidationRule__c> pendingRules = getPendingRules(workflow.Id);
+
             for (WorkflowTransition__c transition : pendingTransitions) {
                 transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             }
-            
+
             for (ValidationRule__c rule : pendingRules) {
                 rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
             }
-            
+
             List<SObject> recordsToUpdate = new List<SObject>();
             recordsToUpdate.addAll(pendingTransitions);
             recordsToUpdate.addAll(pendingRules);
-            
+
             updateRecords(recordsToUpdate);
         } catch (Exception ex) {
             throw new ServiceException('Error updating workflow: ' + ex.getMessage());
         }
     }
-    
+
 }

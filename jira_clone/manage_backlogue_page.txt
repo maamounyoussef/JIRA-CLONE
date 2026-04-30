@@ -6,7 +6,7 @@ Page pre condition Flow:
 INFORMATION : WHEN WE HAVE A REQUEST THAT SET THE PROJECT ID THAT IS MEAN IT WILL BE GET  FROM THE LOCAL STORAGE.
 	
 	
-Manage BackLogue Page :
+Manage BackLogue Page : 	
 UI : in this page we have 2  Container : 
 	- one for work container : it can contain many sprint Container 
 		* the sprint container can contain many ticket container.

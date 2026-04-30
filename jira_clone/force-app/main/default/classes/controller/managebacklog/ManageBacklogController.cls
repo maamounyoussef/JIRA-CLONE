@@ -9,15 +9,15 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
-            ProjectService.getProjectById(projectId);
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
 
-            List<Sprint__c> sprints = SprintService.loadFuturedSprints(projectId);
+            List<Sprint__c> sprints = SprintService.loadFuturedSprintsByProject(project);
 
-            List<Status__c> statuses = StatusService.loadStatuses(projectId);
-            List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(projectId);
-            List<ProjectMember__c> members = ProjectService.loadProjectMembers(projectId);
-            List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
-            List<Ticket__c> backlogTickets = TicketService.loadBacklogTickets(projectId, 0, null);
+            List<Status__c> statuses = StatusService.loadStatuses(project);
+            List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(project);
+            List<ProjectMember__c> members = ProjectService.loadProjectMembers(project);
+            List<Epic__c> epics = EpicService.getEpicsByProject(project);
+            List<Ticket__c> backlogTickets = TicketService.loadBacklogTickets(project, 0, null);
 
             List<Map<String, String>> priorityOptions = new List<Map<String, String>>();
             priorityOptions.add(new Map<String, String>{ 'label' => '—', 'value' => '' });
@@ -56,21 +56,11 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static APIResponse getProjectByName(String projectName) {
-        try {
-            if (String.isBlank(projectName)) return new APIResponse(false, 'projectName is required');
-            Project__c project = ProjectService.getProjectByNameWithValidation(projectName);
-            return new APIResponse(true, 'Project retrieved successfully', project);
-        } catch (Exception ex) {
-            return new APIResponse(false, 'Error retrieving project: ' + ex.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            List<Status__c> statuses = StatusService.getStatusesByProjectWithValidation(projectId);
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<Status__c> statuses = StatusService.loadStatuses(project);
             return new APIResponse(true, 'Project statuses retrieved successfully', statuses);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving project statuses: ' + ex.getMessage());
@@ -96,7 +86,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse getEpicsByProject(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            List<Epic__c> epics = EpicService.getEpicsByProject(projectId);
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<Epic__c> epics = EpicService.getEpicsByProject(project);
             return new APIResponse(true, 'Epics retrieved successfully', epics);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving epics: ' + ex.getMessage());
@@ -107,9 +98,9 @@ public with sharing class ManageBacklogController {
     public static APIResponse getEpicById(String epicId) {
         try {
             if (String.isBlank(epicId)) return new APIResponse(false, 'epicId is required');
-            Epic__c epic = EpicService.getEpicById(epicId);
+            Epic__c epic = DomainCorrectness.requireEpicExists(epicId);
             return new APIResponse(true, 'Epic retrieved successfully', epic);
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving epic: ' + ex.getMessage());
         }
     }
@@ -120,6 +111,8 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            DomainCorrectness.requireProjectExists(projectId);
 
             Epic__c epic = new Epic__c();
             epic.Name = name;
@@ -141,8 +134,7 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(epicId)) return new APIResponse(false, 'epicId is required');
 
-            Epic__c existing = EpicService.findEpicById(epicId);
-            if (existing == null) return new APIResponse(false, 'Epic not found: ' + epicId);
+            Epic__c existing = DomainCorrectness.requireEpicExists(epicId);
 
             if (String.isNotBlank(name)) existing.Name = name;
             if (String.isNotBlank(summary)) existing.Summary__c = summary;
@@ -165,6 +157,8 @@ public with sharing class ManageBacklogController {
             if (duration == null) return new APIResponse(false, 'duration is required');
             if (String.isBlank(goal)) return new APIResponse(false, 'goal is required');
 
+            DomainCorrectness.requireProjectExists(projectId);
+
             Sprint__c sprint = new Sprint__c();
             sprint.Name = name;
             sprint.Project__c = projectId;
@@ -185,8 +179,7 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
 
-            Sprint__c existing = SprintService.findSprintById(sprintId);
-            if (existing == null) return new APIResponse(false, 'Sprint not found');
+            Sprint__c existing = DomainCorrectness.requireSprintExists(sprintId);
 
             if (String.isNotBlank(name)) existing.Name = name;
             if (duration != null) existing.Duration__c = duration;
@@ -204,7 +197,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse completeSprint(String sprintId) {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
-            SprintService.completeSprint(sprintId);
+            Sprint__c sprint = DomainCorrectness.requireSprintExists(sprintId);
+            SprintService.completeSprint(sprint);
             return new APIResponse(true, 'Sprint completed');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error completing sprint: ' + ex.getMessage());
@@ -215,10 +209,9 @@ public with sharing class ManageBacklogController {
     public static APIResponse deleteSprint(String sprintId) {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
-            SprintService.deleteSprint(sprintId);
+            Sprint__c sprint = DomainCorrectness.requireSprintExists(sprintId);
+            SprintService.deleteSprint(sprint);
             return new APIResponse(true, 'Sprint deleted');
-        } catch (SprintException ex) {
-            return new APIResponse(false, ex.getMessage());
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting sprint: ' + ex.getMessage());
         }
@@ -228,7 +221,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse startSprint(String sprintId) {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
-            SprintService.startSprint(sprintId);
+            Sprint__c sprint = DomainCorrectness.requireSprintExists(sprintId);
+            SprintService.startSprint(sprint);
             return new APIResponse(true, 'Sprint started');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error starting sprint: ' + ex.getMessage());
@@ -239,7 +233,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadBacklogTickets(String projectId, Integer offset, Integer pageSize) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            List<Ticket__c> tickets = TicketService.loadBacklogTickets(projectId, offset, pageSize);
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<Ticket__c> tickets = TicketService.loadBacklogTickets(project, offset, pageSize);
             return new APIResponse(true, 'Backlog tickets loaded', tickets);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading backlog tickets: ' + ex.getMessage());
@@ -250,7 +245,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadTicketsBySprint(String sprintId, Integer offset, Integer pageSize) {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
-            List<Ticket__c> tickets = TicketService.getActiveTicketsBySprintOrderByPriorityAsc(sprintId, offset, pageSize);
+            Sprint__c sprint = DomainCorrectness.requireSprintExists(sprintId);
+            List<Ticket__c> tickets = TicketService.getActiveTicketsBySprintOrderByPriorityAsc(sprint, offset, pageSize);
             return new APIResponse(true, 'Tickets loaded', tickets);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading tickets by sprint: ' + ex.getMessage());
@@ -261,9 +257,10 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadTicketTypes(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(projectId);
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(project);
             return new APIResponse(true, 'Ticket Types loaded successfully', ticketTypes);
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error loading ticket types: ' + ex.getMessage());
         }
     }
@@ -272,21 +269,9 @@ public with sharing class ManageBacklogController {
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
-            TicketType__c ticketType = TicketService.getTicketTypeByIdWithValidation(ticketTypeId);
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
-        }  catch (Exception ex) {
-            return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
-    public static APIResponse getTicketTypeByName(String ticketTypeName, String projectId) {
-        try {
-            if (String.isBlank(ticketTypeName)) return new APIResponse(false, 'ticketTypeName is required');
-            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            TicketType__c ticketType = TicketService.getTicketTypeByNameWithValidation(ticketTypeName, projectId);
-            return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
     }
@@ -299,6 +284,9 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(iconUrl)) return new APIResponse(false, 'iconUrl is required');
             if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            DomainCorrectness.requireProjectExists(projectId);
+            DomainCorrectness.requireWorkflowBelongsToProject(workflowId, projectId);
 
             TicketType__c created = TicketService.createTicketType(name, description, iconUrl, workflowId, projectId);
             return new APIResponse(true, 'Ticket Type created successfully', created);
@@ -313,6 +301,11 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
+
+            DomainCorrectness.requireTicketTypeExists(ticketTypeId);
+            DomainCorrectness.requireOptionalProjectMemberActive(assignedToId);
+            DomainCorrectness.requireOptionalEpicActive(epicId);
+            DomainCorrectness.requireOptionalSprintExists(sprintId);
 
             Ticket__c ticket = new Ticket__c();
             ticket.Name = name;
@@ -337,8 +330,7 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
 
-            Ticket__c existing = TicketService.findTicketById(ticketId);
-            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
 
             if (String.isNotBlank(summary)) existing.Summary__c = summary;
             if (String.isNotBlank(description)) existing.Description__c = description;
@@ -359,7 +351,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
-            Ticket__c updated = TicketService.updateTicketSummary(ticketId, summary);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            Ticket__c updated = TicketService.updateTicketSummary(existing, summary);
             return new APIResponse(true, 'Ticket summary updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket summary: ' + ex.getMessage());
@@ -371,9 +364,10 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             if (String.isBlank(priority)) return new APIResponse(false, 'priority is required');
-            Ticket__c updated = TicketService.updateTicketPriority(ticketId, priority);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            Ticket__c updated = TicketService.updateTicketPriority(existing, priority);
             return new APIResponse(true, 'Ticket priority updated', updated);
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket priority: ' + ex.getMessage());
         }
     }
@@ -383,7 +377,9 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             if (String.isBlank(memberId)) return new APIResponse(false, 'memberId is required');
-            Ticket__c updated = TicketService.assignTicket(ticketId, memberId);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            DomainCorrectness.requireProjectMemberActive(memberId);
+            Ticket__c updated = TicketService.assignTicket(existing, memberId);
             return new APIResponse(true, 'Ticket assignee updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error assigning ticket: ' + ex.getMessage());
@@ -395,7 +391,9 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             if (String.isBlank(stateId)) return new APIResponse(false, 'stateId is required');
-            Ticket__c updated = TicketService.updateTicketState(ticketId, stateId);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            DomainCorrectness.requireStatusExists(stateId);
+            Ticket__c updated = TicketService.updateTicketState(existing, stateId);
             return new APIResponse(true, 'Ticket state updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket state: ' + ex.getMessage());
@@ -407,8 +405,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             if (String.isBlank(sprintId))  return new APIResponse(false, 'sprintId is required');
-            Ticket__c existing = TicketService.findTicketById(ticketId);
-            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+            DomainCorrectness.requireSprintExists(sprintId);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
             existing.Sprint__c = sprintId;
             Ticket__c updated = TicketService.updateTicket(existing);
             return new APIResponse(true, 'Ticket moved to sprint', updated);
@@ -421,8 +419,7 @@ public with sharing class ManageBacklogController {
     public static APIResponse moveTicketToBacklog(String ticketId) {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
-            Ticket__c existing = TicketService.findTicketById(ticketId);
-            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
             existing.Sprint__c = null;
             Ticket__c updated = TicketService.updateTicket(existing);
             return new APIResponse(true, 'Ticket moved to backlog', updated);
@@ -435,7 +432,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse deleteTicket(String ticketId) {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
-            TicketService.deleteTickets(new List<String>{ticketId});
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            TicketService.deleteTicket(existing);
             return new APIResponse(true, 'Ticket deleted');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting ticket: ' + ex.getMessage());
@@ -448,7 +446,7 @@ public with sharing class ManageBacklogController {
             if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
             TicketService.deleteTickets(ticketIds);
             return new APIResponse(true, 'Tickets deleted');
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting tickets: ' + ex.getMessage());
         }
     }
@@ -457,7 +455,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadSubtasks(String ticketId) {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
-            List<Subtask__c> subs = TicketService.getSubtasksByTicket(ticketId);
+            Ticket__c ticket = DomainCorrectness.requireTicketExists(ticketId);
+            List<Subtask__c> subs = TicketService.getSubtasksByTicket(ticket);
             return new APIResponse(true, 'Subtasks loaded', subs);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading subtasks: ' + ex.getMessage());
@@ -472,9 +471,13 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
 
+            Ticket__c ticket = DomainCorrectness.requireTicketExists(ticketId);
+            DomainCorrectness.requireOptionalProjectMemberActive(assigneeId);
+            DomainCorrectness.requireOptionalStatusExists(currentStateId);
+
             Subtask__c subtask = new Subtask__c();
             subtask.Summary__c = summary;
-            subtask.Ticket__c = ticketId;
+            subtask.Ticket__c = ticket.Id;
             if (String.isNotBlank(description)) subtask.Description__c = description;
             if (String.isNotBlank(assigneeId)) subtask.Assignee__c = assigneeId;
             if (String.isNotBlank(currentStateId)) subtask.CurrentState__c = currentStateId;
@@ -493,7 +496,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
-            Subtask__c updated = TicketService.updateSubtaskSummary(subtaskId, summary);
+            Subtask__c existing = DomainCorrectness.requireSubtaskExists(subtaskId);
+            Subtask__c updated = TicketService.updateSubtaskSummary(existing, summary);
             return new APIResponse(true, 'Subtask summary updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating subtask summary: ' + ex.getMessage());
@@ -505,8 +509,7 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
 
-            Subtask__c existing = TicketService.findSubtaskById(subtaskId);
-            if (existing == null) return new APIResponse(false, 'Subtask not found: ' + subtaskId);
+            Subtask__c existing = DomainCorrectness.requireSubtaskExists(subtaskId);
 
             if (String.isNotBlank(summary)) existing.Summary__c = summary;
             if (String.isNotBlank(description)) existing.Description__c = description;
@@ -526,7 +529,9 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
             if (String.isBlank(memberId)) return new APIResponse(false, 'memberId is required');
-            Subtask__c updated = TicketService.assignSubtask(subtaskId, memberId);
+            Subtask__c existing = DomainCorrectness.requireSubtaskExists(subtaskId);
+            DomainCorrectness.requireProjectMemberActive(memberId);
+            Subtask__c updated = TicketService.assignSubtask(existing, memberId);
             return new APIResponse(true, 'Subtask assignee updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error assigning subtask: ' + ex.getMessage());
@@ -537,7 +542,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse deleteSubtask(String subtaskId) {
         try {
             if (String.isBlank(subtaskId)) return new APIResponse(false, 'subtaskId is required');
-            TicketService.deleteSubtasks(new List<String>{subtaskId});
+            Subtask__c existing = DomainCorrectness.requireSubtaskExists(subtaskId);
+            TicketService.deleteSubtask(existing);
             return new APIResponse(true, 'Subtask deleted');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting subtask: ' + ex.getMessage());
@@ -563,6 +569,9 @@ public with sharing class ManageBacklogController {
             if (String.isBlank(userId)) return new APIResponse(false, 'userId is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
 
+            DomainCorrectness.requireUserExists(userId);
+            DomainCorrectness.requireProjectExists(projectId);
+
             ProjectMember__c created = ProjectService.createProjectMember(userId, projectId, recordStatus);
             return new APIResponse(true, 'Project member created successfully', created);
         } catch (Exception ex) {
@@ -574,7 +583,8 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadMembers(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            List<ProjectMember__c> members = ProjectService.loadProjectMembers(projectId);
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<ProjectMember__c> members = ProjectService.loadProjectMembers(project);
             return new APIResponse(true, 'Project members loaded successfully', members);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading project members: ' + ex.getMessage());
@@ -588,8 +598,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
 
-            Ticket__c existing = TicketService.findTicketById(ticketId);
-            if (existing == null) return new APIResponse(false, 'Ticket not found: ' + ticketId);
+            DomainCorrectness.requireOptionalEpicActive(epicId);
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
 
             existing.Epic__c = epicId;
             Ticket__c updated = TicketService.updateTicket(existing);

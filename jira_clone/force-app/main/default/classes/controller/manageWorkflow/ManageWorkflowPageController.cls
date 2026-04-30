@@ -5,9 +5,9 @@
  * Uses individual Use Cases for each business action
  */
 public with sharing class ManageWorkflowPageController {
-    
+
     // ==================== WORKFLOW METHODS ====================
-    
+
     /**
      * @description Get workflow with all transitions and validation rules
      * @param workflowId - The Workflow record Id
@@ -16,13 +16,15 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getWorkflow(String workflowId) {
         try {
-            WorkflowConfigDTO config = WorkflowService.getWorkflowConfig(workflowId);
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+            Workflow__c workflow = DomainCorrectness.requireWorkflowExists(workflowId);
+            WorkflowConfigDTO config = WorkflowService.getWorkflowConfig(workflow);
             return new APIResponse(true, 'Workflow retrieved successfully', config);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving workflow: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Get all statuses for a project
      * @param projectId - The Project record Id
@@ -31,13 +33,15 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
-            List<Status__c> statuses = StatusService.getStatusesByProjectWithValidation(projectId);
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<Status__c> statuses = StatusService.loadStatuses(project);
             return new APIResponse(true, 'Project statuses retrieved successfully', statuses);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving project statuses: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Load all workflows
      * @return APIResponse containing List<Workflow__c> in data attribute
@@ -47,11 +51,11 @@ public with sharing class ManageWorkflowPageController {
         try {
             List<Workflow__c> workflows = WorkflowService.loadWorkflows();
             return new APIResponse(true, 'Workflows loaded successfully', workflows);
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error loading workflows: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Create a new workflow
      * @param name - The workflow name
@@ -61,13 +65,18 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse createWorkflow(String name, String projectId) {
         try {
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            DomainCorrectness.requireProjectExists(projectId);
+
             Workflow__c workflow = WorkflowService.createWorkflowWithValidation(name, projectId);
             return new APIResponse(true, 'Workflow created successfully', workflow);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating workflow: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Final update workflow: activate all pending transitions and validation rules
      * This is called when the user clicks the Update Workflow button
@@ -78,18 +87,22 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse updateWorkflow(String workflowId) {
         try {
-            WorkflowService.updateWorkflow(workflowId);
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+
+            Workflow__c workflow = DomainCorrectness.requireWorkflowExists(workflowId);
+
+            WorkflowService.updateWorkflow(workflow);
             return new APIResponse(
-                true, 
+                true,
                 'Workflow updated successfully. All pending transitions and validation rules activated.'
             );
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating workflow: ' + ex.getMessage());
         }
     }
-    
+
     // ==================== TICKET TYPE METHODS ====================
-    
+
     /**
      * @description Get ticket type by Id
      * @param ticketTypeId - The TicketType__c record Id
@@ -98,15 +111,16 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
-            TicketType__c ticketType = TicketTypeService.getTicketTypeByIdWithValidation(ticketTypeId);
+            if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
             return new APIResponse(true, 'Ticket Type retrieved successfully', ticketType);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving ticket type: ' + ex.getMessage());
         }
     }
-    
+
     // ==================== STATUS METHODS ====================
-    
+
     /**
      * @description Load all statuses for a project
      * @param projectId - The Project__c record Id
@@ -115,13 +129,15 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadStatuses(String projectId) {
         try {
-            List<Status__c> statuses = StatusService.loadStatuses(projectId);
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+            List<Status__c> statuses = StatusService.loadStatuses(project);
             return new APIResponse(true, 'Statuses loaded successfully', statuses);
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error loading statuses: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Create a new status
      * @param name - The status name
@@ -131,15 +147,20 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse createStatus(String name, String projectId) {
         try {
-            Status__c status = StatusService.createStatusWithValidation(name, projectId);
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            DomainCorrectness.requireProjectExists(projectId);
+
+            Status__c status = StatusService.createStatus(name, projectId);
             return new APIResponse(true, 'Status created successfully', status);
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error creating status: ' + ex.getMessage());
         }
     }
-    
+
     // ==================== WORKFLOW TRANSITION METHODS ====================
-    
+
     /**
      * @description Load all transitions for a workflow
      * @param workflowId - The Workflow__c record Id
@@ -148,7 +169,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse loadTransitions(String workflowId) {
         try {
-            List<WorkflowTransition__c> transitions = WorkflowService.loadWorkflowTransitions(workflowId);
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+            Workflow__c workflow = DomainCorrectness.requireWorkflowExists(workflowId);
+            List<WorkflowTransition__c> transitions = WorkflowService.loadWorkflowTransitions(workflow);
             return new APIResponse(true, 'Workflow Transitions loaded successfully', transitions);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading workflow transitions: ' + ex.getMessage());
@@ -163,13 +186,14 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled(cacheable=true)
     public static APIResponse getWorkflowTransitionById(String transitionId) {
         try {
-            WorkflowTransition__c transition = WorkflowService.getWorkflowTransitionByIdWithValidation(transitionId);
+            if (String.isBlank(transitionId)) return new APIResponse(false, 'transitionId is required');
+            WorkflowTransition__c transition = DomainCorrectness.requireTransitionExists(transitionId);
             return new APIResponse(true, 'Workflow Transition retrieved successfully', transition);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error retrieving workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Create a new workflow transition
      * @param name - The transition name
@@ -182,7 +206,16 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse createTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
         try {
-            WorkflowTransition__c transition = WorkflowService.createWorkflowTransition(name, workflowId, fromStatusId, toStatusId, recordStatus);
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+            if (String.isBlank(fromStatusId)) return new APIResponse(false, 'fromStatusId is required');
+            if (String.isBlank(toStatusId)) return new APIResponse(false, 'toStatusId is required');
+
+            Workflow__c workflow = DomainCorrectness.requireWorkflowExists(workflowId);
+            Status__c fromStatus = DomainCorrectness.requireStatusExists(fromStatusId);
+            Status__c toStatus = DomainCorrectness.requireStatusExists(toStatusId);
+
+            WorkflowTransition__c transition = WorkflowService.createWorkflowTransition(name, workflow, fromStatus, toStatus, recordStatus);
             return new APIResponse(true, 'Workflow Transition created successfully', transition);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating workflow transition: ' + ex.getMessage());
@@ -199,19 +232,28 @@ public with sharing class ManageWorkflowPageController {
      */
     @AuraEnabled
     public static APIResponse addWorkflowTransition(
-        String workflowId, 
-        String name, 
-        String fromStatusId, 
+        String workflowId,
+        String name,
+        String fromStatusId,
         String toStatusId
     ) {
         try {
-            WorkflowTransition__c transition = WorkflowService.addWorkflowTransition(workflowId, name, fromStatusId, toStatusId);
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(fromStatusId)) return new APIResponse(false, 'fromStatusId is required');
+            if (String.isBlank(toStatusId)) return new APIResponse(false, 'toStatusId is required');
+
+            Workflow__c workflow = DomainCorrectness.requireWorkflowExists(workflowId);
+            Status__c fromStatus = DomainCorrectness.requireStatusExists(fromStatusId);
+            Status__c toStatus = DomainCorrectness.requireStatusExists(toStatusId);
+
+            WorkflowTransition__c transition = WorkflowService.addWorkflowTransition(workflow, name, fromStatus, toStatus);
             return new APIResponse(
-                true, 
+                true,
                 'Workflow Transition created successfully with pending status',
                 transition
             );
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error adding workflow transition: ' + ex.getMessage());
         }
     }
@@ -224,7 +266,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse activateWorkflowTransition(String workflowTransitionId) {
         try {
-            WorkflowService.activateWorkflowTransition(workflowTransitionId);
+            if (String.isBlank(workflowTransitionId)) return new APIResponse(false, 'workflowTransitionId is required');
+            WorkflowTransition__c transition = DomainCorrectness.requireTransitionExists(workflowTransitionId);
+            WorkflowService.activateWorkflowTransition(transition);
             return new APIResponse(true, 'Workflow Transition activated successfully');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error activating workflow transition: ' + ex.getMessage());
@@ -239,15 +283,17 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse deleteWorkflowTransition(String workflowTransitionId) {
         try {
-            WorkflowService.deleteWorkflowTransition(workflowTransitionId);
+            if (String.isBlank(workflowTransitionId)) return new APIResponse(false, 'workflowTransitionId is required');
+            WorkflowTransition__c transition = DomainCorrectness.requireTransitionExists(workflowTransitionId);
+            WorkflowService.deleteWorkflowTransition(transition);
             return new APIResponse(true, 'Workflow Transition deleted successfully');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting workflow transition: ' + ex.getMessage());
         }
     }
-    
+
     // ==================== VALIDATION RULE METHODS ====================
-    
+
     /**
      * @description Add a new Validation Rule to a Workflow Transition
      * Precondition: Workflow Transition must exist
@@ -258,14 +304,20 @@ public with sharing class ManageWorkflowPageController {
      */
     @AuraEnabled
     public static APIResponse addValidationRule(
-        String workflowTransitionId, 
-        String ticketField, 
+        String workflowTransitionId,
+        String ticketField,
         String validationType
     ) {
         try {
-            ValidationRule__c rule = WorkflowService.addValidationRule(workflowTransitionId, ticketField, validationType);
+            if (String.isBlank(workflowTransitionId)) return new APIResponse(false, 'workflowTransitionId is required');
+            if (String.isBlank(ticketField)) return new APIResponse(false, 'ticketField is required');
+            if (String.isBlank(validationType)) return new APIResponse(false, 'validationType is required');
+
+            WorkflowTransition__c transition = DomainCorrectness.requireTransitionExists(workflowTransitionId);
+
+            ValidationRule__c rule = WorkflowService.addValidationRule(transition, ticketField, validationType);
             return new APIResponse(
-                true, 
+                true,
                 'Validation Rule created successfully with pending status',
                 rule
             );
@@ -273,7 +325,7 @@ public with sharing class ManageWorkflowPageController {
             return new APIResponse(false, 'Error adding validation rule: ' + ex.getMessage());
         }
     }
-    
+
     /**
      * @description Delete a Validation Rule (soft delete by setting status to deleted)
      * @param validationRuleId - The ValidationRule__c record Id
@@ -282,7 +334,9 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse deleteValidationRule(String validationRuleId) {
         try {
-            WorkflowService.deleteValidationRule(validationRuleId);
+            if (String.isBlank(validationRuleId)) return new APIResponse(false, 'validationRuleId is required');
+            ValidationRule__c rule = DomainCorrectness.requireValidationRuleExists(validationRuleId);
+            WorkflowService.deleteValidationRule(rule);
             return new APIResponse(true, 'Validation Rule deleted successfully');
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting validation rule: ' + ex.getMessage());
@@ -298,9 +352,11 @@ public with sharing class ManageWorkflowPageController {
     @AuraEnabled
     public static APIResponse activateValidationRule(String validationRuleId) {
         try {
-            WorkflowService.activateValidationRule(validationRuleId);
+            if (String.isBlank(validationRuleId)) return new APIResponse(false, 'validationRuleId is required');
+            ValidationRule__c rule = DomainCorrectness.requireValidationRuleExists(validationRuleId);
+            WorkflowService.activateValidationRule(rule);
             return new APIResponse(true, 'Validation Rule activated successfully');
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             return new APIResponse(false, 'Error activating validation rule: ' + ex.getMessage());
         }
     }

@@ -4,19 +4,9 @@
  */
 public with sharing class UserService {
     
-    // Repository methods
-    public static List<User> getActiveUsers() {
-        try {
-            return [SELECT Id, Name, Email FROM User WHERE IsActive = TRUE ORDER BY Name];
-        } catch (Exception ex) {
-            throw new ServiceException('Error querying users: ' + ex.getMessage());
-        }
-    }
-    
-    // Use case methods
     public static List<User> loadUsers() {
         try {
-            return getActiveUsers();
+            return [SELECT Id, Name, Email FROM User WHERE IsActive = TRUE ORDER BY Name];
         } catch (Exception ex) {
             throw new ServiceException('Error loading users: ' + ex.getMessage());
         }

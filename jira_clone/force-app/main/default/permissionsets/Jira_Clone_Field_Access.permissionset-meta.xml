@@ -13,21 +13,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Sprint__c.Duration__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Sprint__c.Goal__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Sprint__c.RecordStatus__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Sprint__c.StartDate__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -63,16 +48,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Ticket__c.Creator__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Ticket__c.Description__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Ticket__c.EndDate__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -81,11 +56,7 @@
         <field>Ticket__c.Epic__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Ticket__c.Priority__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
+
     <fieldPermissions>
         <editable>true</editable>
         <field>Ticket__c.Sprint__c</field>
@@ -99,11 +70,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Ticket__c.StoryPoint__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Ticket__c.Ticket_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
