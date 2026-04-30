@@ -1,0 +1,19 @@
+Before writing any code:
+
+1. Read @REQUIREMENTS → understand features, actions, and flows.
+
+2. Read @OBJECT_VALIDATION_LWC_APEX → understand all objects, 
+   required fields, frontend and Apex call contracts.
+
+3. When building frontend validation:
+   Follow @LWC_VALIDATION_PROMPT + @LWC_ARCHITECTURE_PROMPT
+   and cross-reference @OBJECT_VALIDATION_LWC_APEX 
+   to validate the correct fields.
+
+4. When building Apex calls and flow:
+   Follow @APEX_CALL_FLOW_PROMPT + @LWC_ARCHITECTURE_PROMPT
+   and cross-reference @OBJECT_VALIDATION_LWC_APEX 
+   to use the correct objects and fields.
+
+Never assume field names or object structure.
+Always verify against @OBJECT_VALIDATION_LWC_APEX first.

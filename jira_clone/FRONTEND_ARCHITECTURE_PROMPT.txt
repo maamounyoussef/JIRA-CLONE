@@ -1,0 +1,34 @@
+LWC ARCHITECTURE RULES
+
+COMPONENT TYPES:
+- Page Component: entry point, ONLY type allowed to call Apex, receives child events.
+- Child Component: reusable, NEVER calls Apex, communicates upward via CustomEvents only.
+
+FILE STRUCTURE:
+Page:  component.js/html/css + componentValidator.js + <domain>Validator.js + <domain>Utils.js
+Child: same as page + componentEvents.js (required)
+
+EVENTS FILE (child only):
+- All dispatchEvent calls live here as named export functions. Never inline in main JS.
+- Always bubbles:true, composed:true.
+- This is the single upward communication contract.
+
+MAIN JS STRUCTURE (per domain):
+// ╔══ <DOMAIN> SECTION ══╗
+// ─── PROPERTIES & STATE
+// ─── WIRE
+// ─── APEX CALLS  (page only — forbidden in child)
+// ─── EVENT HANDLERS
+// ─── GETTERS
+Omit empty subsections.
+
+IMPORT ORDER: 1) LWC core/Apex  2) Events (child only)  3) Validators  4) Utils
+
+VALIDATOR FILES: Pure functions, return string|null, named exports, one per domain (always create even if empty).
+
+UTILS FILES: Pure helpers (formatters, mappers, factories), named exports, one per domain (always create even if empty).
+Naming: empty<X>() / format<X>() / build<X>() / to<Format>()
+
+VALIDATION RULE:
+- Action is a dispatch (child)  → validate inside the child before dispatching.
+- Action is an Apex call (page) → validate inside the page before calling Apex.
