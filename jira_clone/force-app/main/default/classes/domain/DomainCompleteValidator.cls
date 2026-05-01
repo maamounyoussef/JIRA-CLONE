@@ -91,6 +91,22 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // TICKET TYPE — business rules
+    // ═══════════════════════════════════════════════════════════════
+
+    public static void requireWorkflowAssignedToTicketType(TicketType__c ticketType, String workflowId) {
+        if (ticketType.Workflow__c != workflowId) {
+            throw new ServiceException('Workflow is not assigned to this Ticket Type');
+        }
+    }
+
+    public static void requireTransitionBelongsToWorkflow(WorkflowTransition__c transition, String workflowId) {
+        if (transition.Workflow__c != workflowId) {
+            throw new ServiceException('Workflow Transition does not belong to this Workflow');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // PAGINATION — utilities
     // ═══════════════════════════════════════════════════════════════
 

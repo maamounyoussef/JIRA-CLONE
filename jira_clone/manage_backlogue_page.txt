@@ -283,7 +283,7 @@ Display :
 			- failed: 
 				- System show a error message.
 				- System hide the buttons.
-			
+	3		
 		
 		03.02 - request format : 
 			Name : update ticket priority

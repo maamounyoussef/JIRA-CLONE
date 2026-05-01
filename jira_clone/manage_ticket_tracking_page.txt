@@ -1,0 +1,124 @@
+Manage Ticket Traking Page : 
+
+Page Pre Condition : 
+	- user must choosed the project work on. 
+	- System will store the project id in the local storage.
+	
+INFORMATION : WHEN WE HAVE A REQUEST THAT SET THE PROJECT ID THAT IS MEAN IT WILL BE GET  FROM THE LOCAL STORAGE.
+
+
+Manage Ticket Page : 
+
+Method Name : LoadManageTicketTrakingPage
+Input 		: projectId
+
+	{
+		status : // call  loadStatuses in StatusService
+			[
+				{
+					id , 
+					name
+				},
+				...
+			],
+		workflows: //call loadWorkflowDfa in WorkflowService
+		
+		sprint_tickets : // in TicketService create loadActive Ticket By Sprint for it(single sprint). 
+			[
+				{
+					name: <name value>,
+					summary: <summary value>,
+					current_state: <current status id>,
+					priority: <priority value> , 
+					story_point: <story point value>, 
+					assigned_to: <assigned to id >,
+					epic_pather : <epic pather id>,
+					sprint : <sprint id>
+				},
+				...
+			]
+		members : // call loadProjectMembers in ProjectService.cls
+			[
+				{
+					user_id : ,
+					name : 
+				},
+				...
+			],
+		
+		sprint : //in Sprint Service create a method for loadActiveSprint this should return only one sprint. 
+			{
+				id , 
+				name ,
+				start_date,
+				end_date,// this is calculated based on start date + duration 
+				goal , 	
+			}
+		
+	}
+	
+Front End Flow : 
+	- System will create a status card column for each  status.
+	- System will create a Ticket card for  each sprint ticket.
+	- System will put each  Ticket card in the correct status card column.
+End Front End Flow. 
+  
+	
+Display : 
+
+	- in this page we have columns : each column related to a status 
+	- a column can contain the name of  the status and many  ticket card.
+	- a ticket card contain the ticket name , summary, type , assigne name , story point , priority
+	
+	
+	capability : 
+		- a user can drag and drop a ticket from status column to target avaiable status column.
+		
+		
+End Display.
+	
+User Actions : 
+
+	01 - The System should allow user to change ticket current status. 
+
+	Actions - 01 : 
+		Name : changeTicketState 
+		Pre Condition: 
+		Main : 
+			00.01- User should choose the target ticket so System(frontEnd) highlight the element that he  can drag to (the allowed target is  just frontEnd calculated without backEnd call ). 
+			00.02- User drop the ticket in a target state.
+		anomaly flow : 
+			01.01 - user drop the ticket in the same current state so system will remove the highlight effect.
+		
+		Post Condition: 
+			success : the ticket will appear in the new current state.
+			failed : ticket will stay  in the same  current state with show a message error.
+		
+
+	00.02 - request : 
+		Name : changeTicketState 
+		Input : ticketId, toStatusId, wokflowId, workflowTransitionId  
+		
+		
+	Sequence : 
+		- controller will receive the request. 
+		- controller will validate the input ticketId , toStatusId.
+		- controller will call the WorkflowService . changeTicketState
+		
+		* - Workflow Service calling the DomainCompleteValidator check if the Ticket Type exist. 
+			failed : throw a exception 
+		* - Workflow Service calling the DomainCompleteValidator check if this Workflow is assigned to this Ticket Type.
+			failed : throw a exception 
+		* - Worlflow Service calling the DomainCompleteValidator check if this workflow transition owned by this workflow. 
+			failed : throw a exception 
+		* - Workflow Service will validate for  <canTransition> canTransition(fromStatusId , toStatusId , workflow transition <pass the full object as we get from the previous step>)  is a method in workflowService. 
+			failed : throw a exception 
+		- Workflow Service will update the ticket current status to the new one.
+		
+		- controller will encapsulate the  error or success flow in ApiResponse.
+
+
+can  we have  the same  from  and to  for the same workflow ? 
+
+
+

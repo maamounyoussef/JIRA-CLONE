@@ -366,6 +366,36 @@ public with sharing class WorkflowService {
         }
     }
 
+    public static List<WorkflowTransition__c> loadWorkflowDfa(String projectId) {
+        try {
+            return [
+                SELECT Id, Workflow__c, FromStatus__c, ToStatus__c
+                FROM WorkflowTransition__c
+                WHERE Workflow__r.Project__c = :projectId
+                  AND RecordStatus__c = :WorkflowConstants.RECORD_STATUS_ACTIVE
+            ];
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading workflow DFA: ' + ex.getMessage());
+        }
+    }
+
+    public static void canTransition(String fromStatusId, String toStatusId, WorkflowTransition__c transition) {
+        if (transition.FromStatus__c != fromStatusId || transition.ToStatus__c != toStatusId) {
+            throw new ServiceException('Transition is not allowed from current status to target status');
+        }
+    }
+
+    public static void changeTicketState(Ticket__c ticket, TicketType__c ticketType, String toStatusId, String workflowId, WorkflowTransition__c transition) {
+        try {
+            DomainCompleteValidator.requireWorkflowAssignedToTicketType(ticketType, workflowId);
+            DomainCompleteValidator.requireTransitionBelongsToWorkflow(transition, workflowId);
+            canTransition(ticket.CurrentState__c, toStatusId, transition);
+            TicketService.updateTicketState(ticket, toStatusId);
+        } catch (Exception ex) {
+            throw new ServiceException('Error changing ticket state: ' + ex.getMessage());
+        }
+    }
+
     public static void updateWorkflow(Workflow__c workflow) {
         try {
             List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflow.Id);

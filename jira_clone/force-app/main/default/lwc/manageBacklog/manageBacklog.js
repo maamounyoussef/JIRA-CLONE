@@ -508,7 +508,7 @@ export default class ManageBacklog extends LightningElement {
             startSprint({ sprintId })
                 .then(res => {
                     if (!res.success) { this.errorMessage = res.message; return; }
-                    this.sprints = this.sprints.filter(s => s.Id !== sprintId);
+                    // this.sprints = this.sprints.filter(s => s.Id !== sprintId);
                 })
                 .catch(err => { this.errorMessage = err.body?.message || 'Error starting sprint'; });
         });

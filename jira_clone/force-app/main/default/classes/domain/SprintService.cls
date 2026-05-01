@@ -53,11 +53,25 @@ public with sharing class SprintService {
         }
     }
 
-    public static List<Sprint__c> loadFuturedSprintsByProject(Project__c project) {
+    public static List<Sprint__c> loadUncompleteSprintsByProject(Project__c project) {
         try {
-            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c FROM Sprint__c WHERE Project__c = :project.Id AND RecordStatus__c = 'future'];
+            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c FROM Sprint__c WHERE Project__c = :project.Id AND RecordStatus__c != 'complete'];
         } catch (Exception ex) {
             throw new ServiceException('Error loading sprints: ' + ex.getMessage());
+        }
+    }
+
+    public static Sprint__c loadActiveSprint(String projectId) {
+        try {
+            List<Sprint__c> sprints = [
+                SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c
+                FROM Sprint__c
+                WHERE Project__c = :projectId AND RecordStatus__c = 'in_progress'
+                LIMIT 1
+            ];
+            return sprints.isEmpty() ? null : sprints[0];
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading active sprint: ' + ex.getMessage());
         }
     }
 

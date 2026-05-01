@@ -1,0 +1,43 @@
+<template>
+    <div class={columnClass}
+         ondragover={handleDragOver}
+         ondrop={handleDrop}
+         ondragleave={handleDragLeave}>
+
+        <!-- Column Header -->
+        <div class="column-header">
+            <span class="status-name">{statusName}</span>
+            <span class="ticket-count">{ticketCount}</span>
+        </div>
+
+        <!-- Ticket Cards -->
+        <div class="ticket-list">
+            <template for:each={tickets} for:item="ticket">
+                <div key={ticket.Id}
+                     class="ticket-card"
+                     draggable="true"
+                     data-ticket-id={ticket.Id}
+                     data-ticket-type-id={ticket.Ticket_Type__c}
+                     ondragstart={handleTicketDragStart}
+                     ondragend={handleTicketDragEnd}>
+
+                    <div class="ticket-name">{ticket.Name}</div>
+                    <div class="ticket-summary">{ticket.Summary__c}</div>
+                    <div class="ticket-meta">
+                        <span class="ticket-priority">{ticket.Priority__c}</span>
+                        <template if:true={ticket.StoryPoint__c}>
+                            <span class="ticket-sp">{ticket.StoryPoint__c} SP</span>
+                        </template>
+                    </div>
+
+                </div>
+            </template>
+        </div>
+
+        <!-- Valid-target drop hint -->
+        <template if:true={isValidTarget}>
+            <div class="drop-hint">Drop here</div>
+        </template>
+
+    </div>
+</template>

@@ -11,7 +11,7 @@ public with sharing class ManageBacklogController {
 
             Project__c project = DomainCorrectness.requireProjectExists(projectId);
 
-            List<Sprint__c> sprints = SprintService.loadFuturedSprintsByProject(project);
+            List<Sprint__c> sprints = SprintService.loadUncompleteSprintsByProject(project);
 
             List<Status__c> statuses = StatusService.loadStatuses(project);
             List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(project);

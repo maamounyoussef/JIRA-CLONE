@@ -162,6 +162,20 @@ public with sharing class TicketService {
         }
     }
 
+    public static List<Ticket__c> loadActiveTicketsBySprint(Sprint__c sprint) {
+        try {
+            return [
+                SELECT Id, Name, Summary__c, CurrentState__c, Priority__c, StoryPoint__c,
+                       AssignedTo__c, Epic__c, Sprint__c, Ticket_Type__c, RecordStatus__c
+                FROM Ticket__c
+                WHERE Sprint__c = :sprint.Id AND RecordStatus__c = 'active'
+                ORDER BY Priority__c ASC
+            ];
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading active tickets by sprint: ' + ex.getMessage());
+        }
+    }
+
     public static Ticket__c updateTicketPriority(Ticket__c existing, String priority) {
         try {
             existing.Priority__c = priority;
