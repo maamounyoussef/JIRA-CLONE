@@ -19,7 +19,7 @@ export function emptySprintForm() {
 export function formatSprint(raw) {
     return {
         ...raw,
-        isComplete      : raw.RecordStatus__c === 'complete',
+        isComplete      : raw.RecordStatus__c === 'completed',
         endDate         : calcEndDate(raw.StartDate__c, raw.Duration__c),
         chevronIcon     : 'utility:chevronright',
         isExpanded      : false,

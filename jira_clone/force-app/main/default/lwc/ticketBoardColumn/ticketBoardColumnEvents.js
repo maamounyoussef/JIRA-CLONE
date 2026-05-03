@@ -32,8 +32,9 @@ export function dispatchTicketDrop(component, toStatusId) {
  * Fired when a drag operation ends (drop or cancel).
  * Parent clears drag state and removes column highlights.
  */
-export function dispatchTicketDragEnd(component) {
+export function dispatchTicketDragEnd(component, ticketId, newCurrentStatusId) {
     component.dispatchEvent(new CustomEvent('ticketdragend', {
+        detail:   { ticketId, newCurrentStatusId },
         bubbles:  true,
         composed: true
     }));

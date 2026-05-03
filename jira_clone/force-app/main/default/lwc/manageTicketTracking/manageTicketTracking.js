@@ -26,11 +26,14 @@ export default class ManageTicketTracking extends LightningElement {
     _sprint              = null;
     _ticketTypes         = [];
     _workflowTransitions = [];
+    _statuses            = [];
+    _sprintTickets       = [];
 
     // Drag state
     _dragTicketId     = null;
     _dragFromStatusId = null;
     _dragTicketTypeId = null;
+    _dragToStatusId   = null;
 
     // ─── GETTERS ──────────────────────────────────────────────────────────────
     get sprint() { return this._sprint; }
@@ -56,29 +59,39 @@ export default class ManageTicketTracking extends LightningElement {
         loadManageTicketTrackingPage({ projectId: this._projectId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                const d = res.data;
-                this._sprint              = d.sprint || null;
-                this._ticketTypes         = d.ticketTypes || [];
-                this._workflowTransitions = d.workflows   || [];
-                this.memberOptions        = (d.members || []).map(m => ({
+                const response = res.data;
+                this._sprint              = response.sprint || null;
+                this._ticketTypes         = response.ticketTypes || [];
+                this._workflowTransitions = response.workflows   || [];
+                this._statuses            = response.status        || [];
+                this._sprintTickets       = response.sprint_tickets || [];
+                this.memberOptions        = (response.members || []).map(m => ({
                     Id:   m.Id,
                     name: (m.User__r && m.User__r.Name) || m.Name || ''
                 }));
-                this.columns = buildColumns(d.status || [], d.sprint_tickets || []);
+                this.columns = buildColumns(this._statuses, this._sprintTickets);
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error loading page'; })
             .finally(() => { this.isLoading = false; });
     }
 
     _callChangeTicketState(ticketId, toStatusId, workflowId, workflowTransitionId) {
-        this.isLoading = true;
         changeTicketState({ ticketId, toStatusId, workflowId, workflowTransitionId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                this._loadData();
+                this._sprintTickets = this._sprintTickets.map(ticket =>
+                    ticket.Id === ticketId
+                     ? {
+                         ...ticket,
+                         CurrentState__c: toStatusId,
+                        currentStatuses: this._statuses.find(
+                        status => status.statusId === toStatusId
+                         ) || null
+                       }
+                       : ticket
+               );
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })
-            .finally(() => { this.isLoading = false; });
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
@@ -110,9 +123,9 @@ export default class ManageTicketTracking extends LightningElement {
         const ticketId        = this._dragTicketId;
         const fromStatusId    = this._dragFromStatusId;
         const ticketTypeId    = this._dragTicketTypeId;
-        this._clearDragState();
 
         if (toStatusId === fromStatusId) return;
+        this._dragToStatusId = toStatusId;
 
         const error = validateChangeTicketState(ticketId, toStatusId);
         if (error) { this.errorMessage = error; return; }
@@ -126,8 +139,16 @@ export default class ManageTicketTracking extends LightningElement {
         this._callChangeTicketState(ticketId, toStatusId, workflowId, transitionId);
     }
 
-    handleTicketDragEnd() {
+    handleTicketDragEnd(evt) {
+        const { ticketId }         = evt.detail;
+        const newCurrentStatusId   = this._dragToStatusId;
+        if (ticketId && newCurrentStatusId) {
+            this._sprintTickets = this._sprintTickets.map(t =>
+                t.Id === ticketId ? { ...t, CurrentState__c: newCurrentStatusId } : t
+            );
+        }
         this._clearDragState();
+        this.columns = buildColumns(this._statuses, this._sprintTickets);
     }
 
     // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────
@@ -135,6 +156,7 @@ export default class ManageTicketTracking extends LightningElement {
         this._dragTicketId     = null;
         this._dragFromStatusId = null;
         this._dragTicketTypeId = null;
+        this._dragToStatusId   = null;
         this.columns = this.columns.map(col => ({ ...col, isValidTarget: false }));
     }
 }

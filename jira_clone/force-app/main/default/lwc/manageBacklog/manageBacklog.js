@@ -100,6 +100,7 @@ export default class ManageBacklog extends LightningElement {
         const ids = [...this._selectedTicketIds];
         deleteTickets({ ticketIds: ids })
             .then(res => {
+                this.isLoading = true;
                 if (!res.success) { this.errorMessage = res.message; return; }
                 this.backlogTickets     = this.backlogTickets.filter(t => !ids.includes(t.Id));
                 this._selectedTicketIds = new Set();
@@ -108,8 +109,10 @@ export default class ManageBacklog extends LightningElement {
                     return { ...s, tickets, hasTickets: tickets.length > 0 };
                 })];
             })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error deleting tickets'; });
-    }
+            .catch(err => { this.errorMessage = err.body?.message || 'Error deleting tickets'; })
+            .finally(() => { this.isLoading = false; });
+            
+        }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
 
@@ -136,13 +139,16 @@ export default class ManageBacklog extends LightningElement {
         const ticketItem   = event.target;
         deleteTicket({ ticketId })
             .then(res => {
+                this.isLoading = true;
                 if (!res.success) { ticketItem.ticketError = res.message; return; }
                 this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
                 this._selectedTicketIds.delete(ticketId);
                 this._selectedTicketIds = new Set(this._selectedTicketIds);
                 this._updateTicketInSprints(ticketId, null);
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting ticket'; });
+            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting ticket'; })
+            .finally(() => { this.isLoading = false; });
+            
     }
 
     // from c-ao-ticket-item
@@ -151,14 +157,17 @@ export default class ManageBacklog extends LightningElement {
         const ticketItem            = event.target;
         updateTicketSummary({ ticketId, summary })
             .then(res => {
+                this.isLoading = true;
                 if (!res.success) { ticketItem.ticketError = res.message; return; }
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Summary__c: summary } : t
                 );
                 this._updateTicketInSprints(ticketId, { Summary__c: summary });
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating summary'; });
-    }
+            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating summary'; })
+            .finally(() => { this.isLoading = false; });
+            
+        }
 
     // from c-ao-ticket-item
     handleTicketPriorityUpdate(event) {
@@ -168,13 +177,15 @@ export default class ManageBacklog extends LightningElement {
         if (error) { ticketItem.ticketError = error; return; }
         updateTicketPriority({ ticketId, priority })
             .then(res => {
+                this.isLoading = true;
                 if (!res.success) { ticketItem.ticketError = res.message; return; }
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Priority__c: priority } : t
                 );
                 this._updateTicketInSprints(ticketId, { Priority__c: priority });
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating priority'; });
+            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating priority'; })
+            .finally(() => { this.isLoading = false; });
     }
 
     // from c-ao-ticket-item
@@ -183,13 +194,15 @@ export default class ManageBacklog extends LightningElement {
         const ticketItem            = event.target;
         updateTicketState({ ticketId, stateId })
             .then(res => {
+                this.isLoading = true;
                 if (!res.success) { ticketItem.ticketError = res.message; return; }
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, CurrentState__c: stateId } : t
                 );
                 this._updateTicketInSprints(ticketId, { CurrentState__c: stateId });
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating state'; });
+            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating state'; })
+            .finally(() => { this.isLoading = false; });        
     }
 
     // from c-ao-ticket-item
@@ -386,6 +399,7 @@ export default class ManageBacklog extends LightningElement {
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
     // -- Update Sprint --
     _executeUpdateSprint() {
+        this.isLoading = true;
         const { name, duration, startDate, goal } = this.sprintForm;
         updateSprint({
             sprintId : this._editingSprintId,
@@ -404,26 +418,38 @@ export default class ManageBacklog extends LightningElement {
                 );
                 this.showSprintModal = false;
             })
-            .catch(err => { this.modalError = err.body?.message || 'Error updating sprint'; });
+            .catch(err => { this.modalError = err.body?.message || 'Error updating sprint'; })
+            .finally(() => {
+                this.isLoading = false;
+            });
     }
 
     // -- Create Sprint --
     _executeCreateSprint() {
+        this.isLoading = true;
         const { name, duration, startDate, goal } = this.sprintForm;
         createSprint({
             name,
-            duration : parseInt(duration, 10),
+            duration: parseInt(duration, 10),
             startDate,
             goal,
             projectId: this._projectId,
         })
-            .then(res => {
-                if (!res.success) { this.modalError = res.message; return; }
-                this.sprints        = [...this.sprints, formatSprint(res.data)];
-                this.showSprintModal = false;
-                this.sprintForm      = emptySprintForm();
-            })
-            .catch(err => { this.modalError = err.body?.message || 'Error creating sprint'; });
+        .then(res => {
+            if (!res.success) {
+                this.modalError = res.message;
+                return;
+            }
+            this.sprints = [...this.sprints, formatSprint(res.data)];
+            this.showSprintModal = false;
+            this.sprintForm = emptySprintForm();
+        })
+        .catch(err => {
+            this.modalError = err.body?.message || 'Error creating sprint';
+        })
+        .finally(() => {
+            this.isLoading = false;
+        });
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
@@ -487,7 +513,8 @@ export default class ManageBacklog extends LightningElement {
                     this._loadData();
                 })
                 .catch(err => { this.errorMessage = err.body?.message || 'Error deleting sprint'; });
-        });
+                
+            });
     }
 
     handleSprintComplete(event) {
@@ -535,6 +562,7 @@ export default class ManageBacklog extends LightningElement {
     }
 
     handleSprintSubmit() {
+        if(this.isLoading) return;
         const error = validateSprintForm(this.sprintForm);
         if (error) { this.modalError = error; return; }
 
@@ -740,7 +768,8 @@ export default class ManageBacklog extends LightningElement {
             .catch(err => {
                 this._updateSprint(sprintId, { isLoadingTickets: false });
                 this.errorMessage = err.body?.message || 'Error loading sprint tickets';
-            });
+            })
+
     }
 
     handleBacklogPrevPage() {

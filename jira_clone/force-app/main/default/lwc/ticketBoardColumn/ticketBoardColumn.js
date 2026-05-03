@@ -36,9 +36,10 @@ export default class TicketBoardColumn extends LightningElement {
         dispatchTicketDragStart(this, ticketId, this.statusId, ticketTypeId);
     }
 
-    handleTicketDragEnd() {
+    handleTicketDragEnd(evt) {
+        const ticketId = evt.currentTarget.dataset.ticketId;
         this._isDragOver = false;
-        dispatchTicketDragEnd(this);
+        dispatchTicketDragEnd(this, ticketId);
     }
 
     handleDragOver(evt) {

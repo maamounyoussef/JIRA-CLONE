@@ -106,7 +106,8 @@ public with sharing class WorkflowService {
         try {
             Workflow__c workflow = new Workflow__c(
                 Name = name,
-                Project__c = projectId
+                Project__c = projectId,
+                RecordStatus__c = 'active'
             );
             insert workflow;
             return workflow;
