@@ -20,8 +20,11 @@ export default class ManageTicketTracking extends LightningElement {
     isLoading       = false;
     errorMessage    = null;
 
-    @track columns       = [];
-    @track memberOptions = [];
+    @track columns         = [];
+    @track memberOptions   = [];
+    @track statusOptions   = [];
+    @track epics           = [];
+    @track priorityOptions = [];
 
     _sprint              = null;
     _ticketTypes         = [];
@@ -36,7 +39,8 @@ export default class ManageTicketTracking extends LightningElement {
     _dragToStatusId   = null;
 
     // ─── GETTERS ──────────────────────────────────────────────────────────────
-    get sprint() { return this._sprint; }
+    get sprint()       { return this._sprint; }
+    get projectId()    { return this._projectId; }
 
     get sprintDateRange() {
         return formatSprintDateRange(this._sprint);
@@ -65,9 +69,12 @@ export default class ManageTicketTracking extends LightningElement {
                 this._workflowTransitions = response.workflows   || [];
                 this._statuses            = response.status        || [];
                 this._sprintTickets       = response.sprint_tickets || [];
+                this.epics                = response.epics          || [];
+                this.priorityOptions      = response.priorityOptions || [];
+                this.statusOptions        = this._statuses.map(s => ({ label: s.Name, value: s.Id }));
                 this.memberOptions        = (response.members || []).map(m => ({
-                    Id:   m.Id,
-                    name: (m.User__r && m.User__r.Name) || m.Name || ''
+                    label: (m.User__r && m.User__r.Name) || m.Name || '',
+                    value: m.Id,
                 }));
                 this.columns = buildColumns(this._statuses, this._sprintTickets);
             })
@@ -99,6 +106,22 @@ export default class ManageTicketTracking extends LightningElement {
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     clearError() { this.errorMessage = null; }
+
+    handleTicketStateChange(event) {
+        const { ticketId, fromStatusId, toStatusId } = event.detail;
+        if (toStatusId === fromStatusId) return;
+        const ticket = this._sprintTickets.find(t => t.Id === ticketId);
+        if (!ticket) return;
+        const transitionId = findTransitionId(
+            ticket.Ticket_Type__c, fromStatusId, toStatusId, this._ticketTypes, this._workflowTransitions
+        );
+        if (!transitionId) { this.errorMessage = 'This transition is not allowed by the workflow.'; return; }
+        this._sprintTickets = this._sprintTickets.map(t =>
+            t.Id === ticketId ? { ...t, CurrentState__c: toStatusId } : t
+        );
+        this.columns = buildColumns(this._statuses, this._sprintTickets);
+        this._callChangeTicketState(ticketId, fromStatusId, toStatusId);
+    }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                          TICKET SECTION                                   ║

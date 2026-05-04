@@ -8,11 +8,15 @@ export default class TicketBoardColumn extends LightningElement {
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
     // ─── PROPERTIES & STATE ───────────────────────────────────────────────────
-    @api statusId      = '';
-    @api statusName    = '';
-    @api tickets       = [];
-    @api isValidTarget = false;
-    @api memberOptions = [];
+    @api statusId        = '';
+    @api statusName      = '';
+    @api tickets         = [];
+    @api isValidTarget   = false;
+    @api memberOptions   = [];
+    @api statusOptions   = [];
+    @api priorityOptions = [];
+    @api epics           = [];
+    @api projectId       = '';
 
     @track _isDragOver = false;
 

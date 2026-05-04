@@ -35,7 +35,7 @@
         </template>
 
         <!-- Kanban Board Columns -->
-        <div class="board-columns">
+        <div class="board-columns" onticketstatechange={handleTicketStateChange}>
             <template for:each={columns} for:item="col">
                 <c-ticket-board-column
                     key={col.statusId}
@@ -44,6 +44,10 @@
                     tickets={col.tickets}
                     is-valid-target={col.isValidTarget}
                     member-options={memberOptions}
+                    status-options={statusOptions}
+                    priority-options={priorityOptions}
+                    epics={epics}
+                    project-id={projectId}
                     onticketdragstart={handleTicketDragStart}
                     onticketdrop={handleTicketDrop}
                     onticketdragend={handleTicketDragEnd}

@@ -178,33 +178,202 @@
     </template>
 
     <!-- ═══════════════════════════════════════════════════════════════════
-         TICKET ROW
+         ROW VARIANT  (default — used by manageBacklog)
          ═══════════════════════════════════════════════════════════════════ -->
-    <div class="ticket-row" draggable="true" ondragstart={handleDragStart}>
+    <template if:false={isCardVariant}>
 
-        <!-- LEFT: checkbox, expand, identity -->
-        <div class="ticket-left">
+        <div class="ticket-row" draggable="true" ondragstart={handleDragStart}>
 
-            <c-ao-checkbox
-                checked={ticket.isSelected}
-                onchange={handleSelect}>
-            </c-ao-checkbox>
+            <!-- LEFT: checkbox, expand, identity -->
+            <div class="ticket-left">
 
-            <div class="icon-wrapper">
+                <c-ao-checkbox
+                    checked={ticket.isSelected}
+                    onchange={handleSelect}>
+                </c-ao-checkbox>
+
+                <div class="icon-wrapper">
+                    <c-ao-btn
+                        icon-name={expandIcon}
+                        variant="bare"
+                        size="sm"
+                        title="Expand subtasks"
+                        onclick={handleToggleSubtasks}>
+                    </c-ao-btn>
+                </div>
+
+                <div class="ticket-identity">
+                    <span class="ticket-key">{ticket.Name}</span>
+
+                    <template if:false={isEditingSummary}>
+                        <span class="ticket-summary">{ticket.Summary__c}</span>
+                        <c-ao-btn
+                            icon-name="utility:edit"
+                            variant="bare"
+                            size="sm"
+                            title="Edit summary"
+                            onclick={handleStartEditSummary}>
+                        </c-ao-btn>
+                    </template>
+                    <template if:true={isEditingSummary}>
+                        <c-ao-input
+                            value={summaryDraft}
+                            class="summary-input"
+                            required
+                            onchange={handleSummaryDraftChange}>
+                        </c-ao-input>
+                        <c-ao-btn
+                            icon-name="utility:check"
+                            variant="bare"
+                            size="sm"
+                            title="Save"
+                            onclick={handleSaveSummary}>
+                        </c-ao-btn>
+                        <c-ao-btn
+                            icon-name="utility:close"
+                            variant="bare"
+                            size="sm"
+                            title="Cancel"
+                            onclick={handleCancelEditSummary}>
+                        </c-ao-btn>
+                    </template>
+                </div>
+            </div>
+
+            <!-- RIGHT: state, epic, priority, assignee, actions -->
+            <div class="ticket-right">
+
+                <div class="ticket-state">
+                    <c-ao-combobox
+                        variant="label-hidden"
+                        placeholder="State"
+                        value={currentStateValue}
+                        options={statusOptions}
+                        onchange={handleStateChange}>
+                    </c-ao-combobox>
+                </div>
+
+                <div class="ticket-epic" onclick={handleOpenEpicModal} title="Click to assign epic">
+                    <template if:true={ticket.Epic__c}>
+                        <span class="epic-badge">{ticket.epicName}</span>
+                    </template>
+                    <template if:false={ticket.Epic__c}>
+                        <span class="epic-missing-badge">
+                            <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                            No Epic
+                        </span>
+                    </template>
+                </div>
+
+                <div class="ticket-priority">
+                    <template if:false={isEditingPriority}>
+                        <button class="priority-btn" onclick={handleStartEditPriority}>
+                            {priorityLabel}
+                        </button>
+                    </template>
+                    <template if:true={isEditingPriority}>
+                        <div class="priority-edit-container" onblur={handleBlurPriority} tabindex="-1">
+                            <c-ao-combobox
+                                variant="label-hidden"
+                                value={priorityDraft}
+                                options={priorityOptions}
+                                onchange={handlePriorityDraftChange}>
+                            </c-ao-combobox>
+                            <c-ao-btn
+                                icon-name="utility:check"
+                                variant="bare"
+                                size="sm"
+                                title="Save priority"
+                                onclick={handleSavePriority}>
+                            </c-ao-btn>
+                            <c-ao-btn
+                                icon-name="utility:close"
+                                variant="bare"
+                                size="sm"
+                                title="Cancel"
+                                onclick={handleCancelEditPriority}>
+                            </c-ao-btn>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="ticket-assignee">
+                    <c-ao-combobox
+                        variant="label-hidden"
+                        placeholder="─"
+                        value={ticket.AssignedTo__c}
+                        options={comboboxAssigneeOptions}
+                        onchange={handleAssigneeChange}>
+                    </c-ao-combobox>
+                </div>
+
                 <c-ao-btn
-                    icon-name={expandIcon}
+                    icon-name="utility:delete"
                     variant="bare"
                     size="sm"
-                    title="Expand subtasks"
-                    onclick={handleToggleSubtasks}>
+                    title="Delete ticket"
+                    onclick={handleDeleteClick}>
+                </c-ao-btn>
+
+                <c-ao-btn
+                    icon-name="utility:add"
+                    variant="bare"
+                    size="sm"
+                    title="Add subtask"
+                    onclick={handleOpenCreateSubtaskModal}>
                 </c-ao-btn>
             </div>
 
-            <div class="ticket-identity">
-                <span class="ticket-key">{ticket.Name}</span>
+        </div>
 
+        <!-- Meta row -->
+        <div class="ticket-meta-row">
+            <template if:true={hasTicketType}>
+                <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
+            </template>
+            <template if:false={hasTicketType}>
+                <span class="ticket-type-missing-badge">
+                    <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                    No Type
+                </span>
+            </template>
+            <span class="sp-badge">SP: {spLabel}</span>
+        </div>
+
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CARD VARIANT  (used by ticketBoardColumn / manageTicketTracking)
+         ═══════════════════════════════════════════════════════════════════ -->
+    <template if:true={isCardVariant}>
+
+        <div class="ticket-card-wrapper">
+
+            <!-- Row 1: key + action buttons -->
+            <div class="card-header">
+                <span class="ticket-key">{ticket.Name}</span>
+                <div class="card-actions">
+                    <c-ao-btn
+                        icon-name="utility:add"
+                        variant="bare"
+                        size="sm"
+                        title="Add subtask"
+                        onclick={handleOpenCreateSubtaskModal}>
+                    </c-ao-btn>
+                    <c-ao-btn
+                        icon-name="utility:delete"
+                        variant="bare"
+                        size="sm"
+                        title="Delete ticket"
+                        onclick={handleDeleteClick}>
+                    </c-ao-btn>
+                </div>
+            </div>
+
+            <!-- Row 2: summary (wrapping) -->
+            <div class="card-summary-section">
                 <template if:false={isEditingSummary}>
-                    <span class="ticket-summary">{ticket.Summary__c}</span>
+                    <span class="card-summary-text">{ticket.Summary__c}</span>
                     <c-ao-btn
                         icon-name="utility:edit"
                         variant="bare"
@@ -236,66 +405,76 @@
                     </c-ao-btn>
                 </template>
             </div>
-        </div>
 
-        <!-- RIGHT: state, epic, priority, assignee, actions -->
-        <div class="ticket-right">
-
-            <div class="ticket-state">
-                <c-ao-combobox
-                    variant="label-hidden"
-                    placeholder="State"
-                    value={currentStateValue}
-                    options={statusOptions}
-                    onchange={handleStateChange}>
-                </c-ao-combobox>
-            </div>
-
-            <div class="ticket-epic" onclick={handleOpenEpicModal} title="Click to assign epic">
-                <template if:true={ticket.Epic__c}>
-                    <span class="epic-badge">{ticket.epicName}</span>
+            <!-- Row 3: type badge + SP + epic -->
+            <div class="card-meta">
+                <template if:true={hasTicketType}>
+                    <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
                 </template>
-                <template if:false={ticket.Epic__c}>
-                    <span class="epic-missing-badge">
+                <template if:false={hasTicketType}>
+                    <span class="ticket-type-missing-badge">
                         <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
-                        No Epic
+                        No Type
                     </span>
                 </template>
+                <span class="sp-badge">SP: {spLabel}</span>
+                <div class="card-epic-cell ticket-epic" onclick={handleOpenEpicModal} title="Click to assign epic">
+                    <template if:true={ticket.Epic__c}>
+                        <span class="epic-badge">{ticket.epicName}</span>
+                    </template>
+                    <template if:false={ticket.Epic__c}>
+                        <span class="epic-missing-badge">
+                            <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                            No Epic
+                        </span>
+                    </template>
+                </div>
             </div>
 
-            <div class="ticket-priority">
-                <template if:false={isEditingPriority}>
-                    <button class="priority-btn" onclick={handleStartEditPriority}>
-                        {priorityLabel}
-                    </button>
-                </template>
-                <template if:true={isEditingPriority}>
-                    <div class="priority-edit-container" onblur={handleBlurPriority} tabindex="-1">
-                        <c-ao-combobox
-                            variant="label-hidden"
-                            value={priorityDraft}
-                            options={priorityOptions}
-                            onchange={handlePriorityDraftChange}>
-                        </c-ao-combobox>
-                        <c-ao-btn
-                            icon-name="utility:check"
-                            variant="bare"
-                            size="sm"
-                            title="Save priority"
-                            onclick={handleSavePriority}>
-                        </c-ao-btn>
-                        <c-ao-btn
-                            icon-name="utility:close"
-                            variant="bare"
-                            size="sm"
-                            title="Cancel"
-                            onclick={handleCancelEditPriority}>
-                        </c-ao-btn>
-                    </div>
-                </template>
+            <!-- Row 4: state + priority -->
+            <div class="card-controls">
+                <div class="card-state-cell ticket-state">
+                    <c-ao-combobox
+                        variant="label-hidden"
+                        placeholder="State"
+                        value={currentStateValue}
+                        options={statusOptions}
+                        onchange={handleStateChange}>
+                    </c-ao-combobox>
+                </div>
+                <div class="ticket-priority">
+                    <template if:false={isEditingPriority}>
+                        <button class="priority-btn" onclick={handleStartEditPriority}>{priorityLabel}</button>
+                    </template>
+                    <template if:true={isEditingPriority}>
+                        <div class="priority-edit-container" onblur={handleBlurPriority} tabindex="-1">
+                            <c-ao-combobox
+                                variant="label-hidden"
+                                value={priorityDraft}
+                                options={priorityOptions}
+                                onchange={handlePriorityDraftChange}>
+                            </c-ao-combobox>
+                            <c-ao-btn
+                                icon-name="utility:check"
+                                variant="bare"
+                                size="sm"
+                                title="Save priority"
+                                onclick={handleSavePriority}>
+                            </c-ao-btn>
+                            <c-ao-btn
+                                icon-name="utility:close"
+                                variant="bare"
+                                size="sm"
+                                title="Cancel"
+                                onclick={handleCancelEditPriority}>
+                            </c-ao-btn>
+                        </div>
+                    </template>
+                </div>
             </div>
 
-            <div class="ticket-assignee">
+            <!-- Row 5: assignee -->
+            <div class="card-assignee-cell ticket-assignee">
                 <c-ao-combobox
                     variant="label-hidden"
                     placeholder="─"
@@ -305,40 +484,23 @@
                 </c-ao-combobox>
             </div>
 
-            <c-ao-btn
-                icon-name="utility:delete"
-                variant="bare"
-                size="sm"
-                title="Delete ticket"
-                onclick={handleDeleteClick}>
-            </c-ao-btn>
+            <!-- Row 6: subtask toggle -->
+            <div class="card-subtask-toggle">
+                <c-ao-btn
+                    icon-name={expandIcon}
+                    variant="bare"
+                    size="sm"
+                    title="Toggle subtasks"
+                    onclick={handleToggleSubtasks}>
+                </c-ao-btn>
+                <span class="card-subtask-label">Subtasks</span>
+            </div>
 
-            <c-ao-btn
-                icon-name="utility:add"
-                variant="bare"
-                size="sm"
-                title="Add subtask"
-                onclick={handleOpenCreateSubtaskModal}>
-            </c-ao-btn>
         </div>
 
-    </div>
+    </template>
 
-    <!-- Meta row -->
-    <div class="ticket-meta-row">
-        <template if:true={hasTicketType}>
-            <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
-        </template>
-        <template if:false={hasTicketType}>
-            <span class="ticket-type-missing-badge">
-                <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
-                No Type
-            </span>
-        </template>
-        <span class="sp-badge">SP: {spLabel}</span>
-    </div>
-
-    <!-- Error -->
+    <!-- Error (shared across both variants) -->
     <template if:true={errorMessage}>
         <div class="ticket-error">
             <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
@@ -353,7 +515,7 @@
         </div>
     </template>
 
-    <!-- ── Subtasks ─────────────────────────────────────────────────────── -->
+    <!-- ── Subtasks (shared across both variants) ────────────────────── -->
     <template if:true={isExpanded}>
         <div class="subtasks-wrapper">
             <template if:true={hasSelectedSubtasks}>

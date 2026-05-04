@@ -20,6 +20,7 @@ export default class AoTicketItem extends LightningElement {
     get ticket()        { return this._ticket; }
     set ticket(value)   { this._ticket = value || {}; this._currentStateId = value?.CurrentState__c ?? ''; }
 
+    @api variant         = 'row';
     @api statusOptions   = [];
     @api priorityOptions = [];
     @api projectId       = '';
@@ -263,6 +264,7 @@ export default class AoTicketItem extends LightningElement {
 
     // ─── GETTERS ─────────────────────────────────────────────────────────────
 
+    get isCardVariant()         { return this.variant === 'card'; }
     get currentStateValue()    { return this._currentStateId || this._ticket?.CurrentState__c || ''; }
     get expandIcon()           { return this.isExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
     get hasSubtasks()          { return this.subtasks.length > 0; }

@@ -22,14 +22,15 @@
                      ondragstart={handleTicketDragStart}
                      ondragend={handleTicketDragEnd}>
 
-                    <div class="ticket-name">{ticket.Name}</div>
-                    <div class="ticket-summary">{ticket.Summary__c}</div>
-                    <div class="ticket-meta">
-                        <span class="ticket-priority">{ticket.Priority__c}</span>
-                        <template if:true={ticket.StoryPoint__c}>
-                            <span class="ticket-sp">{ticket.StoryPoint__c} SP</span>
-                        </template>
-                    </div>
+                    <c-ao-ticket-item
+                        variant="card"
+                        ticket={ticket}
+                        status-options={statusOptions}
+                        priority-options={priorityOptions}
+                        epics={epics}
+                        member-options={memberOptions}
+                        project-id={projectId}>
+                    </c-ao-ticket-item>
 
                 </div>
             </template>

@@ -610,3 +610,112 @@
     .subtask-state   { display: none; }
     .subtask-summary { flex: 0 1 55%; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CARD VARIANT  (variant="card")
+   Column-first layout used inside ticketBoardColumn / kanban board.
+   Reuses the same design tokens and badge/button classes as the row variant.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ticket-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+    padding: var(--row-pad-block) var(--row-pad-inline);
+    background-color: #ffffff;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.ticket-card-wrapper:hover {
+    background-color: #f0efec;
+}
+
+/* ── Row 1: key + action buttons ────────────────────────────────────────── */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25em;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.125em;
+    flex-shrink: 0;
+}
+
+/* ── Row 2: summary (wrapping, not truncated) ────────────────────────────── */
+.card-summary-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25em;
+}
+
+.card-summary-text {
+    font-size: 0.875em;
+    color: #1a1a1a;
+    flex: 1 1 0;
+    min-width: 0;
+    line-height: 1.4;
+}
+
+/* ── Row 3: type badge + SP + epic ──────────────────────────────────────── */
+.card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375em;
+}
+
+/* Override ticket-epic's fixed width so it fits naturally in the meta row */
+.card-epic-cell {
+    flex: 0 0 auto;
+    align-self: center;
+}
+
+/* ── Row 4: state + priority ────────────────────────────────────────────── */
+.card-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+}
+
+/* Override ticket-state fixed width so state fills available space in card */
+.card-state-cell {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.card-state-cell c-ao-combobox {
+    width: 100%;
+}
+
+/* ── Row 5: assignee (full width) ───────────────────────────────────────── */
+.card-assignee-cell {
+    flex: 1 1 0;
+    width: 100%;
+    align-self: stretch;
+}
+
+.card-assignee-cell c-ao-combobox {
+    width: 100%;
+}
+
+/* ── Row 6: subtask toggle ──────────────────────────────────────────────── */
+.card-subtask-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+    border-top: 1px dashed #c8c6c4;
+    padding-top: 0.3em;
+    margin-top: 0.1em;
+}
+
+.card-subtask-label {
+    font-size: 0.6875em;
+    color: #706e6b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
