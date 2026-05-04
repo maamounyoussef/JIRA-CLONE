@@ -13,7 +13,7 @@
         <!-- Ticket Cards -->
         <div class="ticket-list">
             <template for:each={tickets} for:item="ticket">
-                <div key={ticket.Id}
+                <div key={ticket._renderKey}
                      class="ticket-card"
                      data-end-status={ticket.isEndStatus}
                      draggable="true"

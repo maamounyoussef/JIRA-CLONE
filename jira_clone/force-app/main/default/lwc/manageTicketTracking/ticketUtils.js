@@ -14,6 +14,7 @@ export function buildColumns(statuses, tickets) {
         tickets:       (tickets || [])
             .filter(t => t.CurrentState__c === status.Id)
             .map(t => ({
+                _renderKey:      t.Id,
                 Id:              t.Id,
                 Name:            t.Name,
                 Ticket_Type__c:  t.Ticket_Type__c,

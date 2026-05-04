@@ -386,6 +386,24 @@ public with sharing class WorkflowService {
         }
     }
 
+    public static String foundEndStatus(List<WorkflowTransition__c> transitions) {
+        Set<String> fromStatuses = new Set<String>();
+        Set<String> toStatuses = new Set<String>();
+
+        for (WorkflowTransition__c t : transitions) {
+            fromStatuses.add(t.FromStatus__c);
+            toStatuses.add(t.ToStatus__c);
+        }
+
+        for (String toStatusId : toStatuses) {
+            if (!fromStatuses.contains(toStatusId)) {
+                return toStatusId;
+            }
+        }
+
+        return null;
+    }
+
     public static void updateWorkflow(Workflow__c workflow) {
         try {
             List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflow.Id);

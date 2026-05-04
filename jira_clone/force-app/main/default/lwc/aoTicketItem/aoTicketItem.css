@@ -632,6 +632,14 @@
     background-color: #f0efec;
 }
 
+.ticket-card-wrapper.end-status {
+    background-color: #f0faf0;
+}
+
+.ticket-card-wrapper.end-status:hover {
+    background-color: #e5f5e5;
+}
+
 /* ── Row 1: key + action buttons ────────────────────────────────────────── */
 .card-header {
     display: flex;

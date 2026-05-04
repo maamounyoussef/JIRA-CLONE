@@ -68,7 +68,11 @@ export default class ManageTicketTracking extends LightningElement {
                 this._ticketTypes         = response.ticketTypes || [];
                 this._workflowTransitions = response.workflows   || [];
                 this._statuses            = response.status        || [];
-                this._sprintTickets       = response.sprint_tickets || [];
+                const endStatusSet        = new Set(response.ticketsAtEndStatus || []);
+                this._sprintTickets       = (response.sprint_tickets || []).map(t => ({
+                    ...t,
+                    isEndStatus: endStatusSet.has(t.Id)
+                }));
                 this.epics                = response.epics          || [];
                 this.priorityOptions      = response.priorityOptions || [];
                 this.statusOptions        = this._statuses.map(s => ({ label: s.Name, value: s.Id }));
@@ -98,7 +102,14 @@ export default class ManageTicketTracking extends LightningElement {
                         : ticket
                 );
                 if (isEndStatus) {
-                    this.columns = buildColumns(this._statuses, this._sprintTickets);
+                    this.columns = this.columns.map(col => ({
+                        ...col,
+                        tickets: col.tickets.map(t =>
+                            t.Id === ticketId
+                                ? { ...t, isEndStatus: true, _renderKey: t.Id + '_' + Date.now() }
+                                : t
+                        )
+                    }));
                 }
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })

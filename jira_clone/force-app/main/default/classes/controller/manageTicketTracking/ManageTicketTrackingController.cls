@@ -20,13 +20,50 @@ public with sharing class ManageTicketTrackingController {
                 ? TicketService.loadActiveTicketsBySprint(sprint)
                 : new List<Ticket__c>();
 
+            // Group already-loaded workflow transitions by workflow ID
+            Map<String, List<WorkflowTransition__c>> transitionsByWorkflow = new Map<String, List<WorkflowTransition__c>>();
+            for (WorkflowTransition__c wt : workflows) {
+                if (!transitionsByWorkflow.containsKey(wt.Workflow__c)) {
+                    transitionsByWorkflow.put(wt.Workflow__c, new List<WorkflowTransition__c>());
+                }
+                transitionsByWorkflow.get(wt.Workflow__c).add(wt);
+            }
+
+            // Build ticketTypeId -> workflowId map from already-loaded ticketTypes
+            Map<String, String> ticketTypeWorkflowMap = new Map<String, String>();
+            for (TicketType__c tt : ticketTypes) {
+                if (tt.Workflow__c != null) {
+                    ticketTypeWorkflowMap.put(tt.Id, tt.Workflow__c);
+                }
+            }
+
+            // Find the end status for each workflow
+            Map<String, String> workflowEndStatusMap = new Map<String, String>();
+            for (String wfId : transitionsByWorkflow.keySet()) {
+                String endStatusId = WorkflowService.foundEndStatus(transitionsByWorkflow.get(wfId));
+                if (endStatusId != null) {
+                    workflowEndStatusMap.put(wfId, endStatusId);
+                }
+            }
+
+            // Collect IDs of sprint tickets currently at their workflow's end status
+            Set<String> ticketsAtEndStatus = new Set<String>();
+            for (Ticket__c t : sprintTickets) {
+                String wfId      = ticketTypeWorkflowMap.get(t.Ticket_Type__c);
+                String endStatus = wfId != null ? workflowEndStatusMap.get(wfId) : null;
+                if (endStatus != null && endStatus == t.CurrentState__c) {
+                    ticketsAtEndStatus.add(t.Id);
+                }
+            }
+
             Map<String, Object> data = new Map<String, Object>{
-                'status'         => statuses,
-                'workflows'      => workflows,
-                'sprint_tickets' => sprintTickets,
-                'members'        => members,
-                'ticketTypes'    => ticketTypes,
-                'sprint'         => sprint
+                'status'              => statuses,
+                'workflows'           => workflows,
+                'sprint_tickets'      => sprintTickets,
+                'members'             => members,
+                'ticketTypes'         => ticketTypes,
+                'sprint'              => sprint,
+                'ticketsAtEndStatus'  => ticketsAtEndStatus
             };
 
             return new APIResponse(true, 'Manage ticket tracking page loaded', data);
