@@ -624,6 +624,8 @@
     padding: var(--row-pad-block) var(--row-pad-inline);
     background-color: #ffffff;
     border-bottom: 1px solid #1a1a1a;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .ticket-card-wrapper:hover {
@@ -675,20 +677,49 @@
 }
 
 /* ── Row 4: state + priority ────────────────────────────────────────────── */
+/* Use fr columns so state (62%) and priority (38%) always keep the same
+   proportional positions regardless of card width.                          */
 .card-controls {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 62fr 38fr;
     gap: 0.375em;
+    align-items: center;
+    width: 100%;
 }
 
-/* Override ticket-state fixed width so state fills available space in card */
+/* Override ticket-state fixed flex-basis so it fills its grid cell */
 .card-state-cell {
-    flex: 1 1 0;
+    flex: unset;
+    width: 100%;
     min-width: 0;
 }
 
 .card-state-cell c-ao-combobox {
     width: 100%;
+}
+
+/* Priority fills its grid cell in the card */
+.card-controls .ticket-priority {
+    flex: unset;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.card-controls .priority-btn {
+    width: 100%;
+}
+
+.card-controls .priority-edit-container {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Let the priority combobox shrink to fit its cell instead of fixed 5.5em */
+.card-controls .priority-edit-container c-ao-combobox {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
 }
 
 /* ── Row 5: assignee (full width) ───────────────────────────────────────── */

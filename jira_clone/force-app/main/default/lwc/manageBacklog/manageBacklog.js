@@ -48,6 +48,10 @@ export default class ManageBacklog extends LightningElement {
     _dragSourceSprintId = null;
     _dragTargetSprintId = null;
 
+    @track _isSmallScreen = false;
+    _mqList    = null;
+    _mqHandler = null;
+
     @track sprints           = [];
     @track backlogTickets    = [];
     @track statusOptions     = [];
@@ -66,6 +70,17 @@ export default class ManageBacklog extends LightningElement {
         }
         this._projectId = projectId;
         this._loadData();
+
+        this._mqList        = window.matchMedia('(max-width: 767px)');
+        this._isSmallScreen = this._mqList.matches;
+        this._mqHandler     = (e) => { this._isSmallScreen = e.matches; };
+        this._mqList.addEventListener('change', this._mqHandler);
+    }
+
+    disconnectedCallback() {
+        if (this._mqList) {
+            this._mqList.removeEventListener('change', this._mqHandler);
+        }
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
@@ -412,6 +427,7 @@ export default class ManageBacklog extends LightningElement {
     get hasSelectedTickets() { return this._selectedTicketIds.size > 0; }
     get selectedCount()      { return this._selectedTicketIds.size; }
     get hasBacklogTickets()  { return this.backlogTickets.length > 0; }
+    get ticketVariant()      { return this._isSmallScreen ? 'card' : 'row'; }
 
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
