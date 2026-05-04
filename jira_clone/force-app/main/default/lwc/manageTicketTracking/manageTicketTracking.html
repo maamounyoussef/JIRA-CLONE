@@ -9,15 +9,6 @@
         </div>
     </template>
 
-    <!-- End Status Banner -->
-    <template if:true={endStatusMessage}>
-        <div class="info-box">
-            <lightning-icon icon-name="utility:check" size="x-small" variant="success"></lightning-icon>
-            <span>{endStatusMessage}</span>
-            <c-ao-btn label="Dismiss" variant="ghost" onclick={clearEndStatusMessage}></c-ao-btn>
-        </div>
-    </template>
-
     <!-- Loading -->
     <template if:true={isLoading}>
         <div class="loading-spinner">

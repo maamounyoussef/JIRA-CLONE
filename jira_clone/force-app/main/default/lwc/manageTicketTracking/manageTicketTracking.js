@@ -19,7 +19,6 @@ export default class ManageTicketTracking extends LightningElement {
     _projectId      = null;
     isLoading       = false;
     errorMessage    = null;
-    endStatusMessage = null;
 
     @track columns       = [];
     @track memberOptions = [];
@@ -80,27 +79,26 @@ export default class ManageTicketTracking extends LightningElement {
         changeTicketState({ ticketId, fromStatusId, toStatusId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
+                const isEndStatus = res.data && res.data.isEndStatus;
                 this._sprintTickets = this._sprintTickets.map(ticket =>
                     ticket.Id === ticketId
-                     ? {
-                         ...ticket,
-                         CurrentState__c: toStatusId,
-                        currentStatuses: this._statuses.find(
-                        status => status.statusId === toStatusId
-                         ) || null
-                       }
-                       : ticket
-               );
-               if (res.data && res.data.isEndStatus) {
-                   this.endStatusMessage = 'Ticket has reached a final status — no further transitions are available.';
-               }
+                        ? {
+                            ...ticket,
+                            CurrentState__c: toStatusId,
+                            currentStatuses: this._statuses.find(s => s.statusId === toStatusId) || null,
+                            isEndStatus:     isEndStatus || false
+                          }
+                        : ticket
+                );
+                if (isEndStatus) {
+                    this.columns = buildColumns(this._statuses, this._sprintTickets);
+                }
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     clearError() { this.errorMessage = null; }
-    clearEndStatusMessage() { this.endStatusMessage = null; }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                          TICKET SECTION                                   ║
