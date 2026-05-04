@@ -13,7 +13,13 @@ export default class AoTicketItem extends LightningElement {
 
     // ─── PROPERTIES & STATE ──────────────────────────────────────────────────
 
-    @api ticket          = {};
+    @track _currentStateId = '';
+
+    _ticket = {};
+    @api
+    get ticket()        { return this._ticket; }
+    set ticket(value)   { this._ticket = value || {}; this._currentStateId = value?.CurrentState__c ?? ''; }
+
     @api statusOptions   = [];
     @api priorityOptions = [];
     @api projectId       = '';
@@ -71,8 +77,8 @@ export default class AoTicketItem extends LightningElement {
 
     _errors = null;
 
-    // null → success: close whichever modal is open
-    // string → error: show inside the open modal
+    // null  → success: close whichever modal is open, clear inline error
+    // string → error: show inside the open modal, or inline on the ticket row if no modal is open
     @api
     get errors() { return this._errors; }
     set errors(value) {
@@ -83,8 +89,15 @@ export default class AoTicketItem extends LightningElement {
             this.showEpicModal          = false;
             this.showCreateEpicModal    = false;
             this.modalError             = null;
+            this.errorMessage           = null;
         } else {
-            this.modalError = value;
+            const modalOpen = this.showCreateSubtaskModal || this.showEpicModal || this.showCreateEpicModal;
+            if (modalOpen) {
+                this.modalError = value;
+            } else {
+                this._currentStateId = this._ticket?.CurrentState__c ?? '';
+                this.errorMessage    = value;
+            }
         }
     }
 
@@ -113,7 +126,7 @@ export default class AoTicketItem extends LightningElement {
     }
 
     handleStateChange(event) {
-        this._dispatch('ticketstatechange', { ticketId: this.ticket.Id, stateId: event.detail.value });
+        this._dispatch('ticketstatechange', { ticketId: this.ticket.Id, fromStatusId: this.ticket.CurrentState__c, toStatusId: event.detail.value });
     }
 
     handleAssigneeChange(event) {
@@ -250,6 +263,7 @@ export default class AoTicketItem extends LightningElement {
 
     // ─── GETTERS ─────────────────────────────────────────────────────────────
 
+    get currentStateValue()    { return this._currentStateId || this._ticket?.CurrentState__c || ''; }
     get expandIcon()           { return this.isExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
     get hasSubtasks()          { return this.subtasks.length > 0; }
     get spLabel()              { return this.ticket.StoryPoint__c != null ? this.ticket.StoryPoint__c : '—'; }

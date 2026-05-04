@@ -387,16 +387,27 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
-    public static APIResponse updateTicketState(String ticketId, String stateId) {
+    public static APIResponse changeTicketState(String ticketId, String fromStatusId, String toStatusId) {
         try {
-            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
-            if (String.isBlank(stateId)) return new APIResponse(false, 'stateId is required');
-            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
-            DomainCorrectness.requireStatusExists(stateId);
-            Ticket__c updated = TicketService.updateTicketState(existing, stateId);
-            return new APIResponse(true, 'Ticket state updated', updated);
+            if (String.isBlank(ticketId))     return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(fromStatusId)) return new APIResponse(false, 'fromStatusId is required');
+            if (String.isBlank(toStatusId))   return new APIResponse(false, 'toStatusId is required');
+
+            Ticket__c     ticket     = DomainCorrectness.requireTicketExists(ticketId);
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticket.Ticket_Type__c);
+            Workflow__c   workflow   = DomainCorrectness.requireWorkflowExists(ticketType.Workflow__c);
+
+            List<WorkflowTransition__c> transitions = WorkflowService.getTransitionsByWorkflow(workflow.Id);
+
+            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatusId, toStatusId, transitions);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'isEndStatus' => isEndStatus
+            };
+
+            return new APIResponse(true, 'Ticket state changed successfully', data);
         } catch (Exception ex) {
-            return new APIResponse(false, 'Error updating ticket state: ' + ex.getMessage());
+            return new APIResponse(false, 'Error changing ticket state: ' + ex.getMessage());
         }
     }
 

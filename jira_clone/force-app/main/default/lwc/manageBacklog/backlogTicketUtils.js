@@ -7,12 +7,15 @@ export function emptyTicket() {
     return { name: '', summary: '', description: '', storyPoint: null, ticketTypeId: '', currentStateId: '', priority: '' };
 }
 
+const _rk = () => Math.random().toString(36).slice(2);
+
 export function formatTicket(rawTicket, ticketTypeOptions, ticketTypeId) {
     return {
         ...rawTicket,
         epicName      : '',
         ticketTypeName: ticketTypeOptions.find(o => o.value === ticketTypeId)?.label || '',
         isSelected    : false,
+        _key          : _rk(),
     };
 }
 
@@ -26,5 +29,6 @@ export function enrichTickets(tickets, epics, ticketTypeOptions, memberOptions) 
         ticketTypeName: ticketTypeMap[t.Ticket_Type__c] || '',
         assigneeName  : memberMap[t.AssignedTo__c]      || '',
         isSelected    : false,
+        _key          : _rk(),
     }));
 }

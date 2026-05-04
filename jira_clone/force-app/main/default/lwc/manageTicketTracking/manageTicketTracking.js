@@ -6,7 +6,7 @@ import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
 import { buildColumns }                                     from './ticketUtils';
-import { getValidTargetStatusIds, findTransitionId, getWorkflowId } from './workflowUtils';
+import { getValidTargetStatusIds, findTransitionId } from './workflowUtils';
 import { formatSprintDateRange }                            from './sprintUtils';
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -16,9 +16,10 @@ import { formatSprintDateRange }                            from './sprintUtils'
 export default class ManageTicketTracking extends LightningElement {
 
     // ─── PROPERTIES & STATE ───────────────────────────────────────────────────
-    _projectId   = null;
-    isLoading    = false;
-    errorMessage = null;
+    _projectId      = null;
+    isLoading       = false;
+    errorMessage    = null;
+    endStatusMessage = null;
 
     @track columns       = [];
     @track memberOptions = [];
@@ -75,8 +76,8 @@ export default class ManageTicketTracking extends LightningElement {
             .finally(() => { this.isLoading = false; });
     }
 
-    _callChangeTicketState(ticketId, toStatusId, workflowId, workflowTransitionId) {
-        changeTicketState({ ticketId, toStatusId, workflowId, workflowTransitionId })
+    _callChangeTicketState(ticketId, fromStatusId, toStatusId) {
+        changeTicketState({ ticketId, fromStatusId, toStatusId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 this._sprintTickets = this._sprintTickets.map(ticket =>
@@ -90,12 +91,16 @@ export default class ManageTicketTracking extends LightningElement {
                        }
                        : ticket
                );
+               if (res.data && res.data.isEndStatus) {
+                   this.endStatusMessage = 'Ticket has reached a final status — no further transitions are available.';
+               }
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     clearError() { this.errorMessage = null; }
+    clearEndStatusMessage() { this.endStatusMessage = null; }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                          TICKET SECTION                                   ║
@@ -135,8 +140,7 @@ export default class ManageTicketTracking extends LightningElement {
         );
         if (!transitionId) { this.errorMessage = 'This transition is not allowed by the workflow.'; return; }
 
-        const workflowId = getWorkflowId(ticketTypeId, this._ticketTypes);
-        this._callChangeTicketState(ticketId, toStatusId, workflowId, transitionId);
+        this._callChangeTicketState(ticketId, fromStatusId, toStatusId);
     }
 
     handleTicketDragEnd(evt) {

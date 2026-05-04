@@ -119,7 +119,7 @@
 
                         <template for:each={sprint.tickets} for:item="ticket">
                             <c-ao-ticket-item
-                                key={ticket.Id}
+                                key={ticket._key}
                                 data-ticket-id={ticket.Id}
                                 ticket={ticket}
                                 status-options={statusOptions}

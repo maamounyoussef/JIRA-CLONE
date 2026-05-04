@@ -15,14 +15,12 @@ public class ManageTicketTrackingControllerTest {
 
     @isTest
     static void testChangeTicketState_Success() {
-        Ticket__c             ticket     = [SELECT Id FROM Ticket__c WHERE Name = 'TCK-001' LIMIT 1];
-        Status__c             stDone     = [SELECT Id FROM Status__c WHERE Name = 'Done' LIMIT 1];
-        Workflow__c           workflow   = [SELECT Id FROM Workflow__c LIMIT 1];
-        WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
+        Ticket__c ticket = [SELECT Id, CurrentState__c FROM Ticket__c WHERE Name = 'TCK-001' LIMIT 1];
+        Status__c stDone = [SELECT Id FROM Status__c WHERE Name = 'Done' LIMIT 1];
 
         Test.startTest();
         APIResponse res = ManageTicketTrackingController.changeTicketState(
-            ticket.Id, stDone.Id, workflow.Id, transition.Id
+            ticket.Id, ticket.CurrentState__c, stDone.Id
         );
         Test.stopTest();
 

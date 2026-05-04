@@ -107,6 +107,26 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW — transition availability
+    // ═══════════════════════════════════════════════════════════════
+
+    public static WorkflowTransition__c requireTransitionAllowed(String fromStatusId, String toStatusId, List<WorkflowTransition__c> transitions) {
+        for (WorkflowTransition__c t : transitions) {
+            if (t.FromStatus__c == fromStatusId && t.ToStatus__c == toStatusId) {
+                return t;
+            }
+        }
+        throw new ServiceException('Transition from current status to target status is not allowed by the workflow');
+    }
+
+    public static Boolean isEndStatus(String statusId, List<WorkflowTransition__c> transitions) {
+        for (WorkflowTransition__c t : transitions) {
+            if (t.FromStatus__c == statusId) return false;
+        }
+        return true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // PAGINATION — utilities
     // ═══════════════════════════════════════════════════════════════
 

@@ -386,17 +386,6 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static void changeTicketState(Ticket__c ticket, TicketType__c ticketType, String toStatusId, String workflowId, WorkflowTransition__c transition) {
-        try {
-            DomainCompleteValidator.requireWorkflowAssignedToTicketType(ticketType, workflowId);
-            DomainCompleteValidator.requireTransitionBelongsToWorkflow(transition, workflowId);
-            canTransition(ticket.CurrentState__c, toStatusId, transition);
-            TicketService.updateTicketState(ticket, toStatusId);
-        } catch (Exception ex) {
-            throw new ServiceException('Error changing ticket state: ' + ex.getMessage());
-        }
-    }
-
     public static void updateWorkflow(Workflow__c workflow) {
         try {
             List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflow.Id);

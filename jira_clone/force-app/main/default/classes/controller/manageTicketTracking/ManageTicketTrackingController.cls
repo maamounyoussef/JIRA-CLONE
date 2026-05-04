@@ -36,18 +36,25 @@ public with sharing class ManageTicketTrackingController {
     }
 
     @AuraEnabled
-    public static APIResponse changeTicketState(String ticketId, String toStatusId, String workflowId, String workflowTransitionId) {
+    public static APIResponse changeTicketState(String ticketId, String fromStatusId, String toStatusId) {
         try {
-            if (String.isBlank(ticketId))   return new APIResponse(false, 'ticketId is required');
-            if (String.isBlank(toStatusId)) return new APIResponse(false, 'toStatusId is required');
+            if (String.isBlank(ticketId))     return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(fromStatusId)) return new APIResponse(false, 'fromStatusId is required');
+            if (String.isBlank(toStatusId))   return new APIResponse(false, 'toStatusId is required');
 
-            Ticket__c             ticket     = DomainCorrectness.requireTicketExists(ticketId);
-            TicketType__c         ticketType = DomainCorrectness.requireTicketTypeExists(ticket.Ticket_Type__c);
-            WorkflowTransition__c transition = DomainCorrectness.requireTransitionExists(workflowTransitionId);
+            Ticket__c     ticket     = DomainCorrectness.requireTicketExists(ticketId);
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticket.Ticket_Type__c);
+            Workflow__c   workflow   = DomainCorrectness.requireWorkflowExists(ticketType.Workflow__c);
 
-            WorkflowService.changeTicketState(ticket, ticketType, toStatusId, workflowId, transition);
+            List<WorkflowTransition__c> transitions = WorkflowService.getTransitionsByWorkflow(workflow.Id);
 
-            return new APIResponse(true, 'Ticket state changed successfully');
+            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatusId, toStatusId, transitions);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'isEndStatus' => isEndStatus
+            };
+
+            return new APIResponse(true, 'Ticket state changed successfully', data);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error changing ticket state: ' + ex.getMessage());
         }

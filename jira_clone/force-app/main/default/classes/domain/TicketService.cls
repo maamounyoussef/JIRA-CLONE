@@ -185,15 +185,6 @@ public with sharing class TicketService {
         }
     }
 
-    public static Ticket__c updateTicketState(Ticket__c existing, String stateId) {
-        try {
-            existing.CurrentState__c = stateId;
-            return updateTicket(existing);
-        } catch (Exception ex) {
-            throw new ServiceException('Error updating ticket state: ' + ex.getMessage());
-        }
-    }
-
     public static Ticket__c updateTicketSummary(Ticket__c existing, String summary) {
         try {
             existing.Summary__c = summary;
@@ -361,11 +352,25 @@ public with sharing class TicketService {
                 AND RecordStatus__c != 'delete'
                 ORDER BY Name ASC
             ];
-            
+
         } catch (Exception ex) {
             throw new ServiceException('Error loading ticket types: ' + ex.getMessage());
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW STATE CHANGE
+    // ═══════════════════════════════════════════════════════════════
+
+    public static Boolean changeTicketState(Ticket__c ticket, String fromStatusId, String toStatusId, List<WorkflowTransition__c> transitions) {
+        try {
+            DomainCompleteValidator.requireTransitionAllowed(fromStatusId, toStatusId, transitions);
+            ticket.CurrentState__c = toStatusId;
+            updateTicket(ticket);
+            return DomainCompleteValidator.isEndStatus(toStatusId, transitions);
+        } catch (Exception ex) {
+            throw new ServiceException('Error changing ticket state: ' + ex.getMessage());
+        }
+    }
 
 }

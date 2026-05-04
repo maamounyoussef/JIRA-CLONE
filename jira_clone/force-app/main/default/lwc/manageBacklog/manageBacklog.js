@@ -1,4 +1,5 @@
 import { LightningElement, track } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadStyle } from 'lightning/platformResourceLoader';
 import createTicket          from '@salesforce/apex/ManageBacklogController.createTicket';
 import loadBacklogData       from '@salesforce/apex/ManageBacklogController.loadBacklogData';
@@ -15,7 +16,7 @@ import loadTicketsBySprint   from '@salesforce/apex/ManageBacklogController.load
 import deleteTicket          from '@salesforce/apex/ManageBacklogController.deleteTicket';
 import updateTicketSummary   from '@salesforce/apex/ManageBacklogController.updateTicketSummary';
 import updateTicketPriority  from '@salesforce/apex/ManageBacklogController.updateTicketPriority';
-import updateTicketState     from '@salesforce/apex/ManageBacklogController.updateTicketState';
+import changeTicketState     from '@salesforce/apex/ManageBacklogController.changeTicketState';
 import assignTicket          from '@salesforce/apex/ManageBacklogController.assignTicket';
 import updateTicketEpic      from '@salesforce/apex/ManageBacklogController.updateTicketEpic';
 import createEpic            from '@salesforce/apex/ManageBacklogController.createEpic';
@@ -190,19 +191,32 @@ export default class ManageBacklog extends LightningElement {
 
     // from c-ao-ticket-item
     handleTicketStateChange(event) {
-        const { ticketId, stateId } = event.detail;
-        const ticketItem            = event.target;
-        updateTicketState({ ticketId, stateId })
+        const { ticketId, fromStatusId, toStatusId } = event.detail;
+        changeTicketState({ ticketId, fromStatusId, toStatusId })
             .then(res => {
                 this.isLoading = true;
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) {
+                    this._reKeyTicket(ticketId);
+                    this.errorMessage = res.message;
+                    return;
+                }
                 this.backlogTickets = this.backlogTickets.map(t =>
-                    t.Id === ticketId ? { ...t, CurrentState__c: stateId } : t
+                    t.Id === ticketId ? { ...t, CurrentState__c: toStatusId } : t
                 );
-                this._updateTicketInSprints(ticketId, { CurrentState__c: stateId });
+                this._updateTicketInSprints(ticketId, { CurrentState__c: toStatusId });
+                if (res.data && res.data.isEndStatus) {
+                    this.dispatchEvent(new ShowToastEvent({
+                        title  : 'Final Status Reached',
+                        message: 'This ticket has no further transitions available.',
+                        variant: 'success'
+                    }));
+                }
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating state'; })
-            .finally(() => { this.isLoading = false; });        
+            .catch(err => {
+                this._reKeyTicket(ticketId);
+                this.errorMessage = err.body?.message || 'Error updating state';
+            })
+            .finally(() => { this.isLoading = false; });
     }
 
     // from c-ao-ticket-item
@@ -807,5 +821,13 @@ export default class ManageBacklog extends LightningElement {
                 : s.tickets.map(t => t.Id === ticketId ? { ...t, ...updates } : t);
             return { ...s, tickets, hasTickets: tickets.length > 0 };
         });
+    }
+
+    _reKeyTicket(ticketId) {
+        const newKey = Math.random().toString(36).slice(2);
+        this.backlogTickets = this.backlogTickets.map(t =>
+            t.Id === ticketId ? { ...t, _key: newKey } : t
+        );
+        this._updateTicketInSprints(ticketId, { _key: newKey });
     }
 }
