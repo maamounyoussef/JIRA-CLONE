@@ -11,7 +11,20 @@ export function buildColumns(statuses, tickets) {
     return statuses.map(status => ({
         statusId:      status.Id,
         statusName:    status.Name,
-        tickets:       (tickets || []).filter(t => t.CurrentState__c === status.Id),
+        tickets:       (tickets || [])
+            .filter(t => t.CurrentState__c === status.Id)
+            .map(t => ({
+                Id:              t.Id,
+                Name:            t.Name,
+                Ticket_Type__c:  t.Ticket_Type__c,
+                ticketTypeName:  t.ticketTypeName  || '',
+                Summary__c:      t.Summary__c      || '',
+                StoryPoint__c:   t.StoryPoint__c,
+                AssignedTo__c:   t.AssignedTo__c,
+                assigneeName:    t.assigneeName    || '',
+                CurrentState__c: t.CurrentState__c,
+                isEndStatus:     t.isEndStatus     || false,
+            })),
         isValidTarget: false
     }));
 }

@@ -178,9 +178,9 @@
     </template>
 
     <!-- ═══════════════════════════════════════════════════════════════════
-         ROW VARIANT  (default — used by manageBacklog)
+         ROW VARIANT  (used by manageBacklog, default)
          ═══════════════════════════════════════════════════════════════════ -->
-    <template if:false={isCardVariant}>
+    <template if:true={isRowVariant}>
 
         <div class="ticket-row" draggable="true" ondragstart={handleDragStart}>
 
@@ -343,9 +343,9 @@
     </template>
 
     <!-- ═══════════════════════════════════════════════════════════════════
-         CARD VARIANT  (used by ticketBoardColumn / manageTicketTracking)
+         FULL-TICKET-CARD VARIANT  (used by manageBacklog on small screens)
          ═══════════════════════════════════════════════════════════════════ -->
-    <template if:true={isCardVariant}>
+    <template if:true={isFullTicketCardVariant}>
 
         <div class="ticket-card-wrapper">
 
@@ -500,7 +500,47 @@
 
     </template>
 
-    <!-- Error (shared across both variants) -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TRACKING-CARD VARIANT  (used by manageTicketTracking / ticketBoardColumn)
+         ═══════════════════════════════════════════════════════════════════ -->
+    <template if:true={isTrackingCardVariant}>
+
+        <div class="ticket-card-wrapper">
+
+            <!-- Row 1: key -->
+            <div class="card-header">
+                <span class="ticket-key">{ticket.Name}</span>
+            </div>
+
+            <!-- Row 2: summary -->
+            <div class="card-summary-section">
+                <span class="card-summary-text">{ticket.Summary__c}</span>
+            </div>
+
+            <!-- Row 3: type badge + SP -->
+            <div class="card-meta">
+                <template if:true={hasTicketType}>
+                    <span class="ticket-type-badge">{ticket.ticketTypeName}</span>
+                </template>
+                <template if:false={hasTicketType}>
+                    <span class="ticket-type-missing-badge">
+                        <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                        No Type
+                    </span>
+                </template>
+                <span class="sp-badge">SP: {spLabel}</span>
+            </div>
+
+            <!-- Row 4: assignee (display only) -->
+            <div class="card-assignee-cell">
+                <span class="assignee-name">{ticket.assigneeName}</span>
+            </div>
+
+        </div>
+
+    </template>
+
+    <!-- Error (shared across all variants) -->
     <template if:true={errorMessage}>
         <div class="ticket-error">
             <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>

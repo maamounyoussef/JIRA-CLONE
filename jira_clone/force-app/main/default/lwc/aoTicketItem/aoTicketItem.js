@@ -264,7 +264,9 @@ export default class AoTicketItem extends LightningElement {
 
     // ─── GETTERS ─────────────────────────────────────────────────────────────
 
-    get isCardVariant()         { return this.variant === 'card'; }
+    get isRowVariant()            { return this.variant === 'row'; }
+    get isFullTicketCardVariant() { return this.variant === 'full-ticket-card'; }
+    get isTrackingCardVariant()   { return this.variant === 'tracking-card'; }
     get currentStateValue()    { return this._currentStateId || this._ticket?.CurrentState__c || ''; }
     get expandIcon()           { return this.isExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
     get hasSubtasks()          { return this.subtasks.length > 0; }

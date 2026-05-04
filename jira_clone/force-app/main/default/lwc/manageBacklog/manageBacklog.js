@@ -427,7 +427,7 @@ export default class ManageBacklog extends LightningElement {
     get hasSelectedTickets() { return this._selectedTicketIds.size > 0; }
     get selectedCount()      { return this._selectedTicketIds.size; }
     get hasBacklogTickets()  { return this.backlogTickets.length > 0; }
-    get ticketVariant()      { return this._isSmallScreen ? 'card' : 'row'; }
+    get ticketVariant()      { return this._isSmallScreen ? 'full-ticket-card' : 'row'; }
 
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
