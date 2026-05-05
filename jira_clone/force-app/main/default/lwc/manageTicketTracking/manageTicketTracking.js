@@ -5,7 +5,7 @@ import changeTicketState            from '@salesforce/apex/ManageTicketTrackingC
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
-import { buildColumns }                                     from './ticketUtils';
+import { buildColumns, enrichTicketsWithTypeName, enrichTicketsWithAssigneeName } from './ticketUtils';
 import { getValidTargetStatusIds, findTransitionId } from './workflowUtils';
 import { formatSprintDateRange }                            from './sprintUtils';
 
@@ -80,6 +80,8 @@ export default class ManageTicketTracking extends LightningElement {
                     label: (m.User__r && m.User__r.Name) || m.Name || '',
                     value: m.Id,
                 }));
+                this._sprintTickets = enrichTicketsWithTypeName(this._sprintTickets, this._ticketTypes);
+                this._sprintTickets = enrichTicketsWithAssigneeName(this._sprintTickets, response.members);
                 this.columns = buildColumns(this._statuses, this._sprintTickets);
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error loading page'; })

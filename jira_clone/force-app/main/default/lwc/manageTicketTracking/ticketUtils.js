@@ -38,3 +38,17 @@ export function getMemberName(memberId, members) {
     const member = (members || []).find(m => m.Id === memberId);
     return member ? (member.User__r && member.User__r.Name) || member.Name || '' : '';
 }
+
+export function enrichTicketsWithTypeName(tickets, ticketTypes) {
+    return (tickets || []).map(t => ({
+        ...t,
+        ticketTypeName: ((ticketTypes || []).find(tt => tt.Id === t.Ticket_Type__c) || {}).Name || ''
+    }));
+}
+
+export function enrichTicketsWithAssigneeName(tickets, members) {
+    return (tickets || []).map(t => ({
+        ...t,
+        assigneeName: getMemberName(t.AssignedTo__c, members)
+    }));
+}
