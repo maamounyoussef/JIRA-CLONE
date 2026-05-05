@@ -31,15 +31,9 @@
                 <div class="items-body">
 
                     <!-- Loading state -->
-                    <template if:true={isLoading}>
-                        <div class="loading-row">
-                            <lightning-spinner size="small" alternative-text="Loading linked items"></lightning-spinner>
-                        </div>
-                    </template>
 
-                    <!-- Items list -->
-                    <template if:false={isLoading}>
 
+   
                         <template if:true={hasItems}>
                             <template for:each={_items} for:item="item">
                                 <div key={item.linkId} class="item-row">
@@ -100,7 +94,6 @@
                             </div>
                         </template>
 
-                    </template>
 
                 </div>
             </template>

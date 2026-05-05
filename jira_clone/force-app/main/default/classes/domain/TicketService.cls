@@ -380,6 +380,22 @@ public with sharing class TicketService {
         }
     }
 
+    public static void createTicketLink(String fromTicketId, String toTicketId, String linkType) {
+        try {
+            TicketLink__c link = new TicketLink__c(
+                LinkedFromTicket__c = fromTicketId,
+                LinkedToTicket__c   = toTicketId,
+                Type__c             = linkType,
+                RecordStatus__c     = 'active'
+            );
+            insert link;
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error creating ticket link: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error creating ticket link: ' + ex.getMessage());
+        }
+    }
+
     public static List<TicketLinkToDto> getTicketLinkedTo(String ticketId) {
         try {
             List<TicketLink__c> links = [

@@ -9,7 +9,6 @@ export default class TicketLinkedTo extends LightningElement {
     @api linkTypeOptions;
 
     @track _isExpanded       = false;
-    @track _isLoading        = false;
     @track _items            = [];
     @track _listKey          = '';
     @track _showAddForm      = false;
@@ -33,7 +32,6 @@ export default class TicketLinkedTo extends LightningElement {
     set listKey(value) {
         if (value && value !== this._listKey) {
             this._listKey   = value;
-            this._isLoading = false;
         }
     }
 
@@ -42,12 +40,10 @@ export default class TicketLinkedTo extends LightningElement {
     get linkedItems() { return this._items; }
     set linkedItems(value) {
         this._items     = Array.isArray(value) ? value : [];
-        this._isLoading = false;
     }
 
     // ─── GETTERS ─────────────────────────────────────────────────────────────
     get isExpanded()    { return this._isExpanded; }
-    get isLoading()     { return this._isLoading; }
     get hasItems()      { return this._items.length > 0; }
     get expandTitle()   { return this._isExpanded ? 'Collapse' : 'Expand'; }
     get showAddForm()   { return this._showAddForm; }
@@ -55,12 +51,13 @@ export default class TicketLinkedTo extends LightningElement {
     get isLinkDisabled(){ return !this._selectedLinkType || !this._selectedTicketId; }
 
 
+    connectedCallback() {
+    }
 
     // ─── EVENT HANDLERS ──────────────────────────────────────────────────────
     handleExpandCollapse() {
         this._isExpanded = !this._isExpanded;
         if (this._isExpanded) {
-            this._isLoading = true;
             this.dispatchEvent(new CustomEvent('expandlinkedto', {
                 detail:   { ticketId: this.ticketId },
                 bubbles:  true,
@@ -74,7 +71,6 @@ export default class TicketLinkedTo extends LightningElement {
     handleAddLink() {
         if (!this._isExpanded) {
             this._isExpanded = true;
-            this._isLoading  = true;
             this.dispatchEvent(new CustomEvent('expandlinkedto', {
                 detail:   { ticketId: this.ticketId },
                 bubbles:  true,
@@ -107,25 +103,38 @@ export default class TicketLinkedTo extends LightningElement {
     }
 
     handleLinkSubmit() {
-        console.log('[ticketLinkedTo] link submit', {
-            ticketId:        this.ticketId,
-            linkType:        this._selectedLinkType,
-            linkedTicketId:  this._selectedTicketId
-        });
-        console.log(this.ticketId);
-        console.log(this._selectedLinkType);
-        console.log(this._selectedTicketId);
+        if (!this._selectedLinkType || !this._selectedTicketId) return;
+        this.dispatchEvent(new CustomEvent('createticketlink', {
+            bubbles:  true,
+            composed: true,
+            detail: {
+                fromTicketId: this.ticketId,
+                toTicketId:   this._selectedTicketId,
+                linkType:     this._selectedLinkType
+            }
+        }));
+        this._showAddForm      = false;
+        this._selectedLinkType = '';
+        this._selectedTicketId = '';
     }
 
     handleCreateLinkedItem() {
-        console.log('[ticketLinkedTo] create linked work item', {
-            ticketId: this.ticketId,
-            linkType: this._selectedLinkType
-        });
+        if (!this._selectedLinkType || !this._selectedTicketId) return;
+        this.dispatchEvent(new CustomEvent('createticketlink', {
+            bubbles:  true,
+            composed: true,
+            detail: {
+                fromTicketId: this.ticketId,
+                toTicketId:   this._selectedTicketId,
+                linkType:     this._selectedLinkType
+            }
+        }));
+        this._showAddForm      = false;
+        this._selectedLinkType = '';
+        this._selectedTicketId = '';
     }
 
     handleCancelAddLink() {
-        console.log('[ticketLinkedTo] cancel add link');
         this._showAddForm      = false;
         this._selectedLinkType = '';
         this._selectedTicketId = '';

@@ -111,6 +111,24 @@ public with sharing class ManageTicketTrackingController {
     }
 
     @AuraEnabled
+    public static APIResponse createTicketLink(String fromTicketId, String toTicketId, String linkType) {
+        try {
+            if (String.isBlank(fromTicketId)) return new APIResponse(false, 'fromTicketId is required');
+            if (String.isBlank(toTicketId))   return new APIResponse(false, 'toTicketId is required');
+            if (String.isBlank(linkType))     return new APIResponse(false, 'linkType is required');
+
+            DomainCorrectness.requireTicketExists(fromTicketId);
+            DomainCorrectness.requireTicketExists(toTicketId);
+
+            TicketService.createTicketLink(fromTicketId, toTicketId, linkType);
+
+            return new APIResponse(true, 'Ticket link created');
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error creating ticket link: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static APIResponse changeTicketState(String ticketId, String fromStatusId, String toStatusId) {
         try {
             if (String.isBlank(ticketId))     return new APIResponse(false, 'ticketId is required');

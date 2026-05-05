@@ -5,6 +5,7 @@ import loadManageTicketTrackingPage from '@salesforce/apex/ManageTicketTrackingC
 import changeTicketState            from '@salesforce/apex/ManageTicketTrackingController.changeTicketState';
 import loadTicketLinkedTo           from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkedTo';
 import loadTicketLinkTypes          from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkTypes';
+import createTicketLink             from '@salesforce/apex/ManageTicketTrackingController.createTicketLink';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -262,5 +263,15 @@ export default class ManageTicketTracking extends LightningElement {
         this._linkedToTicketId   = null;
         this._linkedToItems      = [];
         this._linkedToListKey    = '';
+    }
+
+    handleCreateTicketLink(event) {
+        const { fromTicketId, toTicketId, linkType } = event.detail;
+        createTicketLink({ fromTicketId, toTicketId, linkType })
+            .then(res => {
+                if (!res.success) { this.errorMessage = res.message; return; }
+                refreshApex(this._wiredLinkedItemsResult);
+            })
+            .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error creating ticket link'; });
     }
 }
