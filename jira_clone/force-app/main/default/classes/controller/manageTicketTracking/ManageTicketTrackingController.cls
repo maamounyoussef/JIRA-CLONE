@@ -72,6 +72,44 @@ public with sharing class ManageTicketTrackingController {
         }
     }
 
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketLinkedTo(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+
+            DomainCorrectness.requireTicketExists(ticketId);
+
+            List<TicketLinkToDto> links = TicketService.getTicketLinkedTo(ticketId);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'ticketLinkTo' => links
+            };
+
+            return new APIResponse(true, 'Linked tickets loaded', data);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading linked tickets: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketLinkTypes(String projectId) {
+        try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+
+            DomainCorrectness.requireProjectExists(projectId);
+
+            List<Map<String, String>> ticketLinkTypes = TicketService.getTicketLinkTypes();
+
+            Map<String, Object> data = new Map<String, Object>{
+                'ticketLinkTypes' => ticketLinkTypes
+            };
+
+            return new APIResponse(true, 'Ticket link types loaded', data);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading ticket link types: ' + ex.getMessage());
+        }
+    }
+
     @AuraEnabled
     public static APIResponse changeTicketState(String ticketId, String fromStatusId, String toStatusId) {
         try {

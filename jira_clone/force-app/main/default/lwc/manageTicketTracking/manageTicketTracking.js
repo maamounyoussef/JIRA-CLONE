@@ -1,7 +1,10 @@
-import { LightningElement, track } from 'lwc';
-import { loadStyle } from 'lightning/platformResourceLoader';
+import { LightningElement, track, wire } from 'lwc';
+import { loadStyle }    from 'lightning/platformResourceLoader';
+import { refreshApex }  from '@salesforce/apex';
 import loadManageTicketTrackingPage from '@salesforce/apex/ManageTicketTrackingController.loadManageTicketTrackingPage';
 import changeTicketState            from '@salesforce/apex/ManageTicketTrackingController.changeTicketState';
+import loadTicketLinkedTo           from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkedTo';
+import loadTicketLinkTypes          from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkTypes';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -26,6 +29,8 @@ export default class ManageTicketTracking extends LightningElement {
     @track epics           = [];
     @track priorityOptions = [];
 
+
+
     _sprint              = null;
     _ticketTypes         = [];
     _workflowTransitions = [];
@@ -38,9 +43,43 @@ export default class ManageTicketTracking extends LightningElement {
     _dragTicketTypeId = null;
     _dragToStatusId   = null;
 
+    // Linked-to popup state
+    _ticketLinkTypes        = [];
+    _linkedToTicketId       = null;
+    _showLinkedToPopup      = false;
+    _linkedToWireId         = '';       // reactive param — empty string prevents wire from firing
+    _linkedToItems          = [];
+    _linkedToListKey        = '';
+    _wiredLinkedItemsResult = null;     // stored for refreshApex
+
+    // ─── WIRE ─────────────────────────────────────────────────────────────────
+    @wire(loadTicketLinkedTo, { ticketId: '$_linkedToWireId' })
+    handleLinkedItemsWire(wireResult) {
+        if (!this._linkedToWireId) return;
+        this._wiredLinkedItemsResult = wireResult;
+        const { data } = wireResult;
+        if (data && data.success) {
+            this._linkedToItems   = (data.data && data.data.ticketLinkTo) || [];
+            this._linkedToListKey = String(Date.now());
+        }
+    }
+
+    @wire(loadTicketLinkTypes, { projectId: '$_projectId' })
+    handleLinkedTypeTicketWire({ data }) {
+        if (data && data.success) {
+            this._ticketLinkTypes = (data.data && data.data.ticketLinkTypes) || [];
+        }
+    }
+
     // ─── GETTERS ──────────────────────────────────────────────────────────────
-    get sprint()       { return this._sprint; }
-    get projectId()    { return this._projectId; }
+    get sprint()              { return this._sprint; }
+    get projectId()           { return this._projectId; }
+    get showLinkedToPopup()   { return this._showLinkedToPopup; }
+    get linkedToTicketId()    { return this._linkedToTicketId; }
+    get linkedToItems()       { return this._linkedToItems; }
+    get linkedToListKey()     { return this._linkedToListKey; }
+    get ticketLinkTypes()  { return this._ticketLinkTypes || []; }
+    get tickets() {return this._sprintTickets || [];}
 
     get sprintDateRange() {
         return formatSprintDateRange(this._sprint);
@@ -196,5 +235,32 @@ export default class ManageTicketTracking extends LightningElement {
         this._dragTicketTypeId = null;
         this._dragToStatusId   = null;
         this.columns = this.columns.map(col => ({ ...col, isValidTarget: false }));
+    }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                       LINKED-TO POPUP SECTION                            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
+    handleOpenLinkedTo(evt) {
+        const { ticketId } = evt.detail;
+        this._linkedToTicketId  = ticketId;
+        this._showLinkedToPopup = true;
+    }
+
+    handleExpandLinkedTo(evt) {
+        const { ticketId } = evt.detail;
+        if (this._linkedToWireId === ticketId) {
+            refreshApex(this._wiredLinkedItemsResult);
+        } else {
+            this._linkedToWireId = ticketId;
+        }
+    }
+
+    handleCloseLinkedTo() {
+        this._showLinkedToPopup  = false;
+        this._linkedToTicketId   = null;
+        this._linkedToItems      = [];
+        this._linkedToListKey    = '';
     }
 }

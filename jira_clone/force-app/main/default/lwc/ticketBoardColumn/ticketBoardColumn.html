@@ -32,6 +32,12 @@
                         project-id={projectId}>
                     </c-ao-ticket-item>
 
+                    <!-- Circled button outside drag semantics — fires event up to manageTicketTracking -->
+                    <button class="open-linked-btn"
+                            data-ticket-id={ticket.Id}
+                            onclick={handleOpenLinkedTo}
+                            title="View linked items">&#x1F517;</button>
+
                 </div>
             </template>
         </div>

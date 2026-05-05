@@ -1,5 +1,5 @@
 import { LightningElement, api, track } from 'lwc';
-import { dispatchTicketDragStart, dispatchTicketDrop, dispatchTicketDragEnd } from './ticketBoardColumnEvents';
+import { dispatchTicketDragStart, dispatchTicketDrop, dispatchTicketDragEnd, dispatchOpenLinkedTo } from './ticketBoardColumnEvents';
 
 export default class TicketBoardColumn extends LightningElement {
 
@@ -64,5 +64,11 @@ export default class TicketBoardColumn extends LightningElement {
         if (this.isValidTarget) {
             dispatchTicketDrop(this, this.statusId);
         }
+    }
+
+    handleOpenLinkedTo(evt) {
+        evt.stopPropagation();
+        const ticketId = evt.currentTarget.dataset.ticketId;
+        dispatchOpenLinkedTo(this, ticketId);
     }
 }

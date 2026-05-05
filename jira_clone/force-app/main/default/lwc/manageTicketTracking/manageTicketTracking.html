@@ -35,7 +35,9 @@
         </template>
 
         <!-- Kanban Board Columns -->
-        <div class="board-columns" onticketstatechange={handleTicketStateChange}>
+        <div class="board-columns"
+             onticketstatechange={handleTicketStateChange}
+             onopenlinkedto={handleOpenLinkedTo}>
             <template for:each={columns} for:item="col">
                 <c-ticket-board-column
                     key={col.statusId}
@@ -54,6 +56,19 @@
                 ></c-ticket-board-column>
             </template>
         </div>
+
+        <!-- Linked-to popup — rendered directly here, no props drilled through ticketBoardColumn -->
+        <template if:true={showLinkedToPopup}>
+            <c-ticket-linked-to
+                ticket-id={linkedToTicketId}
+                linked-items={linkedToItems}
+                list-key={linkedToListKey}
+                ticket-options={tickets}
+                link-type-options={ticketLinkTypes}
+                onexpandlinkedto={handleExpandLinkedTo}
+                oncloselinkedto={handleCloseLinkedTo}
+            ></c-ticket-linked-to>
+        </template>
 
     </template>
 
