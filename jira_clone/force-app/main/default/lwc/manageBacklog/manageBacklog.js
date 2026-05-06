@@ -60,6 +60,8 @@ export default class ManageBacklog extends LightningElement {
     @track epics             = [];
     @track priorityOptions   = [];
 
+    _statuses = [];
+
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
     connectedCallback() {
         loadStyle(this, aoThemeResource);
@@ -779,6 +781,7 @@ export default class ManageBacklog extends LightningElement {
 
                 this.epics             = epics;
                 this.priorityOptions   = priorityOptions;
+                this._statuses         = status;
                 this.statusOptions     = status.map(s => ({ label: s.Name, value: s.Id }));
                 this.memberOptions     = members.map(m => ({ label: m.Name, value: m.Id }));
                 this.ticketTypeOptions = ticketTypes.map(t => ({ label: t.Name, value: t.Id }));
@@ -805,6 +808,13 @@ export default class ManageBacklog extends LightningElement {
                 const rawTickets = res.data || [];
                 const tickets    = enrichTickets(rawTickets, this.epics, this.ticketTypeOptions, this.memberOptions);
                 const hasMore    = rawTickets.length === PAGE_SIZE;
+
+                const endStatusIds     = new Set(this._statuses.filter(s => s.isEnd__c).map(s => s.Id));
+                const totalStoryPoints = tickets.reduce((sum, t) => sum + (t.StoryPoint__c || 0), 0);
+                const endedStoryPoints = tickets.filter(t => endStatusIds.has(t.CurrentState__c)).reduce((sum, t) => sum + (t.StoryPoint__c || 0), 0);
+                const storyPointsPercent = totalStoryPoints ? Math.round((endedStoryPoints / totalStoryPoints) * 100) : 0;
+                console.log('Sprint', sprintId, '— Total Story Points:', totalStoryPoints, '| Ended Story Points:', endedStoryPoints);
+
                 this._updateSprint(sprintId, {
                     isLoadingTickets: false,
                     tickets,
@@ -815,6 +825,9 @@ export default class ManageBacklog extends LightningElement {
                     isLastPage      : tickets.length < PAGE_SIZE,
                     currentPage     : Math.floor(offset / PAGE_SIZE) + 1,
                     offsetLabel     : tickets.length === 0 ? 'No tickets' : `Showing ${offset + 1}–${offset + tickets.length}`,
+                    totalStoryPoints,
+                    endedStoryPoints,
+                    storyPointsPercent,
                 });
             })
             .catch(err => {

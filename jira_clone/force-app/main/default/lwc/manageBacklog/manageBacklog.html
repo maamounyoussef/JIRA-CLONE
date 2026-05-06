@@ -113,6 +113,18 @@
                             <p class="sprint-goal">{sprint.Goal__c}</p>
                         </template>
 
+                        <template if:true={sprint.tickets}>
+                            <div class="sprint-progress">
+                                <div class="sprint-progress-labels">
+                                    <span class="sprint-progress-label">Story Points</span>
+                                    <span class="sprint-progress-count">
+                                        <strong>{sprint.endedStoryPoints}</strong> / {sprint.totalStoryPoints} SP &nbsp;·&nbsp; {sprint.storyPointsPercent}%
+                                    </span>
+                                </div>
+                                <lightning-progress-bar value={sprint.storyPointsPercent} size="small"></lightning-progress-bar>
+                            </div>
+                        </template>
+
                         <template if:true={sprint.isLoadingTickets}>
                             <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
                         </template>
