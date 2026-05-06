@@ -75,6 +75,46 @@ public with sharing class SprintService {
         }
     }
 
+    public static Set<String> getTicketsAtEndStatus(
+        List<WorkflowTransition__c> workflowTransitions,
+        List<TicketType__c>         ticketTypes,
+        List<Ticket__c>             tickets
+    ) {
+        Map<String, List<WorkflowTransition__c>> transitionsByWorkflow = new Map<String, List<WorkflowTransition__c>>();
+        for (WorkflowTransition__c wt : workflowTransitions) {
+            if (!transitionsByWorkflow.containsKey(wt.Workflow__c)) {
+                transitionsByWorkflow.put(wt.Workflow__c, new List<WorkflowTransition__c>());
+            }
+            transitionsByWorkflow.get(wt.Workflow__c).add(wt);
+        }
+
+        Map<String, String> ticketTypeWorkflowMap = new Map<String, String>();
+        for (TicketType__c tt : ticketTypes) {
+            if (tt.Workflow__c != null) {
+                ticketTypeWorkflowMap.put(tt.Id, tt.Workflow__c);
+            }
+        }
+
+        Map<String, String> workflowEndStatusMap = new Map<String, String>();
+        for (String wfId : transitionsByWorkflow.keySet()) {
+            String endStatusId = WorkflowService.foundEndStatus(transitionsByWorkflow.get(wfId));
+            if (endStatusId != null) {
+                workflowEndStatusMap.put(wfId, endStatusId);
+            }
+        }
+
+        Set<String> ticketsAtEndStatus = new Set<String>();
+        for (Ticket__c t : tickets) {
+            String wfId      = ticketTypeWorkflowMap.get(t.Ticket_Type__c);
+            String endStatus = wfId != null ? workflowEndStatusMap.get(wfId) : null;
+            if (endStatus != null && endStatus == t.CurrentState__c) {
+                ticketsAtEndStatus.add(t.Id);
+            }
+        }
+
+        return ticketsAtEndStatus;
+    }
+
     public static void startSprint(Sprint__c sprint) {
         try {
             DomainCompleteValidator.requireSprintIsStartable(sprint);
