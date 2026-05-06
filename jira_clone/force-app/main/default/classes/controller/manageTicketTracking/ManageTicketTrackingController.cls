@@ -20,6 +20,8 @@ public with sharing class ManageTicketTrackingController {
                 ? TicketService.loadActiveTicketsBySprint(sprint)
                 : new List<Ticket__c>();
 
+            
+
             Map<String, Object> data = new Map<String, Object>{
                 'status'              => statuses,
                 'workflows'           => workflows,

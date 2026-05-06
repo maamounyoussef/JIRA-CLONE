@@ -22,9 +22,20 @@
         <!-- Sprint Header -->
         <template if:true={sprint}>
             <div class="sprint-header">
-                <h2 class="sprint-name">{sprint.Name}</h2>
-                <span class="sprint-dates">{sprintDateRange}</span>
+                <div class="sprint-header-top">
+                    <h2 class="sprint-name">{sprint.Name}</h2>
+                    <span class="sprint-dates">{sprintDateRange}</span>
+                </div>
                 <p class="sprint-goal">{sprint.Goal__c}</p>
+                <div class="sprint-progress">
+                    <div class="sprint-progress-labels">
+                        <span class="sprint-progress-label">Story Points</span>
+                        <span class="sprint-progress-count">
+                            <strong>{endedStoryPoints}</strong> / {totalStoryPoints} SP &nbsp;·&nbsp; {storyPointsPercent}%
+                        </span>
+                    </div>
+                    <lightning-progress-bar value={storyPointsPercent} size="small"></lightning-progress-bar>
+                </div>
             </div>
         </template>
 
