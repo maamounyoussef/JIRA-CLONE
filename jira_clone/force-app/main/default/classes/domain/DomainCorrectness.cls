@@ -167,7 +167,7 @@ public with sharing class DomainCorrectness {
 
     public static Status__c requireStatusExists(String statusId) {
         List<Status__c> rows = [
-            SELECT Id, Name, Project__c
+            SELECT Id, Name, Project__c, isStart__c, isEnd__c
             FROM Status__c
             WHERE Id = :statusId
             LIMIT 1

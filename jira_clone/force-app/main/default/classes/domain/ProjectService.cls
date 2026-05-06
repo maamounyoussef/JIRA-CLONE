@@ -7,6 +7,7 @@ public with sharing class ProjectService {
     // PROJECT  
     // ═══════════════════════════════════════════════════════════════
 
+    // After insert, ProjectTrigger automatically creates default 'Todo' (isStart) and 'Done' (isEnd) statuses if they don't exist.
     public static Project__c createProject(String name) {
         try {
             Project__c project = new Project__c(Name = name);

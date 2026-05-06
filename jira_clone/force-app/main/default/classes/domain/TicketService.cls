@@ -445,12 +445,12 @@ public with sharing class TicketService {
     // WORKFLOW STATE CHANGE
     // ═══════════════════════════════════════════════════════════════
 
-    public static Boolean changeTicketState(Ticket__c ticket, String fromStatusId, String toStatusId, List<WorkflowTransition__c> transitions) {
+    public static Boolean changeTicketState(Ticket__c ticket, Status__c fromStatus, Status__c toStatus, List<WorkflowTransition__c> transitions) {
         try {
-            DomainCompleteValidator.requireTransitionAllowed(fromStatusId, toStatusId, transitions);
-            ticket.CurrentState__c = toStatusId;
+            DomainCompleteValidator.requireTransitionAllowed(fromStatus.Id, toStatus.Id, transitions);
+            ticket.CurrentState__c = toStatus.Id;
             updateTicket(ticket);
-            return DomainCompleteValidator.isEndStatus(toStatusId, transitions);
+            return DomainCompleteValidator.isEndStatus(toStatus);
         } catch (Exception ex) {
             throw new ServiceException('Error changing ticket state: ' + ex.getMessage());
         }

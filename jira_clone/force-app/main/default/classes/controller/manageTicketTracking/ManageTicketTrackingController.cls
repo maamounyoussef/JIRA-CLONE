@@ -20,16 +20,13 @@ public with sharing class ManageTicketTrackingController {
                 ? TicketService.loadActiveTicketsBySprint(sprint)
                 : new List<Ticket__c>();
 
-            Set<String> ticketsAtEndStatus = SprintService.getTicketsAtEndStatus(workflows, ticketTypes, sprintTickets);
-
             Map<String, Object> data = new Map<String, Object>{
                 'status'              => statuses,
                 'workflows'           => workflows,
                 'sprint_tickets'      => sprintTickets,
                 'members'             => members,
                 'ticketTypes'         => ticketTypes,
-                'sprint'              => sprint,
-                'ticketsAtEndStatus'  => ticketsAtEndStatus
+                'sprint'              => sprint
             };
 
             return new APIResponse(true, 'Manage ticket tracking page loaded', data);
@@ -104,10 +101,12 @@ public with sharing class ManageTicketTrackingController {
             Ticket__c     ticket     = DomainCorrectness.requireTicketExists(ticketId);
             TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticket.Ticket_Type__c);
             Workflow__c   workflow   = DomainCorrectness.requireWorkflowExists(ticketType.Workflow__c);
+            Status__c     fromStatus = DomainCorrectness.requireStatusExists(fromStatusId);
+            Status__c     toStatus   = DomainCorrectness.requireStatusExists(toStatusId);
 
             List<WorkflowTransition__c> transitions = WorkflowService.getTransitionsByWorkflow(workflow.Id);
 
-            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatusId, toStatusId, transitions);
+            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatus, toStatus, transitions);
 
             Map<String, Object> data = new Map<String, Object>{
                 'isEndStatus' => isEndStatus

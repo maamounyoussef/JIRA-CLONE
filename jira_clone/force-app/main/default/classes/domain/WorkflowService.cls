@@ -270,6 +270,8 @@ public with sharing class WorkflowService {
     public static WorkflowTransition__c createWorkflowTransition(String name, Workflow__c workflow, Status__c fromStatus, Status__c toStatus, String recordStatus) {
         try {
             DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatus.Id, toStatus.Id);
+            DomainCompleteValidator.requireFromStatusNotEnd(fromStatus);
+            DomainCompleteValidator.requireToStatusNotStart(toStatus);
 
             return createTransition(name, workflow.Id, fromStatus.Id, toStatus.Id, recordStatus);
         } catch (Exception ex) {

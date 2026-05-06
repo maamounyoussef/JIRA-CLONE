@@ -108,10 +108,10 @@ export default class ManageTicketTracking extends LightningElement {
                 this._ticketTypes         = response.ticketTypes || [];
                 this._workflowTransitions = response.workflows   || [];
                 this._statuses            = response.status        || [];
-                const endStatusSet        = new Set(response.ticketsAtEndStatus || []);
+                const endStatusIds        = new Set(this._statuses.filter(s => s.isEnd__c).map(s => s.Id));
                 this._sprintTickets       = (response.sprint_tickets || []).map(t => ({
                     ...t,
-                    isEndStatus: endStatusSet.has(t.Id)
+                    isEndStatus: endStatusIds.has(t.CurrentState__c)
                 }));
                 this.epics                = response.epics          || [];
                 this.priorityOptions      = response.priorityOptions || [];

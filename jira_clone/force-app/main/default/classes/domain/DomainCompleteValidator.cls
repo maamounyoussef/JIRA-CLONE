@@ -119,11 +119,26 @@ public with sharing class DomainCompleteValidator {
         throw new ServiceException('Transition from current status to target status is not allowed by the workflow');
     }
 
-    public static Boolean isEndStatus(String statusId, List<WorkflowTransition__c> transitions) {
-        for (WorkflowTransition__c t : transitions) {
-            if (t.FromStatus__c == statusId) return false;
+    public static Boolean isEndStatus(Status__c status) {
+        return status.isEnd__c;
+    }
+
+    /**
+     * No outgoing transition may originate from an end status — it is terminal.
+     */
+    public static void requireFromStatusNotEnd(Status__c fromStatus) {
+        if (fromStatus.isEnd__c) {
+            throw new ServiceException('Cannot create a transition from an end status');
         }
-        return true;
+    }
+
+    /**
+     * No transition may target the start (todo) status — it is the entry point only.
+     */
+    public static void requireToStatusNotStart(Status__c toStatus) {
+        if (toStatus.isStart__c) {
+            throw new ServiceException('Cannot create a transition to the start (todo) status');
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

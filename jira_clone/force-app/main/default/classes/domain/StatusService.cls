@@ -20,7 +20,7 @@ public with sharing class StatusService {
     public static List<Status__c> loadStatuses(Project__c project) {
         try {
             return [
-                SELECT Id, Name, Project__c, CreatedDate
+                SELECT Id, Name, Project__c, CreatedDate, isEnd__c, isStart__c
                 FROM Status__c
                 WHERE Project__c = :project.Id
                 ORDER BY Name ASC

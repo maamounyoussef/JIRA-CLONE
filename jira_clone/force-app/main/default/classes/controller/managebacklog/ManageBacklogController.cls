@@ -396,10 +396,12 @@ public with sharing class ManageBacklogController {
             Ticket__c     ticket     = DomainCorrectness.requireTicketExists(ticketId);
             TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticket.Ticket_Type__c);
             Workflow__c   workflow   = DomainCorrectness.requireWorkflowExists(ticketType.Workflow__c);
+            Status__c     fromStatus = DomainCorrectness.requireStatusExists(fromStatusId);
+            Status__c     toStatus   = DomainCorrectness.requireStatusExists(toStatusId);
 
             List<WorkflowTransition__c> transitions = WorkflowService.getTransitionsByWorkflow(workflow.Id);
 
-            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatusId, toStatusId, transitions);
+            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatus, toStatus, transitions);
 
             Map<String, Object> data = new Map<String, Object>{
                 'isEndStatus' => isEndStatus
