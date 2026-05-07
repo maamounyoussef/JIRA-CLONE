@@ -840,7 +840,7 @@ export default class ManageBacklog extends LightningElement {
         this.sprints = this.sprints.map(s => {
             if (s.Id !== sprintId) return s;
             const tickets = [...s.tickets, ticket];
-            return { ...s, tickets, hasTickets: true };
+            return { ...s, tickets, hasTickets: true, totalStoryPoints: (s.totalStoryPoints || 0) + (ticket.StoryPoint__c || 0) };
         });
     }
 
