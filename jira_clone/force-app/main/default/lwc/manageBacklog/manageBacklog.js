@@ -147,7 +147,7 @@ export default class ManageBacklog extends LightningElement {
         this.backlogTickets = this.backlogTickets.map(t =>
             t.Id === ticketId ? { ...t, isSelected: selected } : t
         );
-        this._updateTicketInSprints(ticketId, { isSelected: selected });
+        this._enrichSprintsWithTicketSelection(ticketId, selected);
     }
 
     // -- Ticket Bubble Events from c-ao-ticket-item --
@@ -163,7 +163,7 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
                 this._selectedTicketIds.delete(ticketId);
                 this._selectedTicketIds = new Set(this._selectedTicketIds);
-                this._updateTicketInSprints(ticketId, null);
+                this._enrichSprintsWithoutTicket(ticketId);
                 this._showSuccess('Ticket deleted');
             })
             .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting ticket'; })
@@ -182,7 +182,7 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Summary__c: summary } : t
                 );
-                this._updateTicketInSprints(ticketId, { Summary__c: summary });
+                this._enrichSprintsWithTicketSummary(ticketId, summary);
                 this._showSuccess('Summary updated');
             })
             .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating summary'; })
@@ -203,7 +203,7 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Priority__c: priority } : t
                 );
-                this._updateTicketInSprints(ticketId, { Priority__c: priority });
+                this._enrichSprintsWithTicketPriority(ticketId, priority);
                 this._showSuccess('Priority updated');
             })
             .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating priority'; })
@@ -224,7 +224,7 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, CurrentState__c: toStatusId } : t
                 );
-                this._updateTicketInSprints(ticketId, { CurrentState__c: toStatusId });
+                this._enrichSprintsWithTicketState(ticketId, toStatusId);
                 if (res.data && res.data.isEndStatus) {
                     this.dispatchEvent(new ShowToastEvent({
                         title  : 'Final Status Reached',
@@ -251,11 +251,10 @@ export default class ManageBacklog extends LightningElement {
                 if (!res.success) { ticketItem.ticketError = res.message; return; }
                 const found        = this.memberOptions.find(m => m.value === memberId);
                 const assigneeName = found ? found.label : '';
-                const updates      = { AssignedTo__c: memberId, assigneeName };
                 this.backlogTickets = this.backlogTickets.map(t =>
-                    t.Id === ticketId ? { ...t, ...updates } : t
+                    t.Id === ticketId ? { ...t, AssignedTo__c: memberId, assigneeName } : t
                 );
-                this._updateTicketInSprints(ticketId, updates);
+                this._enrichSprintsWithTicketAssignee(ticketId, memberId, assigneeName);
                 this._showSuccess('Assignee updated');
             })
             .catch(err => { ticketItem.ticketError = err.body?.message || 'Error assigning ticket'; });
@@ -271,11 +270,10 @@ export default class ManageBacklog extends LightningElement {
                 ticketItem.errors = null;
                 const found    = this.epics.find(e => e.Id === epicId);
                 const epicName = found ? found.Name : '';
-                const updates  = { Epic__c: epicId, epicName };
                 this.backlogTickets = this.backlogTickets.map(t =>
-                    t.Id === ticketId ? { ...t, ...updates } : t
+                    t.Id === ticketId ? { ...t, Epic__c: epicId, epicName } : t
                 );
-                this._updateTicketInSprints(ticketId, updates);
+                this._enrichSprintsWithTicketEpic(ticketId, epicId, epicName);
                 this._showSuccess('Epic updated');
             })
             .catch(err => { ticketItem.errors = err.body?.message || 'Error updating epic'; });
@@ -300,11 +298,10 @@ export default class ManageBacklog extends LightningElement {
                     if (!this.epics.some(e => e.Id === createdEpic.Id)) {
                         this.epics = [...this.epics, createdEpic];
                     }
-                    const updates = { Epic__c: createdEpic.Id, epicName: createdEpic.Name };
                     this.backlogTickets = this.backlogTickets.map(t =>
-                        t.Id === ticketId ? { ...t, ...updates } : t
+                        t.Id === ticketId ? { ...t, Epic__c: createdEpic.Id, epicName: createdEpic.Name } : t
                     );
-                    this._updateTicketInSprints(ticketId, updates);
+                    this._enrichSprintsWithTicketEpic(ticketId, createdEpic.Id, createdEpic.Name);
                     this._showSuccess('Epic created and assigned');
                 }
             })
@@ -397,10 +394,7 @@ export default class ManageBacklog extends LightningElement {
             .then(res => {
                 if (!res.success) { ticketModal.errors = res.message; return; }
                 const ticket = formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId);
-                const sprint = this.sprints.find(s => s.Id === data.sprintId);
-                if (sprint) {
-                    this._updateSprint(data.sprintId, { tickets: [...sprint.tickets, ticket], hasTickets: true });
-                }
+                this._enrichSprintWithAddedTicket(data.sprintId, ticket);
                 this.showSprintTicketModal = false;
                 this._showSuccess('Ticket added to sprint');
             })
@@ -628,7 +622,6 @@ export default class ManageBacklog extends LightningElement {
     // ─── GETTERS ──────────────────────────────────────────────────────────────
     get hasSprints() { return this.sprints.length > 0; }
 
-
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                         CONFIRM SECTION                                   ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
@@ -687,14 +680,14 @@ export default class ManageBacklog extends LightningElement {
         if (this._draggingFromSprint) return;
         const sprintId = event.currentTarget.dataset.sprintId;
         this._dragTargetSprintId = sprintId;
-        this._updateSprint(sprintId, { dropTargetClass: 'sprint-container drop-target-active' });
+        this._enrichSprintWithDragOver(sprintId);
         this._isBacklogDragOver = false;
     }
 
     handleDragLeaveSprint(event) {
         if (!event.currentTarget.contains(event.relatedTarget)) {
             const sprintId = event.currentTarget.dataset.sprintId;
-            this._updateSprint(sprintId, { dropTargetClass: 'sprint-container' });
+            this._enrichSprintWithDragReset(sprintId);
         }
     }
 
@@ -713,7 +706,7 @@ export default class ManageBacklog extends LightningElement {
     handleDropOnSprint(event) {
         event.preventDefault();
         const targetSprintId = event.currentTarget.dataset.sprintId;
-        this._updateSprint(targetSprintId, { dropTargetClass: 'sprint-container' });
+        this._enrichSprintWithDragReset(targetSprintId);
         if (this._draggingFromSprint) return;
         const raw = event.dataTransfer.getData('text/plain');
         if (!raw) return;
@@ -744,10 +737,7 @@ export default class ManageBacklog extends LightningElement {
                 if (movedTicket) {
                     const sprint = this.sprints.find(s => s.Id === sprintId);
                     if (sprint && sprint.isExpanded) {
-                        this._updateSprint(sprintId, {
-                            tickets   : [...sprint.tickets, { ...movedTicket, isSelected: false }],
-                            hasTickets: true,
-                        });
+                        this._enrichSprintWithAddedTicket(sprintId, { ...movedTicket, isSelected: false });
                     }
                 }
                 this._showSuccess('Ticket moved to sprint');
@@ -759,7 +749,7 @@ export default class ManageBacklog extends LightningElement {
         moveTicketToBacklog({ ticketId: ticket.Id })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                this._updateTicketInSprints(ticket.Id, null);
+                this._enrichSprintsWithoutTicket(ticket.Id);
                 this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
                 this._showSuccess('Ticket moved to backlog');
             })
@@ -801,7 +791,7 @@ export default class ManageBacklog extends LightningElement {
     }
 
     _loadSprintTickets(sprintId, offset) {
-        this._updateSprint(sprintId, { isLoadingTickets: true });
+        this._enrichSprintWithLoadingTicketState(sprintId, true);
         loadTicketsBySprint({ sprintId, offset, pageSize: PAGE_SIZE })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
@@ -809,29 +799,14 @@ export default class ManageBacklog extends LightningElement {
                 const tickets    = enrichTickets(rawTickets, this.epics, this.ticketTypeOptions, this.memberOptions);
                 const hasMore    = rawTickets.length === PAGE_SIZE;
 
-                const endStatusIds     = new Set(this._statuses.filter(s => s.isEnd__c).map(s => s.Id));
-                const totalStoryPoints = tickets.reduce((sum, t) => sum + (t.StoryPoint__c || 0), 0);
-                const endedStoryPoints = tickets.filter(t => endStatusIds.has(t.CurrentState__c)).reduce((sum, t) => sum + (t.StoryPoint__c || 0), 0);
-                const storyPointsPercent = totalStoryPoints ? Math.round((endedStoryPoints / totalStoryPoints) * 100) : 0;
-                console.log('Sprint', sprintId, '— Total Story Points:', totalStoryPoints, '| Ended Story Points:', endedStoryPoints);
-
-                this._updateSprint(sprintId, {
-                    isLoadingTickets: false,
+                this._enrichSprintWithLoadedTickets(sprintId, {
                     tickets,
-                    hasTickets      : tickets.length > 0,
                     offset,
-                    hasMore,
-                    isFirstPage     : offset === 0,
-                    isLastPage      : tickets.length < PAGE_SIZE,
-                    currentPage     : Math.floor(offset / PAGE_SIZE) + 1,
-                    offsetLabel     : tickets.length === 0 ? 'No tickets' : `Showing ${offset + 1}–${offset + tickets.length}`,
-                    totalStoryPoints,
-                    endedStoryPoints,
-                    storyPointsPercent,
+                    hasMore
                 });
             })
             .catch(err => {
-                this._updateSprint(sprintId, { isLoadingTickets: false });
+                this._enrichSprintWithLoadingTicketState(sprintId, false);
                 this.errorMessage = err.body?.message || 'Error loading sprint tickets';
             })
 
@@ -861,17 +836,107 @@ export default class ManageBacklog extends LightningElement {
             .finally(() => { this.backlogIsLoading = false; });
     }
 
-    _updateSprint(sprintId, updates) {
-        this.sprints = this.sprints.map(s => s.Id === sprintId ? { ...s, ...updates } : s);
+    // -- Sprint enrichers (single sprint) --
+    _enrichSprintWithAddedTicket(sprintId, ticket) {
+        this.sprints = this.sprints.map(s => {
+            if (s.Id !== sprintId) return s;
+            const tickets = [...s.tickets, ticket];
+            return { ...s, tickets, hasTickets: true };
+        });
     }
 
-    _updateTicketInSprints(ticketId, updates) {
+    _enrichSprintWithDragOver(sprintId) {
+        this.sprints = this.sprints.map(s =>
+            s.Id === sprintId ? { ...s, dropTargetClass: 'sprint-container drop-target-active' } : s
+        );
+    }
+
+    _enrichSprintWithDragReset(sprintId) {
+        this.sprints = this.sprints.map(s =>
+            s.Id === sprintId ? { ...s, dropTargetClass: 'sprint-container' } : s
+        );
+    }
+
+    _enrichSprintWithLoadingTicketState(sprintId, isLoadingTickets) {
+        this.sprints = this.sprints.map(s =>
+            s.Id === sprintId ? { ...s, isLoadingTickets } : s
+        );
+    }
+
+    _enrichSprintWithLoadedTickets(sprintId, payload) {
+        const { tickets, offset, hasMore} = payload;
         this.sprints = this.sprints.map(s => {
-            const tickets = updates === null
-                ? s.tickets.filter(t => t.Id !== ticketId)
-                : s.tickets.map(t => t.Id === ticketId ? { ...t, ...updates } : t);
+            if (s.Id !== sprintId) return s;
+            return {
+                ...s,
+                isLoadingTickets: false,
+                tickets,
+                hasTickets      : tickets.length > 0,
+                offset,
+                hasMore,
+                isFirstPage     : offset === 0,
+                isLastPage      : tickets.length < PAGE_SIZE,
+                currentPage     : Math.floor(offset / PAGE_SIZE) + 1,
+                offsetLabel     : tickets.length === 0 ? 'No tickets' : `Showing ${offset + 1}–${offset + tickets.length}`
+            };
+        });
+    }
+
+    // -- Ticket-in-sprints enrichers (all sprints) --
+    _enrichSprintsWithTicketSelection(ticketId, isSelected) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, isSelected } : t),
+        }));
+    }
+
+    _enrichSprintsWithoutTicket(ticketId) {
+        this.sprints = this.sprints.map(s => {
+            const tickets = s.tickets.filter(t => t.Id !== ticketId);
             return { ...s, tickets, hasTickets: tickets.length > 0 };
         });
+    }
+
+    _enrichSprintsWithTicketSummary(ticketId, summary) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Summary__c: summary } : t),
+        }));
+    }
+
+    _enrichSprintsWithTicketPriority(ticketId, priority) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Priority__c: priority } : t),
+        }));
+    }
+
+    _enrichSprintsWithTicketState(ticketId, statusId) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, CurrentState__c: statusId } : t),
+        }));
+    }
+
+    _enrichSprintsWithTicketAssignee(ticketId, memberId, assigneeName) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, AssignedTo__c: memberId, assigneeName } : t),
+        }));
+    }
+
+    _enrichSprintsWithTicketEpic(ticketId, epicId, epicName) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Epic__c: epicId, epicName } : t),
+        }));
+    }
+
+    _enrichSprintsWithTicketRekey(ticketId, key) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, _key: key } : t),
+        }));
     }
 
     _reKeyTicket(ticketId) {
@@ -879,7 +944,7 @@ export default class ManageBacklog extends LightningElement {
         this.backlogTickets = this.backlogTickets.map(t =>
             t.Id === ticketId ? { ...t, _key: newKey } : t
         );
-        this._updateTicketInSprints(ticketId, { _key: newKey });
+        this._enrichSprintsWithTicketRekey(ticketId, newKey);
     }
 
     _showSuccess(message) {

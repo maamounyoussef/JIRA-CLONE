@@ -37,8 +37,6 @@ export default class ManageTicketTracking extends LightningElement {
     _workflowTransitions = [];
     _statuses            = [];
     _sprintTickets       = [];
-    totalStoryPoints     = 0;
-    endedStoryPoints     = 0;
 
     // Drag state
     _dragTicketId     = null;
@@ -89,8 +87,8 @@ export default class ManageTicketTracking extends LightningElement {
     }
 
     get storyPointsPercent() {
-        if (!this.totalStoryPoints) return 0;
-        return Math.round((this.endedStoryPoints / this.totalStoryPoints) * 100);
+        if (!this.sprint.TotalEndedStoryPoint__c) return 0;
+        return Math.round((this.sprint.TotalEndedStoryPoint__c / this.sprint.TotalStoryPoint__c) * 100);
     }
 
 
@@ -132,10 +130,8 @@ export default class ManageTicketTracking extends LightningElement {
                 this._sprintTickets = enrichTicketsWithAssigneeName(this._sprintTickets, response.members);
                 this.columns = buildColumns(this._statuses, this._sprintTickets);
 
-                this.totalStoryPoints = this._sprintTickets.reduce((sum, t) => sum + (t.StoryPoint__c || 0), 0);
-                this.endedStoryPoints = this._sprintTickets.filter(t => t.isEndStatus).reduce((sum, t) => sum + (t.StoryPoint__c || 0), 0);
-                console.log('Total Story Points:', this.totalStoryPoints);
-                console.log('Ended Story Points:', this.endedStoryPoints);
+                console.log('Total Story Points:', this.sprint.TotalStoryPoint__c);
+                console.log('Ended Story Points:', this.sprint.TotalEndedStoryPoint__c);
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error loading page'; })
             .finally(() => { this.isLoading = false; });

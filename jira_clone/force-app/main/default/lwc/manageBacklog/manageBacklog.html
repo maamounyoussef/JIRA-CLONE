@@ -108,11 +108,11 @@
                         </template>
 
                         <template if:true={sprint.tickets}>
-                            <div class="sprint-progress">
+                            <div class="sprint-progress" data-sprint-id={sprint.Id}>
                                 <div class="sprint-progress-labels">
                                     <span class="sprint-progress-label">Story Points</span>
                                     <span class="sprint-progress-count">
-                                        <strong>{sprint.endedStoryPoints}</strong> / {sprint.totalStoryPoints} SP &nbsp;·&nbsp; {sprint.storyPointsPercent}%
+                                        <strong data-metric="ended">{sprint.endedStoryPoints}</strong> / <span data-metric="total">{sprint.totalStoryPoints}</span> SP &nbsp;·&nbsp; <span data-metric="percent">{sprint.storyPointsPercent}</span>%
                                     </span>
                                 </div>
                                 <lightning-progress-bar value={sprint.storyPointsPercent} size="small"></lightning-progress-bar>

@@ -55,7 +55,7 @@ public with sharing class SprintService {
 
     public static List<Sprint__c> loadUncompleteSprintsByProject(Project__c project) {
         try {
-            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c FROM Sprint__c WHERE Project__c = :project.Id AND RecordStatus__c != 'completed' AND RecordStatus__c != 'delete'];
+            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c, TotalStoryPoint__c, TotalEndedStoryPoint__C FROM Sprint__c WHERE Project__c = :project.Id AND RecordStatus__c != 'completed' AND RecordStatus__c != 'delete'];
         } catch (Exception ex) {
             throw new ServiceException('Error loading sprints: ' + ex.getMessage());
         }
@@ -64,7 +64,7 @@ public with sharing class SprintService {
     public static Sprint__c loadActiveSprint(String projectId) {
         try {
             List<Sprint__c> sprints = [
-                SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c
+                SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c, TotalStoryPoint__c, TotalEndedStoryPoint__c
                 FROM Sprint__c
                 WHERE Project__c = :projectId AND RecordStatus__c = 'in_progress'
                 LIMIT 1
