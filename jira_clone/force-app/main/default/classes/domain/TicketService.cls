@@ -98,10 +98,14 @@ public with sharing class TicketService {
         }
     }
 
-    public static void deleteTicket(Ticket__c ticket) {
+    public static Sprint__c deleteTicket(Ticket__c ticket) {
         try {
             ticket.RecordStatus__c = 'delete';
             updateTicket(ticket);
+            if (String.isNotBlank(ticket.Sprint__c)) {
+                return SprintService.decreaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
+            }
+            return null;
         } catch (DmlException dex) {
             throw new ServiceException('DML error deleting ticket: ' + dex.getMessage());
         } catch (Exception ex) {
@@ -109,13 +113,28 @@ public with sharing class TicketService {
         }
     }
 
-    public static void deleteTickets(List<String> ticketIds) {
+    public static List<Sprint__c> deleteTickets(List<Ticket__c> tickets) {
         try {
-            List<Ticket__c> found = [SELECT Id, RecordStatus__c, Ticket_Type__c, Description__c, Creator__c FROM Ticket__c WHERE Id IN :ticketIds];
-            if (!found.isEmpty()) {
-                for (Ticket__c t : found) t.RecordStatus__c = 'delete';
-                update found;
+            if (tickets.isEmpty()) return new List<Sprint__c>();
+
+            for (Ticket__c t : tickets) t.RecordStatus__c = 'delete';
+            update tickets;
+
+            Map<String, Decimal> sprintStoryPointMap = new Map<String, Decimal>();
+            for (Ticket__c t : tickets) {
+                if (String.isNotBlank(t.Sprint__c)) {
+                    Decimal current = sprintStoryPointMap.containsKey(t.Sprint__c) ? sprintStoryPointMap.get(t.Sprint__c) : 0;
+                    sprintStoryPointMap.put(t.Sprint__c, current + (t.StoryPoint__c != null ? t.StoryPoint__c : 0));
+                }
             }
+
+            List<Sprint__c> updatedSprints = new List<Sprint__c>();
+            for (String sprintId : sprintStoryPointMap.keySet()) {
+                Sprint__c updated = SprintService.decreaseTotalStoryPoint(sprintId, sprintStoryPointMap.get(sprintId));
+                updatedSprints.add(updated);
+            }
+
+            return updatedSprints;
         } catch (DmlException dex) {
             throw new ServiceException('DML error deleting tickets: ' + dex.getMessage());
         } catch (Exception ex) {

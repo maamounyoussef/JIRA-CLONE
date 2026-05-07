@@ -122,10 +122,8 @@ export default class ManageBacklog extends LightningElement {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 this.backlogTickets     = this.backlogTickets.filter(t => !ids.includes(t.Id));
                 this._selectedTicketIds = new Set();
-                this.sprints = [...this.sprints.map(s => {
-                    const tickets = s.tickets.filter(t => !ids.includes(t.Id));
-                    return { ...s, tickets, hasTickets: tickets.length > 0 };
-                })];
+                const updatedSprints = res.data?.updatedSprints || [];
+                this._enrichSprintsWithoutTickets(ids, updatedSprints);
                 this._showSuccess('Tickets deleted');
             })
             .catch(err => { this.errorMessage = err.body?.message || 'Error deleting tickets'; })
@@ -163,7 +161,8 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
                 this._selectedTicketIds.delete(ticketId);
                 this._selectedTicketIds = new Set(this._selectedTicketIds);
-                this._enrichSprintsWithoutTicket(ticketId);
+                const updatedSprint = res.data?.updatedSprint;
+                this._enrichSprintsWithoutTicket(ticketId, updatedSprint);
                 this._showSuccess('Ticket deleted');
             })
             .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting ticket'; })
@@ -890,9 +889,39 @@ export default class ManageBacklog extends LightningElement {
         }));
     }
 
-    _enrichSprintsWithoutTicket(ticketId) {
+    _enrichSprintsWithoutTicket(ticketId, updatedSprint) {
         this.sprints = this.sprints.map(s => {
             const tickets = s.tickets.filter(t => t.Id !== ticketId);
+            if (s.Id === updatedSprint?.Id) {
+                return {
+                    ...s,
+                    tickets,
+                    hasTickets: tickets.length > 0,
+                    totalStoryPoints: updatedSprint.TotalStoryPoint__c
+                };
+            }
+            return { ...s, tickets, hasTickets: tickets.length > 0 };
+        });
+    }
+
+    _enrichSprintsWithoutTickets(ticketIds, updatedSprints) {
+        const updatedSprintMap = {};
+        updatedSprints.forEach(sprint => {
+            updatedSprintMap[sprint.Id] = sprint;
+        });
+
+        this.sprints = this.sprints.map(s => {
+            const tickets = s.tickets.filter(t => !ticketIds.includes(t.Id));
+            const updatedSprint = updatedSprintMap[s.Id];
+
+            if (updatedSprint) {
+                return {
+                    ...s,
+                    tickets,
+                    hasTickets: tickets.length > 0,
+                    totalStoryPoints: updatedSprint.TotalStoryPoint__c
+                };
+            }
             return { ...s, tickets, hasTickets: tickets.length > 0 };
         });
     }

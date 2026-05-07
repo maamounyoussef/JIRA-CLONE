@@ -446,8 +446,12 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
-            TicketService.deleteTicket(existing);
-            return new APIResponse(true, 'Ticket deleted');
+            Sprint__c updatedSprint = TicketService.deleteTicket(existing);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'updatedSprint' => updatedSprint
+            };
+            return new APIResponse(true, 'Ticket deleted', data);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting ticket: ' + ex.getMessage());
         }
@@ -457,8 +461,19 @@ public with sharing class ManageBacklogController {
     public static APIResponse deleteTickets(List<String> ticketIds) {
         try {
             if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
-            TicketService.deleteTickets(ticketIds);
-            return new APIResponse(true, 'Tickets deleted');
+            InputSecurityValidator.validateTicketDeletionLimit(ticketIds);
+
+            List<Ticket__c> tickets = new List<Ticket__c>();
+            for (String ticketId : ticketIds) {
+                tickets.add(DomainCorrectness.requireTicketExists(ticketId));
+            }
+
+            List<Sprint__c> updatedSprints = TicketService.deleteTickets(tickets);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'updatedSprints' => updatedSprints
+            };
+            return new APIResponse(true, 'Tickets deleted', data);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error deleting tickets: ' + ex.getMessage());
         }

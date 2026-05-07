@@ -101,4 +101,16 @@ public with sharing class SprintService {
             throw new ServiceException('Error updating total story point: ' + ex.getMessage());
         }
     }
+
+    public static Sprint__c decreaseTotalStoryPoint(String sprintId, Decimal totalStoryPoint) {
+        try {
+            if (String.isBlank(sprintId) || totalStoryPoint == null) return null;
+            Sprint__c sprint = findSprintById(sprintId);
+            sprint.TotalStoryPoint__c -= totalStoryPoint;
+            updateSprint(sprint);
+            return sprint;
+        } catch (Exception ex) {
+            throw new ServiceException('Error updating total story point: ' + ex.getMessage());
+        }
+    }
 }
