@@ -6,7 +6,7 @@ public with sharing class SprintService {
 
     public static Sprint__c findSprintById(String sprintId) {
         try {
-            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c FROM Sprint__c WHERE Id = :sprintId LIMIT 1];
+            return [SELECT Id, Name, Duration__c, StartDate__c, Goal__c, Project__c, RecordStatus__c, TotalStoryPoint__c, TotalEndedStoryPoint__c FROM Sprint__c WHERE Id = :sprintId LIMIT 1];
         } catch (Exception ex) {
             throw new ServiceException('Error finding sprint: ' + ex.getMessage());
         }
@@ -89,6 +89,16 @@ public with sharing class SprintService {
             updateSprint(sprint);
         } catch (Exception ex) {
             throw new ServiceException('Error starting sprint: ' + ex.getMessage());
+        }
+    }
+
+    public static void increaseTotalStoryPoint(String sprintId, Decimal totalStoryPoint) {
+        try {
+            Sprint__c sprint = findSprintById(sprintId);
+            sprint.TotalStoryPoint__c += totalStoryPoint;
+            updateSprint(sprint);
+        } catch (Exception ex) {
+            throw new ServiceException('Error updating total story point: ' + ex.getMessage());
         }
     }
 }

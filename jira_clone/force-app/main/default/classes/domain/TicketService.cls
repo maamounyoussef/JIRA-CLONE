@@ -56,6 +56,8 @@ public with sharing class TicketService {
 
             ticket.RecordStatus__c = 'active';
             insert ticket;
+
+            SprintService.increaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
             return ticket;
         } catch (DmlException dex) {
             throw new ServiceException('DML error creating ticket: ' + dex.getMessage());
