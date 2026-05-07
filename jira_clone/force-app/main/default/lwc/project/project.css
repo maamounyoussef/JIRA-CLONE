@@ -1,0 +1,133 @@
+:host {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+    background-color: #F4F5F7;
+    min-height: 100%;
+}
+
+.page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    border: 1px solid #DFE1E6;
+    margin-top: 24px;
+}
+
+.page__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0 0 20px;
+    line-height: 1.3;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+.alert {
+    padding: 12px 16px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    border-left: 4px solid;
+}
+
+.alert--success {
+    background-color: #E3FCEF;
+    border-color: #00875A;
+    color: #006644;
+}
+
+.alert--error {
+    background-color: #FFEBE6;
+    border-color: #DE350B;
+    color: #BF2600;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    line-height: 1;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn--primary {
+    background-color: #0052CC;
+    color: #FFFFFF;
+}
+
+.btn--primary:hover:not(:disabled) {
+    background-color: #0065FF;
+}
+
+.btn--ghost {
+    background-color: transparent;
+    color: #42526E;
+}
+
+.btn--ghost:hover:not(:disabled) {
+    background-color: #EBECF0;
+    color: #172B4D;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 16px;
+    background-color: #FAFBFC;
+    border: 1px solid #DFE1E6;
+    border-radius: 3px;
+}
+
+.form__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    line-height: 1.3;
+}
+
+.form__required {
+    color: #DE350B;
+}
+
+.form__input {
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: #172B4D;
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 3px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.form__input:focus {
+    border-color: #4C9AFF;
+    box-shadow: 0 0 0 1px #4C9AFF;
+}
+
+.form__input::placeholder {
+    color: #97A0AF;
+}
+
+.form__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}

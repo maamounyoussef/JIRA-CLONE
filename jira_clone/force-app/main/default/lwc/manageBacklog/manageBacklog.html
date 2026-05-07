@@ -20,43 +20,39 @@
 
     <!-- Confirmation Dialog -->
     <template if:true={showConfirmDialog}>
-        <section role="dialog" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-                <div class="slds-modal__content slds-p-around_medium">
-                    <p>{confirmMessage}</p>
-                </div>
-                <div class="slds-modal__footer">
-                    <c-ao-btn label="Cancel"  variant="ghost"  onclick={handleCancelConfirm}></c-ao-btn>
-                    <c-ao-btn label="Confirm" variant="danger" onclick={handleConfirm}></c-ao-btn>
-                </div>
+        <div class="modal-backdrop" onclick={handleCancelConfirm}></div>
+        <section role="dialog" aria-modal="true" class="modal modal--sm">
+            <div class="modal__content">
+                <p class="modal__message">{confirmMessage}</p>
             </div>
+            <footer class="modal__footer">
+                <c-ao-btn label="Cancel"  variant="ghost"  onclick={handleCancelConfirm}></c-ao-btn>
+                <c-ao-btn label="Confirm" variant="danger" onclick={handleConfirm}></c-ao-btn>
+            </footer>
         </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
     <!-- Create / Edit Sprint Modal -->
     <template if:true={showSprintModal}>
-        <section role="dialog" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-                <header class="slds-modal__header">
-                    <h2>{sprintModalTitle}</h2>
-                </header>
-                <div class="slds-modal__content slds-p-around_medium">
-                    <c-ao-input label="Name"            required value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></c-ao-input>
-                    <c-ao-input label="Duration (days)" required type="number" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></c-ao-input>
-                    <c-ao-input label="Start Date"      required type="date"   value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></c-ao-input>
-                    <c-ao-input label="Goal"            required value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></c-ao-input>
-                    <template if:true={modalError}>
-                        <p class="modal-error">{modalError}</p>
-                    </template>
-                </div>
-                <div class="slds-modal__footer">
-                    <c-ao-btn label="Cancel"                 variant="ghost"   onclick={handleCloseSprintModal}></c-ao-btn>
-                    <c-ao-btn label={sprintModalSubmitLabel} variant="primary" onclick={handleSprintSubmit}></c-ao-btn>
-                </div>
+        <div class="modal-backdrop" onclick={handleCloseSprintModal}></div>
+        <section role="dialog" aria-modal="true" class="modal">
+            <header class="modal__header">
+                <h2 class="modal__title">{sprintModalTitle}</h2>
+            </header>
+            <div class="modal__content">
+                <c-ao-input label="Name"            required value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></c-ao-input>
+                <c-ao-input label="Duration (days)" required type="number" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></c-ao-input>
+                <c-ao-input label="Start Date"      required type="date"   value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></c-ao-input>
+                <c-ao-input label="Goal"            required value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></c-ao-input>
+                <template if:true={modalError}>
+                    <p class="modal__error">{modalError}</p>
+                </template>
             </div>
+            <footer class="modal__footer">
+                <c-ao-btn label="Cancel"                 variant="ghost"   onclick={handleCloseSprintModal}></c-ao-btn>
+                <c-ao-btn label={sprintModalSubmitLabel} variant="primary" onclick={handleSprintSubmit}></c-ao-btn>
+            </footer>
         </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
     <!-- ══════════════════════════════════════════
@@ -64,9 +60,9 @@
          ══════════════════════════════════════════ -->
     <div class="page-wrapper" ondragstart={handlePageDragStart} ondragend={handlePageDragEnd}>
 
-        <!-- ── WORK CONTAINER (Sprints) ─────────────────────────────── -->
-        <div class="work-container">
-            <h1 class="section-title">Work</h1>
+        <!-- WORK (Sprints) -->
+        <section class="panel">
+            <h1 class="panel__title">Sprints</h1>
 
             <template if:true={showSprintTicketModal}>
                 <c-ao-create-ticket-modal
@@ -90,7 +86,6 @@
                      ondragover={handleDragOver}
                      ondrop={handleDropOnSprint}>
 
-                    <!-- Sprint Header -->
                     <div class="sprint-header">
                         <button class="toggle-btn" data-sprint-id={sprint.Id} onclick={handleToggle}>
                             <lightning-icon icon-name={sprint.chevronIcon} size="x-small"></lightning-icon>
@@ -107,7 +102,6 @@
                         <c-ao-btn label="+ Ticket" variant="ghost"     data-sprint-id={sprint.Id} onclick={handleSprintAddTicket}></c-ao-btn>
                     </div>
 
-                    <!-- Collapsible Body -->
                     <template if:true={sprint.isExpanded}>
                         <template if:true={sprint.Goal__c}>
                             <p class="sprint-goal">{sprint.Goal__c}</p>
@@ -162,7 +156,6 @@
                             </template>
                         </template>
 
-                        <!-- Pagination Footer -->
                         <div class="pagination-footer">
                             <c-ao-btn
                                 icon-name="utility:chevronleft"
@@ -192,16 +185,16 @@
             <template if:false={hasSprints}>
                 <p class="empty-msg">No active sprints.</p>
             </template>
-        </div>
+        </section>
 
-        <!-- ── BACKLOG CONTAINER ─────────────────────────────────────── -->
-        <div class={backlogDropClass}
+        <!-- BACKLOG -->
+        <section class={backlogDropClass}
              ondragenter={handleDragEnterBacklog}
              ondragleave={handleDragLeaveBacklog}
              ondragover={handleDragOver}
              ondrop={handleDropOnBacklog}>
             <div class="backlog-header">
-                <h1 class="section-title">Backlog</h1>
+                <h1 class="panel__title">Backlog</h1>
                 <c-ao-btn label="+ Sprint" variant="secondary" onclick={handleOpenCreateSprint}></c-ao-btn>
                 <c-ao-btn label="+ Ticket" variant="primary"   onclick={handleOpenCreateTicketForBacklog}></c-ao-btn>
             </div>
@@ -253,7 +246,6 @@
                 </template>
             </template>
 
-            <!-- Backlog Pagination Footer -->
             <div class="pagination-footer">
                 <c-ao-btn
                     icon-name="utility:chevronleft"
@@ -273,7 +265,7 @@
                     onclick={handleBacklogNextPage}>
                 </c-ao-btn>
             </div>
-        </div>
+        </section>
 
     </div>
 </template>

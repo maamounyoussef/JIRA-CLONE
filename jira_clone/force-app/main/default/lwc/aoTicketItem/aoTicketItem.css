@@ -1,104 +1,153 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   aoTicketItem.css
-   Layout uses a 2-column grid at the row level:
-     • Left  column: minmax(0, 1fr) — ticket identity, always truncates cleanly.
-     • Right column: auto            — takes exactly the space its items need.
-   This prevents the priority / assignee / action area from ever being
-   squeezed by a long summary, and stops the priority-edit combobox + confirm
-   buttons from colliding with adjacent columns.
-   ───────────────────────────────────────────────────────────────────────────── */
-.icon-wrapper {
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-/* ── Custom property anchors ─────────────────────────────────────────────── */
 :host {
     container-type: inline-size;
     container-name: ticket;
     display: block;
 
-    font-size: 1em;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
 
     --gap-row:        0.5em;
-    --gap-col:        0.5em;    /* gap between columns in .ticket-right        */
-    --row-pad-block:  0.375em;
-    --row-pad-inline: 0.625em;
+    --gap-col:        0.5em;
+    --row-pad-block:  0.5em;
+    --row-pad-inline: 0.75em;
 }
 
-/* ── Ticket row: 2-column grid ───────────────────────────────────────────── */
+/* ── Modal (shared across all dialogs in this component) ──────────────────── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.54);
+    z-index: 9000;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9001;
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal--sm { width: min(420px, calc(100vw - 32px)); }
+
+.modal__header { padding: 20px 24px 8px; }
+
+.modal__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.modal__content {
+    padding: 8px 24px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal__message {
+    font-size: 0.9375rem;
+    color: #172B4D;
+    margin: 12px 0;
+    line-height: 1.5;
+}
+
+.modal__footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
+}
+
+.modal__error {
+    color: #DE350B;
+    font-size: 0.8125rem;
+    margin: 0;
+    padding: 8px 12px;
+    background-color: #FFEBE6;
+    border-radius: 3px;
+}
+
+/* ── Ticket row ──────────────────────────────────────────────────────────── */
 .ticket-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: stretch;
-    gap: 0 var(--gap-row);                      /* row-gap 0, column-gap for L↔R */
+    align-items: center;
+    gap: 0 var(--gap-row);
     padding: var(--row-pad-block) var(--row-pad-inline);
 
-    border-bottom: 1px solid #1a1a1a;
-    background-color: #ffffff;
+    border-bottom: 1px solid #DFE1E6;
+    background-color: #FFFFFF;
 
     width: 100%;
     box-sizing: border-box;
     overflow: visible;
     min-width: 0;
+    transition: background-color 0.1s ease;
 }
 
 .ticket-row:hover {
-    background-color: #f0efec;
+    background-color: #F4F5F7;
 }
 
-.ticket-row[draggable="true"] {
-    cursor: grab;
-}
+.ticket-row[draggable="true"] { cursor: grab; }
 
 .ticket-row[draggable="true"]:active {
     cursor: grabbing;
-    opacity: 0.75;
+    opacity: 0.7;
 }
 
-/* ── Left section: checkbox, expand, identity ────────────────────────────── */
 .ticket-left {
     display: flex;
     align-items: center;
     gap: var(--gap-row);
     min-width: 0;
-    overflow: hidden;                           /* clips long summaries          */
+    overflow: hidden;
 }
 
-/* ── Right section: state, epic, priority, assignee, actions ──────────────── */
 .ticket-right {
     display: flex;
     align-items: center;
     gap: var(--gap-col);
     min-width: 0;
-    overflow: visible;                          /* allow combobox dropdowns      */
+    overflow: visible;
     justify-content: flex-end;
 }
 
-/* ── Identity section ────────────────────────────────────────────────────── */
+/* ── Identity ────────────────────────────────────────────────────────────── */
 .ticket-identity {
     display: flex;
     align-items: center;
-    align-self: stretch;
-    gap: 0.375em;
+    gap: 0.5em;
     flex: 1 1 0;
     min-width: 0;
     overflow: hidden;
 }
 
 .ticket-key {
-    font-size: 0.9em;
-    font-weight: 700;
-    color: #0176d3;
+    font-size: 0.8125em;
+    font-weight: 600;
+    color: #6B778C;
     white-space: nowrap;
     flex: 0 0 auto;
-    letter-spacing: 0.01em;
 }
 
 .ticket-summary {
-    font-size: 0.875em;
-    color: #1a1a1a;
+    font-size: 0.9375em;
+    color: #172B4D;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -111,115 +160,62 @@
     min-width: 0;
 }
 
-.edit-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 0;
-    padding: 0.2em 0.3em;
-    cursor: pointer;
-    color: #706e6b;
-    font-size: 0.8125em;
-    line-height: 1;
-
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.1s ease;
-}
-
-.ticket-row:hover .edit-btn,
-.ticket-identity:focus-within .edit-btn {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.edit-btn:hover {
-    background-color: #ffffff;
-    border-color: #1a1a1a;
-    box-shadow: 1px 1px 0 #1a1a1a;
-    color: #1a1a1a;
-}
-
-.edit-btn:focus-visible {
-    outline: 2px solid #0176d3;
-    outline-offset: 1px;
-}
-
-/* ── Spacer ──────────────────────────────────────────────────────────────── */
-.row-spacer {
-    flex: 0 0 0;
-}
-
-/* ── State dropdown ──────────────────────────────────────────────────────── */
+/* ── State / Epic / Priority / Assignee cells ────────────────────────────── */
 .ticket-state {
     display: flex;
     align-items: center;
-    align-self: stretch;
-    flex: 0 0 6.5em;
+    flex: 0 0 7em;
     min-width: 0;
-    overflow: visible;
 }
 
-/* aoCombobox host already sets width:100% — these rules ensure the same
-   constraint is applied regardless of which tag ends up in the cell */
 .ticket-state c-ao-combobox,
 .ticket-assignee c-ao-combobox {
     width: 100%;
 }
 
-/* ── Epic badge ──────────────────────────────────────────────────────────── */
 .ticket-epic {
     display: flex;
     align-items: center;
-    align-self: stretch;
-    flex: 0 0 4.5em;
+    flex: 0 0 5em;
     min-width: 0;
     overflow: hidden;
     cursor: pointer;
-    transition: opacity 0.1s ease;
+    border-radius: 3px;
+    padding: 0.15em 0.25em;
+    transition: background-color 0.1s ease;
 }
 
 .ticket-epic:hover {
-    opacity: 0.8;
-}
-
-.ticket-epic:hover .epic-missing-badge {
-    color: #ea001e;
+    background-color: #EBECF0;
 }
 
 .epic-badge {
-    border-radius: 0;
-    border: 1px solid #1a1a1a;
-    background-color: #ffffff;
-    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    background-color: #6554C0;
+    color: #FFFFFF;
+    padding: 0.2em 0.5em;
     font-size: 0.6875em;
     font-weight: 600;
-    color: #1a1a1a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
 .epic-missing-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.25em;
-    font-size: 0.6875em;
-    color: #fe9339;
+    font-size: 0.75em;
+    color: #FF991F;
     white-space: nowrap;
 }
 
-/* ── Priority (inline edit) ──────────────────────────────────────────────── */
 .ticket-priority {
     display: flex;
     align-items: center;
-    align-self: stretch;
     flex: 0 0 auto;
     min-width: 0;
     overflow: visible;
@@ -231,83 +227,81 @@
     gap: 0.25em;
 }
 
-/*
- * Constrain the combobox inside the edit container so the confirm/cancel
- * icon buttons are always visible and never pushed off-screen.
- */
 .priority-edit-container c-ao-combobox {
-    flex: 0 0 5.5em;
-    width: 5.5em;
+    flex: 0 0 6em;
+    width: 6em;
     min-width: 0;
 }
 
 .priority-btn {
-    border-radius: 0;
-    border: 2px solid #1a1a1a;
-    background-color: #ffffff;
-    color: #1a1a1a;
-    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    border: 1px solid #DFE1E6;
+    background-color: #FFFFFF;
+    color: #42526E;
+    padding: 0.25em 0.6em;
     cursor: pointer;
-    font-size: 0.6875em;
-    font-weight: 700;
-    text-transform: uppercase;
-    /* Fixed width so long priority labels don't expand the column */
-    width: 5em;
+    font-family: inherit;
+    font-size: 0.75em;
+    font-weight: 500;
+    width: 5.5em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: center;
-    box-shadow: 2px 2px 0 #1a1a1a;
+    transition: background-color 0.1s ease, border-color 0.1s ease;
 }
 
 .priority-btn:hover {
-    background-color: #f0efec;
-    box-shadow: 1px 1px 0 #1a1a1a;
-    transform: translate(1px, 1px);
+    background-color: #F4F5F7;
+    border-color: #B3BAC5;
 }
 
-/* ── Assignee dropdown ───────────────────────────────────────────────────── */
 .ticket-assignee {
     display: flex;
     align-items: center;
-    align-self: stretch;
-    flex: 0 0 6.5em;
+    flex: 0 0 7em;
     min-width: 0;
     overflow: visible;
 }
 
-/* ── Meta row (type badge, story points) ─────────────────────────────────── */
+/* ── Meta row ────────────────────────────────────────────────────────────── */
 .ticket-meta-row {
     display: flex;
     gap: 0.5em;
     align-items: center;
 
-    padding-block: 0.15em 0.3em;
-    padding-inline-start: 2.75em;
-    padding-inline-end: var(--row-pad-inline);
+    padding: 0.25em var(--row-pad-inline) 0.5em 3em;
 
-    border-bottom: 1px solid #1a1a1a;
-    background-color: #fafaf8;
+    border-bottom: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
 }
 
 .ticket-type-badge {
-    border-radius: 0;
-    border: 2px solid #015ba7;
-    background-color: #ffffff;
-    color: #015ba7;
-    padding: 0.1em 0.3em;
-    font-size: 0.625em;
-    font-weight: 700;
-    text-transform: uppercase;
+    border-radius: 3px;
+    background-color: #DEEBFF;
+    color: #0747A6;
+    padding: 0.2em 0.5em;
+    font-size: 0.6875em;
+    font-weight: 600;
     white-space: nowrap;
-    letter-spacing: 0.02em;
-    box-shadow: 1px 1px 0 #015ba7;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ticket-type-missing-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    font-size: 0.75em;
+    color: #FF991F;
+    white-space: nowrap;
 }
 
 .sp-badge {
-    font-size: 0.6875em;
-    color: #555;
+    font-size: 0.75em;
+    color: #6B778C;
     white-space: nowrap;
+    font-weight: 500;
 }
 
 /* ── Error message ───────────────────────────────────────────────────────── */
@@ -315,158 +309,104 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.3em 0.5em;
-    margin: 0.375em var(--row-pad-inline);
-    background-color: #fff1f0;
-    border: 2px solid #ea001e;
-    border-radius: 0;
-    color: #ea001e;
+    padding: 0.5em 0.75em;
+    margin: 0.5em var(--row-pad-inline);
+    background-color: #FFEBE6;
+    border-left: 3px solid #DE350B;
+    border-radius: 3px;
+    color: #BF2600;
     font-size: 0.8125em;
-    box-shadow: 2px 2px 0 #ea001e;
 }
 
-/* ── Subtasks wrapper ────────────────────────────────────────────────────── */
+/* ── Subtasks ────────────────────────────────────────────────────────────── */
 .subtasks-wrapper {
-    padding-inline-start: 0;
-    background-color: #f5f4f2;
-    border-inline-start: 3px solid #1a1a1a;
-    margin-inline-start: 1.25em;
+    background-color: #FAFBFC;
+    border-left: 2px solid #DFE1E6;
+    margin-left: 1.5em;
 }
 
 .no-subtasks {
-    padding: 0.375em 0.75em;
-    color: #555;
-    font-style: normal;
-    font-size: 0.75em;
-}
-
-/* ── Modal error ─────────────────────────────────────────────────────────── */
-.modal-error {
-    color: #ea001e;
-    font-size: 0.875em;
-    margin-top: 0.5em;
+    padding: 0.75em 1em;
+    color: #6B778C;
+    font-size: 0.8125em;
+    margin: 0;
 }
 
 /* ── Container queries ───────────────────────────────────────────────────── */
 @container ticket (max-width: 48em) {
     :host {
-        --gap-col: 0.375em;
+        --gap-col: 0.4em;
         --row-pad-inline: 0.5em;
     }
 }
 
 @container ticket (max-width: 42em) {
-    :host {
-        --gap-col: 0.25em;
-    }
-    .ticket-epic {
-        display: none;
-    }
+    :host { --gap-col: 0.3em; }
+    .ticket-epic { display: none; }
 }
 
 @container ticket (max-width: 34em) {
     :host {
-        --gap-row: 0.375em;
-        --gap-col: 0.25em;
-        --row-pad-block: 0.3125em;
-        --row-pad-inline: 0.375em;
+        --gap-row: 0.4em;
+        --gap-col: 0.3em;
+        --row-pad-block: 0.4em;
+        --row-pad-inline: 0.4em;
     }
-    .ticket-priority {
-        display: none;
-    }
+    .ticket-priority { display: none; }
 }
 
 @container ticket (max-width: 26em) {
-    :host {
-        --gap-row: 0.25em;
-        --gap-col: 0.25em;
-    }
-    .ticket-assignee {
-        display: none;
-    }
+    .ticket-assignee { display: none; }
 }
 
-/* ── Epic Modal Styles ───────────────────────────────────────────────────── */
-.epic-modal .slds-modal__container {
-    max-width: 30rem;
-}
-
+/* ── Epic Modal special bits ─────────────────────────────────────────────── */
 .epic-empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem 0.5rem;
+    gap: 0.75rem;
 }
 
 .epic-empty-state .empty-icon {
-    --slds-g-color-neutral-base-100: #d8edff;
-    margin-bottom: 1rem;
+    --slds-g-color-neutral-base-100: #DEEBFF;
 }
 
 .epic-empty-state h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
 }
 
 .epic-empty-state p {
     font-size: 0.875rem;
-    color: #555;
-    margin: 0 0 1.5rem 0;
+    color: #6B778C;
+    margin: 0;
     max-width: 24rem;
     line-height: 1.5;
 }
 
-.create-first-epic-btn {
-    background-color: #0176d3;
-    color: #ffffff;
-    border: 2px solid #1a1a1a;
-    border-radius: 0;
-    padding: 0.5rem 1.5rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 3px 3px 0 #1a1a1a;
-    transition: box-shadow 0.1s ease, transform 0.1s ease;
-}
-
-.create-first-epic-btn:hover {
-    box-shadow: 1px 1px 0 #1a1a1a;
-    transform: translate(2px, 2px);
-}
-
-.create-first-epic-btn:focus {
-    outline: 2px solid #0176d3;
-    outline-offset: 2px;
-}
-
-/* Epic Selection */
-.epic-selection {
-    padding: 0.5rem 0;
-}
-
 .epic-hint {
     font-size: 0.875rem;
-    color: #1a1a1a;
-    margin-bottom: 1rem;
+    color: #42526E;
+    margin: 0;
 }
 
 .or-divider {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 1.5rem 0;
-    color: #555;
-    font-size: 0.875rem;
+    color: #6B778C;
+    font-size: 0.8125rem;
 }
 
 .or-divider::before,
 .or-divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid #DFE1E6;
 }
 
 .or-divider span {
@@ -476,37 +416,37 @@
 .create-epic-link {
     background: none;
     border: none;
-    color: #0176d3;
+    color: #0052CC;
+    font-family: inherit;
     font-size: 0.875rem;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
     padding: 0;
-    text-decoration: underline;
+    align-self: flex-start;
 }
 
-.create-epic-link:hover {
-    color: #015ba7;
-}
+.create-epic-link:hover { color: #0065FF; text-decoration: underline; }
 
-.create-epic-link:focus {
-    outline: 2px solid #0176d3;
+.create-epic-link:focus-visible {
+    outline: 2px solid #4C9AFF;
     outline-offset: 2px;
+    border-radius: 3px;
 }
 
-/* ── Subtask bulk action bar ─────────────────────────────────────────────── */
+/* ── Subtask bulk bar ────────────────────────────────────────────────────── */
 .subtask-bulk-bar {
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.3em 0.75em;
-    background-color: #e8f0fe;
-    border-bottom: 2px solid #1a1a1a;
+    padding: 0.4em 0.75em;
+    background-color: #DEEBFF;
+    border-bottom: 1px solid #DFE1E6;
 }
 
 .bulk-count {
-    font-size: 0.75em;
-    font-weight: 700;
-    color: #1a1a1a;
+    font-size: 0.8125em;
+    font-weight: 500;
+    color: #0747A6;
     flex: 1 1 auto;
 }
 
@@ -514,96 +454,68 @@
 .subtask-row {
     display: flex;
     align-items: center;
-    gap: 0.375em;
-    padding-block: 0.25em;
-    padding-inline: 0.5em;
-    padding-inline-start: 1.25em;
-    border-bottom: 1px solid #c8c6c4;
-    background-color: #f5f4f2;
+    gap: 0.5em;
+    padding: 0.4em 0.75em 0.4em 1.5em;
+    border-bottom: 1px solid #EBECF0;
+    background-color: transparent;
+    transition: background-color 0.1s ease;
 }
 
 .subtask-row:hover {
-    background-color: #e8e7e4;
+    background-color: #EBECF0;
 }
 
-.subtask-row c-ao-input[type="checkbox"] {
-    flex: 0 0 auto;
-}
-
-/* ── Subtask summary: takes all available space, truncates cleanly ───────── */
 .subtask-summary {
     display: flex;
     align-items: center;
-    gap: 0.2em;
+    gap: 0.25em;
     flex: 1 1 0;
     min-width: 0;
 }
 
 .summary-text {
-    color: #1a1a1a;
+    color: #172B4D;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1 1 0;
     min-width: 0;
-    font-size: 0.8125em;
+    font-size: 0.875em;
     line-height: 1.4;
 }
 
-.subtask-summary lightning-button-icon {
-    flex: 0 0 auto;
-    opacity: 0.45;
-    transition: opacity 0.1s ease;
-}
-
-.subtask-summary:hover lightning-button-icon {
-    opacity: 1;
-}
-
-/* ── Subtask state label ─────────────────────────────────────────────────── */
 .subtask-state {
     flex: 0 0 auto;
-    min-width: 4em;
+    min-width: 4.5em;
     font-size: 0.6875em;
-    color: #555;
+    color: #FFFFFF;
+    background-color: #6B778C;
+    padding: 0.2em 0.55em;
+    border-radius: 3px;
     text-align: center;
     white-space: nowrap;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
 }
 
-/* ── Subtask assignee: fixed width, never crowds out other items ─────────── */
 .subtask-row c-ao-combobox {
-    flex: 0 0 6.5em;
-    width: 6.5em;
+    flex: 0 0 7em;
+    width: 7em;
     min-width: 0;
 }
 
-/* ── Subtask delete button ───────────────────────────────────────────────── */
-.subtask-row > lightning-button-icon:last-child {
-    flex: 0 0 auto;
-    margin-inline-start: auto;
-    opacity: 0.45;
-    transition: opacity 0.1s ease;
-}
-
-.subtask-row:hover > lightning-button-icon:last-child {
-    opacity: 0.75;
-}
-
-/* ── Subtask error ───────────────────────────────────────────────────────── */
 .subtask-error {
     display: flex;
     align-items: center;
     gap: 0.5em;
     padding: 0.4em 0.75em;
-    margin: 0.2em 0.5em;
-    background-color: #fff1f0;
-    border: 1px solid #ea001e;
-    border-radius: 0;
-    color: #ea001e;
-    font-size: 0.8em;
+    margin: 0.25em 0.5em;
+    background-color: #FFEBE6;
+    border-left: 3px solid #DE350B;
+    border-radius: 3px;
+    color: #BF2600;
+    font-size: 0.8125em;
 }
 
 @container ticket (max-width: 28em) {
@@ -612,35 +524,29 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CARD VARIANT  (variant="card")
-   Column-first layout used inside ticketBoardColumn / kanban board.
-   Reuses the same design tokens and badge/button classes as the row variant.
+   CARD VARIANT — used in kanban board / column layouts
    ══════════════════════════════════════════════════════════════════════════ */
 
 .ticket-card-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 0.4em;
-    padding: var(--row-pad-block) var(--row-pad-inline);
-    background-color: #ffffff;
-    border-bottom: 1px solid #1a1a1a;
+    gap: 0.5em;
+    padding: 0.75em;
+    background-color: #FFFFFF;
+    border-radius: 3px;
     width: 100%;
     box-sizing: border-box;
+    transition: background-color 0.1s ease, box-shadow 0.1s ease;
 }
 
 .ticket-card-wrapper:hover {
-    background-color: #f0efec;
+    background-color: #F4F5F7;
 }
 
 .ticket-card-wrapper.end-status {
-    background-color: #f0faf0;
+    border-left: 3px solid #00875A;
 }
 
-.ticket-card-wrapper.end-status:hover {
-    background-color: #e5f5e5;
-}
-
-/* ── Row 1: key + action buttons ────────────────────────────────────────── */
 .card-header {
     display: flex;
     align-items: center;
@@ -651,11 +557,10 @@
 .card-actions {
     display: flex;
     align-items: center;
-    gap: 0.125em;
+    gap: 0.25em;
     flex-shrink: 0;
 }
 
-/* ── Row 2: summary (wrapping, not truncated) ────────────────────────────── */
 .card-summary-section {
     display: flex;
     align-items: flex-start;
@@ -664,38 +569,33 @@
 
 .card-summary-text {
     font-size: 0.875em;
-    color: #1a1a1a;
+    color: #172B4D;
     flex: 1 1 0;
     min-width: 0;
     line-height: 1.4;
+    font-weight: 500;
 }
 
-/* ── Row 3: type badge + SP + epic ──────────────────────────────────────── */
 .card-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.375em;
+    gap: 0.5em;
 }
 
-/* Override ticket-epic's fixed width so it fits naturally in the meta row */
 .card-epic-cell {
     flex: 0 0 auto;
     align-self: center;
 }
 
-/* ── Row 4: state + priority ────────────────────────────────────────────── */
-/* Use fr columns so state (62%) and priority (38%) always keep the same
-   proportional positions regardless of card width.                          */
 .card-controls {
     display: grid;
-    grid-template-columns: 62fr 38fr;
-    gap: 0.375em;
+    grid-template-columns: 60fr 40fr;
+    gap: 0.5em;
     align-items: center;
     width: 100%;
 }
 
-/* Override ticket-state fixed flex-basis so it fills its grid cell */
 .card-state-cell {
     flex: unset;
     width: 100%;
@@ -706,7 +606,6 @@
     width: 100%;
 }
 
-/* Priority fills its grid cell in the card */
 .card-controls .ticket-priority {
     flex: unset;
     width: 100%;
@@ -723,38 +622,37 @@
     min-width: 0;
 }
 
-/* Let the priority combobox shrink to fit its cell instead of fixed 5.5em */
 .card-controls .priority-edit-container c-ao-combobox {
     flex: 1 1 0;
     width: auto;
     min-width: 0;
 }
 
-/* ── Row 5: assignee (full width) ───────────────────────────────────────── */
 .card-assignee-cell {
     flex: 1 1 0;
     width: 100%;
-    align-self: stretch;
 }
 
 .card-assignee-cell c-ao-combobox {
     width: 100%;
 }
 
-/* ── Row 6: subtask toggle ──────────────────────────────────────────────── */
+.assignee-name {
+    font-size: 0.8125em;
+    color: #6B778C;
+}
+
 .card-subtask-toggle {
     display: flex;
     align-items: center;
     gap: 0.25em;
-    border-top: 1px dashed #c8c6c4;
-    padding-top: 0.3em;
-    margin-top: 0.1em;
+    border-top: 1px solid #DFE1E6;
+    padding-top: 0.5em;
+    margin-top: 0.25em;
 }
 
 .card-subtask-label {
-    font-size: 0.6875em;
-    color: #706e6b;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
+    font-size: 0.75em;
+    color: #6B778C;
+    font-weight: 500;
 }

@@ -1,50 +1,98 @@
+:host {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+    background-color: #F4F5F7;
+    min-height: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
 .error-box {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #fdf2f2;
-    border: 1px solid #e53935;
-    border-radius: 6px;
-    padding: 10px 14px;
-    margin-bottom: 12px;
+    background-color: #FFEBE6;
+    border-left: 4px solid #DE350B;
+    border-radius: 3px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    color: #BF2600;
+    font-size: 0.875rem;
 }
 
-.loading-spinner {
+.page-spinner {
     display: flex;
     justify-content: center;
-    padding: 40px;
+    padding: 48px;
 }
 
 .sprint-header {
-    padding: 12px 0 16px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 0 0 16px;
+    border-bottom: 1px solid #DFE1E6;
     margin-bottom: 16px;
 }
 
+.sprint-header__top {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .sprint-name {
-    font-size: 18px;
+    font-size: 1.5rem;
     font-weight: 600;
-    margin: 0 0 4px;
+    color: #172B4D;
+    margin: 0;
+    line-height: 1.3;
 }
 
 .sprint-dates {
-    font-size: 13px;
-    color: #666;
+    font-size: 0.8125rem;
+    color: #6B778C;
 }
 
 .sprint-goal {
-    font-size: 13px;
-    color: #444;
+    font-size: 0.875rem;
+    color: #42526E;
     margin: 6px 0 0;
+    font-style: italic;
+}
+
+.sprint-progress {
+    margin-top: 12px;
+}
+
+.sprint-progress__labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.sprint-progress__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sprint-progress__count {
+    font-size: 0.8125rem;
+    color: #42526E;
 }
 
 .no-sprint-banner {
     padding: 16px;
-    background: #f5f5f5;
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
     border-radius: 6px;
     margin-bottom: 16px;
     text-align: center;
-    color: #666;
+    color: #6B778C;
+    font-size: 0.875rem;
 }
 
 .board-columns {

@@ -11,41 +11,34 @@
 
     <!-- Loading -->
     <template if:true={isLoading}>
-        <div class="loading-spinner">
-            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-        </div>
+        <lightning-spinner alternative-text="Loading" size="medium" class="page-spinner"></lightning-spinner>
     </template>
 
-    <!-- Board -->
     <template if:false={isLoading}>
 
-        <!-- Sprint Header -->
         <template if:true={sprint}>
-            <div class="sprint-header">
-                <div class="sprint-header-top">
+            <header class="sprint-header">
+                <div class="sprint-header__top">
                     <h2 class="sprint-name">{sprint.Name}</h2>
                     <span class="sprint-dates">{sprintDateRange}</span>
                 </div>
                 <p class="sprint-goal">{sprint.Goal__c}</p>
                 <div class="sprint-progress">
-                    <div class="sprint-progress-labels">
-                        <span class="sprint-progress-label">Story Points</span>
-                        <span class="sprint-progress-count">
+                    <div class="sprint-progress__labels">
+                        <span class="sprint-progress__label">Story Points</span>
+                        <span class="sprint-progress__count">
                             <strong>{endedStoryPoints}</strong> / {totalStoryPoints} SP &nbsp;·&nbsp; {storyPointsPercent}%
                         </span>
                     </div>
                     <lightning-progress-bar value={storyPointsPercent} size="small"></lightning-progress-bar>
                 </div>
-            </div>
+            </header>
         </template>
 
         <template if:false={sprint}>
-            <div class="no-sprint-banner">
-                <p>No active sprint. Start a sprint from the Backlog page.</p>
-            </div>
+            <p class="no-sprint-banner">No active sprint. Start a sprint from the Backlog page.</p>
         </template>
 
-        <!-- Kanban Board Columns -->
         <div class="board-columns"
              onticketstatechange={handleTicketStateChange}
              onopenlinkedto={handleOpenLinkedTo}>
@@ -68,7 +61,6 @@
             </template>
         </div>
 
-        <!-- Linked-to popup — rendered directly here, no props drilled through ticketBoardColumn -->
         <template if:true={showLinkedToPopup}>
             <c-ticket-linked-to
                 ticket-id={linkedToTicketId}
