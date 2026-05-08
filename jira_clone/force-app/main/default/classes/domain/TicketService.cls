@@ -215,6 +215,20 @@ public with sharing class TicketService {
         }
     }
 
+    public static Sprint__c removeTicketFromSprint(Ticket__c ticket) {
+        try {
+            if (String.isNotBlank(ticket.Sprint__c)) {
+                Sprint__c updated = SprintService.decreaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
+                ticket.Sprint__c = null;
+                updateTicket(ticket);
+                return updated;
+            }
+            return null;
+        } catch (Exception ex) {
+            throw new ServiceException('Error removing ticket from sprint: ' + ex.getMessage());
+        }
+    }
+
 
     // ═══════════════════════════════════════════════════════════════
     // SUBTASK 

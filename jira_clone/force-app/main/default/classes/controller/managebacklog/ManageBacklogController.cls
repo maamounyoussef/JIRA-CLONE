@@ -433,9 +433,12 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
             Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
-            existing.Sprint__c = null;
-            Ticket__c updated = TicketService.updateTicket(existing);
-            return new APIResponse(true, 'Ticket moved to backlog', updated);
+            Sprint__c updatedSprint = TicketService.removeTicketFromSprint(existing);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'updatedSprint' => updatedSprint
+            };
+            return new APIResponse(true, 'Ticket moved to backlog', data);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error moving ticket to backlog: ' + ex.getMessage());
         }

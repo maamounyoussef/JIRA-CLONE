@@ -748,7 +748,8 @@ export default class ManageBacklog extends LightningElement {
         moveTicketToBacklog({ ticketId: ticket.Id })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                this._enrichSprintsWithoutTicket(ticket.Id);
+                const updatedSprint = res.data?.updatedSprint || [];
+                this._enrichSprintsWithoutTicket(ticket.Id,updatedSprint);
                 this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
                 this._showSuccess('Ticket moved to backlog');
             })
