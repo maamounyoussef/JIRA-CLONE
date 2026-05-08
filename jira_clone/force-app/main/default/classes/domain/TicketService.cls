@@ -25,7 +25,7 @@ public with sharing class TicketService {
         }
     }
 
-    public static Ticket__c createTicket(Ticket__c ticket) {
+    public static CreateTicketResponse createTicket(Ticket__c ticket) {
         try {
             TicketType__c ticketType = getTicketTypeById(ticket.Ticket_Type__c);
             String projectId = ticketType.Project__c;
@@ -57,8 +57,13 @@ public with sharing class TicketService {
             ticket.RecordStatus__c = 'active';
             insert ticket;
 
-            SprintService.increaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
-            return ticket;
+            Sprint__c updatedSprint = null;
+            if(!String.isBlank(ticket.Sprint__c))
+            {
+               updatedSprint = SprintService.increaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
+                 return new CreateTicketResponse(ticket, updatedSprint);
+            }
+            return new CreateTicketResponse(ticket);
         } catch (DmlException dex) {
             throw new ServiceException('DML error creating ticket: ' + dex.getMessage());
         } catch (Exception ex) {
@@ -215,7 +220,7 @@ public with sharing class TicketService {
         }
     }
 
-    public static Sprint__c removeTicketFromSprint(Ticket__c ticket) {
+    public static Sprint__c removeTicketSprint(Ticket__c ticket) {
         try {
             if (String.isNotBlank(ticket.Sprint__c)) {
                 Sprint__c updated = SprintService.decreaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
@@ -228,6 +233,18 @@ public with sharing class TicketService {
             throw new ServiceException('Error removing ticket from sprint: ' + ex.getMessage());
         }
     }
+
+    public static Sprint__c moveTicketToSprint(Ticket__c ticket, Sprint__c sprint) {
+        try {
+            DomainCompleteValidator.requireTicketNotInDifferentSprint(ticket, sprint.Id);
+            ticket.Sprint__c = sprint.Id;
+            updateTicket(ticket);
+            Sprint__c updated = SprintService.increaseTotalStoryPoint(sprint.Id, ticket.StoryPoint__c);
+            return updated;
+        } catch (Exception ex) {
+            throw new ServiceException('Error moving ticket to sprint: ' + ex.getMessage());
+        }
+    } 
 
 
     // ═══════════════════════════════════════════════════════════════

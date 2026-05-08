@@ -392,8 +392,9 @@ export default class ManageBacklog extends LightningElement {
         createTicket(data)
             .then(res => {
                 if (!res.success) { ticketModal.errors = res.message; return; }
-                const ticket = formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId);
-                this._enrichSprintWithAddedTicket(data.sprintId, ticket);
+                const ticket = formatTicket(res.data.createdTicket, this.ticketTypeOptions, data.ticketTypeId);
+                const updatedSprint = formatSprint(res.data.updatedSprint);
+                this._enrichSprintWithAddedTicket(updatedSprint, ticket);
                 this.showSprintTicketModal = false;
                 this._showSuccess('Ticket added to sprint');
             })
@@ -733,10 +734,12 @@ export default class ManageBacklog extends LightningElement {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 const movedTicket = this.backlogTickets.find(t => t.Id === ticketId);
                 this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
-                if (movedTicket) {
+                const updatedSprint = formatSprint(res.data?.updatedSprint);
+
+                if (movedTicket && updatedSprint) {
                     const sprint = this.sprints.find(s => s.Id === sprintId);
                     if (sprint && sprint.isExpanded) {
-                        this._enrichSprintWithAddedTicket(sprintId, { ...movedTicket, isSelected: false });
+                        this._enrichSprintWithAddedTicket(updatedSprint, { ...movedTicket, isSelected: false });
                     }
                 }
                 this._showSuccess('Ticket moved to sprint');
@@ -837,11 +840,11 @@ export default class ManageBacklog extends LightningElement {
     }
 
     // -- Sprint enrichers (single sprint) --
-    _enrichSprintWithAddedTicket(sprintId, ticket) {
+    _enrichSprintWithAddedTicket(updatedSprint, ticket) {
         this.sprints = this.sprints.map(s => {
-            if (s.Id !== sprintId) return s;
+            if (s.Id !== updatedSprint.Id) return s;
             const tickets = [...s.tickets, ticket];
-            return { ...s, tickets, hasTickets: true, totalStoryPoints: (s.totalStoryPoints || 0) + (ticket.StoryPoint__c || 0) };
+            return { ...s, tickets, hasTickets: true, totalStoryPoints: updatedSprint.totalStoryPoints };
         });
     }
 

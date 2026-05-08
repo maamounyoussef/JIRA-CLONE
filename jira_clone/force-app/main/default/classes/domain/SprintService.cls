@@ -92,11 +92,12 @@ public with sharing class SprintService {
         }
     }
 
-    public static void increaseTotalStoryPoint(String sprintId, Decimal totalStoryPoint) {
+    public static Sprint__c increaseTotalStoryPoint(String sprintId, Decimal totalStoryPoint) {
         try {
             Sprint__c sprint = findSprintById(sprintId);
             sprint.TotalStoryPoint__c += totalStoryPoint;
             updateSprint(sprint);
+            return sprint;
         } catch (Exception ex) {
             throw new ServiceException('Error updating total story point: ' + ex.getMessage());
         }

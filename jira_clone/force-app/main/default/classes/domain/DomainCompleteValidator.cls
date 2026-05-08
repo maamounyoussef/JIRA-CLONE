@@ -48,6 +48,16 @@ public with sharing class DomainCompleteValidator {
         }
     }
 
+    /**
+     * Ticket cannot be moved from one sprint to another sprint.
+     * It can only be moved from backlog (null) to a sprint, or from a sprint to backlog (null).
+     */
+    public static void requireTicketNotInDifferentSprint(Ticket__c ticket, String targetSprintId) {
+        if (String.isNotBlank(ticket.Sprint__c) && ticket.Sprint__c != targetSprintId) {
+            throw new ServiceException('Ticket cannot be moved from one sprint to another sprint');
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // WORKFLOW TRANSITION — invariants
     // ═══════════════════════════════════════════════════════════════
