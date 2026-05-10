@@ -106,10 +106,11 @@ public with sharing class ManageTicketTrackingController {
 
             List<WorkflowTransition__c> transitions = WorkflowService.getTransitionsByWorkflow(workflow.Id);
 
-            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatus, toStatus, transitions);
+            ChangeTicketStateDto result = TicketService.changeTicketState(ticket, fromStatus, toStatus, transitions);
 
             Map<String, Object> data = new Map<String, Object>{
-                'isEndStatus' => isEndStatus
+                'isEndStatus' => result.isEndStatus,
+                'updatedSprint' => result.updatedSprint
             };
 
             return new APIResponse(true, 'Ticket state changed successfully', data);

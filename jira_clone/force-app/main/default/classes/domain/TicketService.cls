@@ -45,14 +45,13 @@ public with sharing class TicketService {
 
             if (String.isBlank(ticket.Priority__c)) ticket.Priority__c = 'Medium';
 
+            Status__c status;
             if (String.isBlank(ticket.CurrentState__c)) {
-                ticket.CurrentState__c = getTodoStatus(projectId).Id;
+                status = StatusService.getStartStatus(projectId);
             } else {
-                List<Status__c> existing = [SELECT Id FROM Status__c WHERE Id = :ticket.CurrentState__c LIMIT 1];
-                if (existing.isEmpty()) {
-                    ticket.CurrentState__c = getTodoStatus(projectId).Id;
-                }
+                status = StatusService.findStatus(ticket.CurrentState__c);
             }
+            ticket.CurrentState__c = status.Id;
 
             ticket.RecordStatus__c = 'active';
             insert ticket;
@@ -60,8 +59,12 @@ public with sharing class TicketService {
             Sprint__c updatedSprint = null;
             if(!String.isBlank(ticket.Sprint__c))
             {
-               updatedSprint = SprintService.increaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
-                 return new CreateTicketResponse(ticket, updatedSprint);
+                
+                if (DomainCompleteValidator.isEndStatus(status)) 
+                    updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c,ticket.StoryPoint__c);  
+                else 
+                    updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c,0);
+                return new CreateTicketResponse(ticket, updatedSprint);
             }
             return new CreateTicketResponse(ticket);
         } catch (DmlException dex) {
@@ -69,17 +72,6 @@ public with sharing class TicketService {
         } catch (Exception ex) {
             throw new ServiceException('Error creating ticket: ' + ex.getMessage());
         }
-    }
-
-    private static Status__c getTodoStatus(String projectId) {
-        List<Status__c> statuses = [
-            SELECT Id, Name
-            FROM Status__c
-            WHERE Project__c = :projectId AND Name = 'Todo'
-            LIMIT 1
-        ];
-        if (statuses.isEmpty()) throw new ServiceException('Todo status not found for project: ' + projectId);
-        return statuses[0];
     }
 
     public static Ticket__c updateTicket(Ticket__c ticket) {
@@ -108,7 +100,11 @@ public with sharing class TicketService {
             ticket.RecordStatus__c = 'delete';
             updateTicket(ticket);
             if (String.isNotBlank(ticket.Sprint__c)) {
-                return SprintService.decreaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
+                Status__c status = StatusService.findStatus(ticket.CurrentState__c);
+                if(DomainCompleteValidator.isEndStatus(status))
+                    return SprintService.decreaseTotalAndEndedStoryPoints(ticket.Sprint__c, ticket.StoryPoint__c, ticket.StoryPoint__c);
+                else 
+                    return SprintService.decreaseTotalAndEndedStoryPoints(ticket.Sprint__c, ticket.StoryPoint__c, 0);
             }
             return null;
         } catch (DmlException dex) {
@@ -117,7 +113,7 @@ public with sharing class TicketService {
             throw new ServiceException('Error deleting ticket: ' + ex.getMessage());
         }
     }
-
+        
     public static List<Sprint__c> deleteTickets(List<Ticket__c> tickets) {
         try {
             if (tickets.isEmpty()) return new List<Sprint__c>();
@@ -125,17 +121,30 @@ public with sharing class TicketService {
             for (Ticket__c t : tickets) t.RecordStatus__c = 'delete';
             update tickets;
 
-            Map<String, Decimal> sprintStoryPointMap = new Map<String, Decimal>();
+            Map<String, Decimal> sprintTotalStoryPointMap = new Map<String, Decimal>();
+            Map<String, Decimal> sprintEndedStoryPointMap = new Map<String, Decimal>();
+
             for (Ticket__c t : tickets) {
                 if (String.isNotBlank(t.Sprint__c)) {
-                    Decimal current = sprintStoryPointMap.containsKey(t.Sprint__c) ? sprintStoryPointMap.get(t.Sprint__c) : 0;
-                    sprintStoryPointMap.put(t.Sprint__c, current + (t.StoryPoint__c != null ? t.StoryPoint__c : 0));
+                    Decimal storyPoints = t.StoryPoint__c != null ? t.StoryPoint__c : 0;
+
+                    Decimal currentTotal = sprintTotalStoryPointMap.containsKey(t.Sprint__c) ? sprintTotalStoryPointMap.get(t.Sprint__c) : 0;
+                    sprintTotalStoryPointMap.put(t.Sprint__c, currentTotal + storyPoints);
+
+                    Decimal currentEnded = sprintEndedStoryPointMap.containsKey(t.Sprint__c) ? sprintEndedStoryPointMap.get(t.Sprint__c) : 0;
+                    Status__c status = StatusService.findStatus(t.CurrentState__c);
+                    Decimal endedPoints = DomainCompleteValidator.isEndStatus(status) ? storyPoints : 0;
+                    sprintEndedStoryPointMap.put(t.Sprint__c, currentEnded + endedPoints);
                 }
             }
 
             List<Sprint__c> updatedSprints = new List<Sprint__c>();
-            for (String sprintId : sprintStoryPointMap.keySet()) {
-                Sprint__c updated = SprintService.decreaseTotalStoryPoint(sprintId, sprintStoryPointMap.get(sprintId));
+            for (String sprintId : sprintTotalStoryPointMap.keySet()) {
+                Sprint__c updated = SprintService.decreaseTotalAndEndedStoryPoints(
+                    sprintId,
+                    sprintTotalStoryPointMap.get(sprintId),
+                    sprintEndedStoryPointMap.get(sprintId)
+                );
                 updatedSprints.add(updated);
             }
 
@@ -223,7 +232,13 @@ public with sharing class TicketService {
     public static Sprint__c removeTicketSprint(Ticket__c ticket) {
         try {
             if (String.isNotBlank(ticket.Sprint__c)) {
-                Sprint__c updated = SprintService.decreaseTotalStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c);
+                Sprint__c updated;
+                Status__c status = StatusService.findStatus(ticket.CurrentState__c);
+                if (DomainCompleteValidator.isEndStatus(status))
+                    updated = SprintService.decreaseTotalAndEndedStoryPoints(ticket.Sprint__c, ticket.StoryPoint__c, ticket.StoryPoint__c);
+                else
+                    updated = SprintService.decreaseTotalAndEndedStoryPoints(ticket.Sprint__c, ticket.StoryPoint__c, 0);
+
                 ticket.Sprint__c = null;
                 updateTicket(ticket);
                 return updated;
@@ -239,8 +254,12 @@ public with sharing class TicketService {
             DomainCompleteValidator.requireTicketNotInDifferentSprint(ticket, sprint.Id);
             ticket.Sprint__c = sprint.Id;
             updateTicket(ticket);
-            Sprint__c updated = SprintService.increaseTotalStoryPoint(sprint.Id, ticket.StoryPoint__c);
-            return updated;
+            Status__c status = StatusService.findStatus(ticket.CurrentState__c);
+            System.debug('status '+status);
+            if(DomainCompleteValidator.isEndStatus(status))
+                return SprintService.increaseTotalAndEndedStoryPoint(sprint.Id, ticket.StoryPoint__c,ticket.StoryPoint__c);
+            else 
+                return SprintService.increaseTotalAndEndedStoryPoint(sprint.Id, ticket.StoryPoint__c,0);
         } catch (Exception ex) {
             throw new ServiceException('Error moving ticket to sprint: ' + ex.getMessage());
         }
@@ -497,12 +516,20 @@ public with sharing class TicketService {
     // WORKFLOW STATE CHANGE
     // ═══════════════════════════════════════════════════════════════
 
-    public static Boolean changeTicketState(Ticket__c ticket, Status__c fromStatus, Status__c toStatus, List<WorkflowTransition__c> transitions) {
+    public static ChangeTicketStateDto changeTicketState(Ticket__c ticket, Status__c fromStatus, Status__c toStatus, List<WorkflowTransition__c> transitions) {
         try {
             DomainCompleteValidator.requireTransitionAllowed(fromStatus.Id, toStatus.Id, transitions);
             ticket.CurrentState__c = toStatus.Id;
             updateTicket(ticket);
-            return DomainCompleteValidator.isEndStatus(toStatus);
+
+            Boolean isEndStatus = DomainCompleteValidator.isEndStatus(toStatus);
+            Sprint__c updatedSprint = null;
+
+            if (isEndStatus && String.isNotBlank(ticket.Sprint__c)) {
+                updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, 0,ticket.StoryPoint__c);
+            }
+
+            return new ChangeTicketStateDto(isEndStatus, updatedSprint);
         } catch (Exception ex) {
             throw new ServiceException('Error changing ticket state: ' + ex.getMessage());
         }

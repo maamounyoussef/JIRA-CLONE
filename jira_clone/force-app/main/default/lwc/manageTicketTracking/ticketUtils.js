@@ -52,3 +52,39 @@ export function enrichTicketsWithAssigneeName(tickets, members) {
         assigneeName: getMemberName(t.AssignedTo__c, members)
     }));
 }
+
+/**
+ * Returns a new tickets array with the target ticket's state fields updated.
+ */
+export function enrichTicketsWithStateChange(tickets, ticketId, toStatusId, statuses, isEndStatus) {
+    return (tickets || []).map(ticket =>
+        ticket.Id === ticketId
+            ? {
+                ...ticket,
+                CurrentState__c: toStatusId,
+                currentStatuses: (statuses || []).find(s => s.statusId === toStatusId) || null,
+                isEndStatus:     isEndStatus || false
+              }
+            : ticket
+    );
+}
+
+/**
+ * Handles the end-status transition: flips the ticket's isEndStatus flag and
+ * forces a re-render in the columns, and enriches the sprint with the latest
+ * TotalEndedStoryPoint__c. Returns the new { columns, sprint }.
+ */
+export function enrichSprintWithEndedTicket(sprint, columns, ticketId, updatedSprint) {
+    const newColumns = (columns || []).map(col => ({
+        ...col,
+        tickets: col.tickets.map(t =>
+            t.Id === ticketId
+                ? { ...t, isEndStatus: true, _renderKey: t.Id + '_' + Date.now() }
+                : t
+        )
+    }));
+    const newSprint = updatedSprint
+        ? { ...sprint, TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c }
+        : sprint;
+    return { columns: newColumns, sprint: newSprint };
+}

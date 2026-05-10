@@ -317,6 +317,7 @@ public with sharing class ManageBacklogController {
             if (String.isNotBlank(epicId)) ticket.Epic__c = epicId;
             if (String.isNotBlank(sprintId)) ticket.Sprint__c = sprintId;
             if (String.isNotBlank(priority)) ticket.Priority__c = priority;
+            if (String.isNotBlank(currentStateId)) ticket.CurrentState__c = currentStateId;
 
             CreateTicketResponse createTicketResponse = TicketService.createTicket(ticket);
             Map<String, Object> responseData = new Map<String, Object>{
@@ -405,10 +406,11 @@ public with sharing class ManageBacklogController {
 
             List<WorkflowTransition__c> transitions = WorkflowService.getTransitionsByWorkflow(workflow.Id);
 
-            Boolean isEndStatus = TicketService.changeTicketState(ticket, fromStatus, toStatus, transitions);
+            ChangeTicketStateDto result = TicketService.changeTicketState(ticket, fromStatus, toStatus, transitions);
 
             Map<String, Object> data = new Map<String, Object>{
-                'isEndStatus' => isEndStatus
+                'isEndStatus' => result.isEndStatus,
+                'updatedSprint' => result.updatedSprint
             };
 
             return new APIResponse(true, 'Ticket state changed successfully', data);

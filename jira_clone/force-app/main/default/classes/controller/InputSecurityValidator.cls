@@ -5,8 +5,8 @@
 public with sharing class InputSecurityValidator {
 
     public static void validateTicketDeletionLimit(List<String> ticketIds) {
-        if (ticketIds != null && ticketIds.size() > 40) {
-            throw new InputSecurityException('Cannot delete more than 40 tickets at a time');
+        if (ticketIds != null && ticketIds.size() > 24) {
+            throw new InputSecurityException('Cannot delete more than 24 tickets at a time');
         }
     }
 

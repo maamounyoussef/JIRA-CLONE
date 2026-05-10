@@ -9,7 +9,8 @@ import createTicketLink             from '@salesforce/apex/ManageTicketTrackingC
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
-import { buildColumns, enrichTicketsWithTypeName, enrichTicketsWithAssigneeName } from './ticketUtils';
+import { buildColumns, enrichTicketsWithTypeName, enrichTicketsWithAssigneeName,
+         enrichTicketsWithStateChange, enrichSprintWithEndedTicket } from './ticketUtils';
 import { getValidTargetStatusIds, findTransitionId } from './workflowUtils';
 import { formatSprintDateRange }                            from './sprintUtils';
 
@@ -142,25 +143,18 @@ export default class ManageTicketTracking extends LightningElement {
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 const isEndStatus = res.data && res.data.isEndStatus;
-                this._sprintTickets = this._sprintTickets.map(ticket =>
-                    ticket.Id === ticketId
-                        ? {
-                            ...ticket,
-                            CurrentState__c: toStatusId,
-                            currentStatuses: this._statuses.find(s => s.statusId === toStatusId) || null,
-                            isEndStatus:     isEndStatus || false
-                          }
-                        : ticket
+
+                this._sprintTickets = enrichTicketsWithStateChange(
+                    this._sprintTickets, ticketId, toStatusId, this._statuses, isEndStatus
                 );
+
                 if (isEndStatus) {
-                    this.columns = this.columns.map(col => ({
-                        ...col,
-                        tickets: col.tickets.map(t =>
-                            t.Id === ticketId
-                                ? { ...t, isEndStatus: true, _renderKey: t.Id + '_' + Date.now() }
-                                : t
-                        )
-                    }));
+                    const updatedSprint = res.data && res.data.updatedSprint;
+                    const enriched = enrichSprintWithEndedTicket(
+                        this._sprint, this.columns, ticketId, updatedSprint
+                    );
+                    this.columns = enriched.columns;
+                    this._sprint = enriched.sprint;
                 }
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })

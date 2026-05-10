@@ -14,6 +14,8 @@ public with sharing class SprintService {
 
     public static Sprint__c createSprint(Sprint__c sprint) {
         try {
+            sprint.TotalStoryPoint__c = 0;
+            sprint.TotalEndedStoryPoint__c = 0;
             insert sprint;
             return sprint;
         } catch (DmlException dex) {
@@ -92,26 +94,31 @@ public with sharing class SprintService {
         }
     }
 
-    public static Sprint__c increaseTotalStoryPoint(String sprintId, Decimal totalStoryPoint) {
+    public static Sprint__c increaseTotalAndEndedStoryPoint(String sprintId, Decimal totalStoryPoints, Decimal totalEndedStoryPoints)
+    {
         try {
+            if (String.isBlank(sprintId) || totalStoryPoints == null || totalEndedStoryPoints == null) return null;
             Sprint__c sprint = findSprintById(sprintId);
-            sprint.TotalStoryPoint__c += totalStoryPoint;
+            sprint.TotalStoryPoint__c += totalStoryPoints;
+            sprint.TotalEndedStoryPoint__c += totalEndedStoryPoints;
             updateSprint(sprint);
             return sprint;
         } catch (Exception ex) {
-            throw new ServiceException('Error updating total story point: ' + ex.getMessage());
+            throw new ServiceException('Error updating  story point: ' + ex.getMessage());
         }
     }
 
-    public static Sprint__c decreaseTotalStoryPoint(String sprintId, Decimal totalStoryPoint) {
+    public static Sprint__c decreaseTotalAndEndedStoryPoints(String sprintId, Decimal totalStoryPoints, Decimal totalEndedStoryPoints)
+    {
         try {
-            if (String.isBlank(sprintId) || totalStoryPoint == null) return null;
+            if (String.isBlank(sprintId) || totalStoryPoints == null || totalEndedStoryPoints == null) return null;
             Sprint__c sprint = findSprintById(sprintId);
-            sprint.TotalStoryPoint__c -= totalStoryPoint;
+            sprint.TotalStoryPoint__c -= totalStoryPoints;
+            sprint.TotalEndedStoryPoint__c -= totalEndedStoryPoints;
             updateSprint(sprint);
             return sprint;
         } catch (Exception ex) {
-            throw new ServiceException('Error updating total story point: ' + ex.getMessage());
+            throw new ServiceException('Error updating  story point: ' + ex.getMessage());
         }
     }
 }

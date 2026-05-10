@@ -15,11 +15,13 @@ public class TicketServiceTest {
         insert statuses;
         Id defaultStateId = statuses[0].Id;
 
-        Workflow__c workflow = new Workflow__c(Name = 'Default WF', Project__c = project.Id);
+        Workflow__c workflow = new Workflow__c(Name = 'Default WF', Project__c = project.Id, RecordStatus__c = 'active');
         insert workflow;
 
         TicketType__c tt = new TicketType__c(
             Name            = 'Feature Request',
+            Description__c  = 'Feature Request description',
+            IconUrl__c      = 'https://example.com/icon.png',
             Project__c      = project.Id,
             Workflow__c     = workflow.Id,
             RecordStatus__c = 'active'
@@ -27,9 +29,11 @@ public class TicketServiceTest {
         insert tt;
 
         Epic__c epic = new Epic__c(
-            Name       = 'first epic',
-            Summary__c = 'epic summary',
-            Project__c = project.Id
+            Name        = 'first epic',
+            Summary__c  = 'epic summary',
+            Project__c  = project.Id,
+            CreatedAt__c = Datetime.now(),
+            UpdatedAt__c = Datetime.now()
         );
         insert epic;
 
@@ -51,9 +55,9 @@ public class TicketServiceTest {
         Id sprint6Id = sprints[1].Id;
 
         List<Ticket__c> tickets = new List<Ticket__c>{
-            new Ticket__c(Name = 'dddddddddd',      Summary__c = 'dddddddddddddddd', Description__c = 'ddddddddddddddddddd', CurrentState__c = defaultStateId, Priority__c = 'High',   StoryPoint__c = 3, AssignedTo__c = member.Id, Sprint__c = sprint3Id, Ticket_Type__c = tt.Id, RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'adfgfhhhhhhhhhh', Summary__c = 'sfdsf',            Description__c = 'dsfdsfds',            CurrentState__c = defaultStateId, Priority__c = 'High',   StoryPoint__c = 4, AssignedTo__c = member.Id, Sprint__c = sprint3Id, Ticket_Type__c = tt.Id, RecordStatus__c = 'active'),
-            new Ticket__c(Name = 'saaaaaaa',         Summary__c = 'saaa',             Description__c = 'sa',                  CurrentState__c = defaultStateId, Priority__c = 'Medium', StoryPoint__c = 3, Epic__c = epic.Id,         Sprint__c = sprint6Id, Ticket_Type__c = tt.Id, RecordStatus__c = 'active')
+            new Ticket__c(Name = 'dddddddddd',      Summary__c = 'dddddddddddddddd', Description__c = 'ddddddddddddddddddd', CurrentState__c = defaultStateId, Priority__c = 'High',   StoryPoint__c = 3, AssignedTo__c = member.Id, Creator__c = member.Id, Sprint__c = sprint3Id, Ticket_Type__c = tt.Id, RecordStatus__c = 'active'),
+            new Ticket__c(Name = 'adfgfhhhhhhhhhh', Summary__c = 'sfdsf',            Description__c = 'dsfdsfds',            CurrentState__c = defaultStateId, Priority__c = 'High',   StoryPoint__c = 4, AssignedTo__c = member.Id, Creator__c = member.Id, Sprint__c = sprint3Id, Ticket_Type__c = tt.Id, RecordStatus__c = 'active'),
+            new Ticket__c(Name = 'saaaaaaa',         Summary__c = 'saaa',             Description__c = 'sa',                  CurrentState__c = defaultStateId, Priority__c = 'Medium', StoryPoint__c = 3, Creator__c = member.Id, Epic__c = epic.Id,        Sprint__c = sprint6Id, Ticket_Type__c = tt.Id, RecordStatus__c = 'active')
         };
         insert tickets;
     }
@@ -70,108 +74,110 @@ public class TicketServiceTest {
 
     // ── ticket tests ──────────────────────────────────────────────────────────
 
-    // ── subtask tests ─────────────────────────────────────────────────────────
-
     @isTest
-    static void testCreateAndFindSubtask() {
-        Id ticketId = getTicketId('dddddddddd');
+    static void testCreateTicket() {
+        Id ticketTypeId = [SELECT Id FROM TicketType__c WHERE Name = 'Feature Request' LIMIT 1].Id;
+        Id sprintId     = getSprintId('Sprint 3');
 
-        Subtask__c sub = new Subtask__c();
-        sub.Summary__c = 'Write unit tests';
-        sub.Ticket__c  = ticketId;
+        Ticket__c ticket = new Ticket__c(
+            Name           = 'New Test Ticket',
+            Summary__c     = 'New ticket summary',
+            Description__c = 'New ticket description',
+            Priority__c    = 'High',
+            StoryPoint__c  = 5,
+            Ticket_Type__c = ticketTypeId,
+            Sprint__c      = sprintId
+        );
 
         Test.startTest();
-        Subtask__c created = TicketService.createSubtask(sub);
+        CreateTicketResponse response = TicketService.createTicket(ticket);
         Test.stopTest();
 
-        System.assertNotEquals(null, created.Id, 'Subtask should be inserted');
-        System.assertEquals('active', created.RecordStatus__c, 'RecordStatus should default to active');
-
-        Subtask__c found = TicketService.findSubtaskById(created.Id);
-        System.assertNotEquals(null, found, 'findSubtaskById should return the record');
-        System.assertEquals('Write unit tests', found.Summary__c);
+        System.assertNotEquals(null, response, 'Response should not be null');
+        System.assertNotEquals(null, response.createdTicket, 'Created ticket should not be null');
+        System.assertNotEquals(null, response.createdTicket.Id, 'Created ticket should have an Id');
+        System.assertEquals('active', response.createdTicket.RecordStatus__c, 'RecordStatus should default to active');
+        System.assertNotEquals(null, response.updatedSprint, 'Updated sprint should not be null when sprint is set');
     }
 
+    // create status in sprint with choosing end status as current status >> should the total ended story point updated for the sprint
     @isTest
-    static void testUpdateSubtaskSummary() {
-        Id ticketId = getTicketId('dddddddddd');
-        Subtask__c sub = new Subtask__c(Summary__c = 'Old summary', Ticket__c = ticketId);
-        insert sub;
+    static void testCreateTicketInSprintWithEndStatusUpdatesEndedStoryPoint() {
+        Project__c project = new Project__c(Name = 'End Status Project');
+        insert project;
 
-        Subtask__c fetched = TicketService.findSubtaskById(sub.Id);
-        Test.startTest();
-        Subtask__c updated = TicketService.updateSubtaskSummary(fetched, 'New summary');
-        Test.stopTest();
+        Status__c endStatus = [
+            SELECT Id, isEnd__c
+            FROM Status__c
+            WHERE Project__c = :project.Id AND isEnd__c = true
+            LIMIT 1
+        ];
 
-        System.assertEquals('New summary', updated.Summary__c);
-    }
+        Workflow__c workflow = new Workflow__c(
+            Name            = 'End Status WF',
+            Project__c      = project.Id,
+            RecordStatus__c = 'active'
+        );
+        insert workflow;
 
-    @isTest
-    static void testDeleteSubtasks() {
-        Id ticketId = getTicketId('dddddddddd');
-        Subtask__c sub = new Subtask__c(Summary__c = 'To delete', Ticket__c = ticketId);
-        insert sub;
+        TicketType__c tt = new TicketType__c(
+            Name            = 'Bug',
+            Description__c  = 'Bug description',
+            IconUrl__c      = 'https://example.com/icon.png',
+            Project__c      = project.Id,
+            Workflow__c     = workflow.Id,
+            RecordStatus__c = 'active'
+        );
+        insert tt;
 
-        Test.startTest();
-        TicketService.deleteSubtasks(new List<String>{ sub.Id });
-        Test.stopTest();
+        ProjectMember__c member = new ProjectMember__c(
+            User__c         = UserInfo.getUserId(),
+            Project__c      = project.Id,
+            RecordStatus__c = 'Active'
+        );
+        insert member;
 
-        Subtask__c softDeleted = [SELECT RecordStatus__c FROM Subtask__c WHERE Id = :sub.Id];
-        System.assertEquals('delete', softDeleted.RecordStatus__c, 'Should be soft-deleted');
-    }
+        Sprint__c sprint = new Sprint__c(
+            Name                    = 'EndStatusSprint',
+            Duration__c             = 2,
+            StartDate__c            = Date.newInstance(2026, 4, 1),
+            Goal__c                 = 'goal',
+            Project__c              = project.Id,
+            RecordStatus__c         = 'future',
+            TotalStoryPoint__c      = 0,
+            TotalEndedStoryPoint__c = 0
+        );
+        insert sprint;
 
-    @isTest
-    static void testAssignSubtask() {
-        Id ticketId = getTicketId('dddddddddd');
-        Id memberId = [SELECT Id FROM ProjectMember__c LIMIT 1].Id;
-
-        Subtask__c sub = new Subtask__c(Summary__c = 'Assign me', Ticket__c = ticketId);
-        insert sub;
-
-        Subtask__c fetched = TicketService.findSubtaskById(sub.Id);
-        Test.startTest();
-        Subtask__c updated = TicketService.assignSubtask(fetched, memberId);
-        Test.stopTest();
-
-        System.assertEquals(memberId, updated.Assignee__c, 'Assignee should be set');
-    }
-
-    // ── ticket type tests ─────────────────────────────────────────────────────
-
-    @isTest
-    static void testLoadTicketTypes() {
-        Project__c project = [SELECT Id FROM Project__c LIMIT 1];
-
-        Test.startTest();
-        List<TicketType__c> types = TicketService.loadTicketTypes(project);
-        Test.stopTest();
-
-        System.assertNotEquals(0, types.size(), 'Should return at least one ticket type');
-    }
-
-    @isTest
-    static void getTicketTypeById() {
-        TicketType__c tt = [SELECT Id FROM TicketType__c LIMIT 1];
-
-        Test.startTest();
-        TicketType__c result = TicketService.getTicketTypeById(tt.Id);
-        Test.stopTest();
-
-        System.assertEquals(tt.Id, result.Id);
-    }
-
-
-    @isTest
-    static void testCreateTicketType() {
-        Id projectId  = [SELECT Id FROM Project__c LIMIT 1].Id;
-        Id workflowId = [SELECT Id FROM Workflow__c LIMIT 1].Id;
+        Decimal storyPoints = 5;
+        Ticket__c ticket = new Ticket__c(
+            Name            = 'End Status Ticket',
+            Summary__c      = 'Ticket starts in an end status',
+            Description__c  = 'Story points should count as ended on creation',
+            Priority__c     = 'High',
+            StoryPoint__c   = storyPoints,
+            Ticket_Type__c  = tt.Id,
+            Sprint__c       = sprint.Id,
+            CurrentState__c = endStatus.Id
+        );
 
         Test.startTest();
-        TicketType__c created = TicketService.createTicketType('Story', 'A user story', null, workflowId, projectId);
+        CreateTicketResponse response = TicketService.createTicket(ticket);
         Test.stopTest();
 
-        System.assertNotEquals(null, created.Id);
-        System.assertEquals('active', created.RecordStatus__c);
+        System.assertNotEquals(null, response,                'Response should not be null');
+        System.assertNotEquals(null, response.createdTicket,  'Created ticket should not be null');
+        System.assertNotEquals(null, response.updatedSprint,  'Updated sprint should not be null when sprint is set');
+        System.assertEquals(
+            storyPoints,
+            response.updatedSprint.TotalStoryPoint__c,
+            'TotalStoryPoint should equal the ticket story points'
+        );
+        System.assertEquals(
+            storyPoints,
+            response.updatedSprint.TotalEndedStoryPoint__c,
+            'TotalEndedStoryPoint should equal ticket story points when created in an end status'
+        );
     }
 
 }

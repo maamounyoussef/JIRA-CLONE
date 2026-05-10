@@ -122,7 +122,7 @@ export default class ManageBacklog extends LightningElement {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 this.backlogTickets     = this.backlogTickets.filter(t => !ids.includes(t.Id));
                 this._selectedTicketIds = new Set();
-                const updatedSprints = res.data?.updatedSprints || [];
+                const updatedSprints = (res.data?.updatedSprints || []).map(formatSprint);
                 this._enrichSprintsWithoutTickets(ids, updatedSprints);
                 this._showSuccess('Tickets deleted');
             })
@@ -161,7 +161,7 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
                 this._selectedTicketIds.delete(ticketId);
                 this._selectedTicketIds = new Set(this._selectedTicketIds);
-                const updatedSprint = res.data?.updatedSprint;
+                const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
                 this._enrichSprintsWithoutTicket(ticketId, updatedSprint);
                 this._showSuccess('Ticket deleted');
             })
@@ -224,7 +224,12 @@ export default class ManageBacklog extends LightningElement {
                     t.Id === ticketId ? { ...t, CurrentState__c: toStatusId } : t
                 );
                 this._enrichSprintsWithTicketState(ticketId, toStatusId);
-                if (res.data && res.data.isEndStatus) {
+                const isEndStatus   = res.data?.isEndStatus;
+                const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
+                if (isEndStatus) {
+                    if (updatedSprint) {
+                        this._enrichSprintWithStoryPoints(updatedSprint);
+                    }
                     this.dispatchEvent(new ShowToastEvent({
                         title  : 'Final Status Reached',
                         message: 'This ticket has no further transitions available.',
@@ -751,8 +756,8 @@ export default class ManageBacklog extends LightningElement {
         moveTicketToBacklog({ ticketId: ticket.Id })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                const updatedSprint = res.data?.updatedSprint || [];
-                this._enrichSprintsWithoutTicket(ticket.Id,updatedSprint);
+                const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
+                this._enrichSprintsWithoutTicket(ticket.Id, updatedSprint);
                 this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
                 this._showSuccess('Ticket moved to backlog');
             })
@@ -844,7 +849,25 @@ export default class ManageBacklog extends LightningElement {
         this.sprints = this.sprints.map(s => {
             if (s.Id !== updatedSprint.Id) return s;
             const tickets = [...s.tickets, ticket];
-            return { ...s, tickets, hasTickets: true, totalStoryPoints: updatedSprint.totalStoryPoints };
+            return {
+                ...s,
+                tickets,
+                hasTickets        : true,
+                totalStoryPoints  : updatedSprint.totalStoryPoints,
+                endedStoryPoints  : updatedSprint.endedStoryPoints,
+                storyPointsPercent: updatedSprint.storyPointsPercent,
+            };
+        });
+    }
+
+    _enrichSprintWithStoryPoints(updatedSprint) {
+        this.sprints = this.sprints.map(s => {
+            if (s.Id !== updatedSprint.Id) return s;
+            return {
+                ...s,
+                totalStoryPoints: updatedSprint.totalStoryPoints,
+                endedStoryPoints: updatedSprint.endedStoryPoints
+            };
         });
     }
 
@@ -901,7 +924,9 @@ export default class ManageBacklog extends LightningElement {
                     ...s,
                     tickets,
                     hasTickets: tickets.length > 0,
-                    totalStoryPoints: updatedSprint.TotalStoryPoint__c
+                    totalStoryPoints: updatedSprint.totalStoryPoints,
+                    endedStoryPoints: updatedSprint.endedStoryPoints,
+                    storyPointsPercent: updatedSprint.storyPointsPercent
                 };
             }
             return { ...s, tickets, hasTickets: tickets.length > 0 };
@@ -923,7 +948,9 @@ export default class ManageBacklog extends LightningElement {
                     ...s,
                     tickets,
                     hasTickets: tickets.length > 0,
-                    totalStoryPoints: updatedSprint.TotalStoryPoint__c
+                    totalStoryPoints: updatedSprint.totalStoryPoints,
+                    endedStoryPoints: updatedSprint.endedStoryPoints,
+                    storyPointsPercent: updatedSprint.storyPointsPercent
                 };
             }
             return { ...s, tickets, hasTickets: tickets.length > 0 };
