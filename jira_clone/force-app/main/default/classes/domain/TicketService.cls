@@ -32,13 +32,7 @@ public with sharing class TicketService {
 
             if (String.isBlank(ticket.Creator__c)) {
                 String userId = UserInfo.getUserId();
-                List<ProjectMember__c> rows = [
-                    SELECT Id, User__c, Project__c, RecordStatus__c
-                    FROM ProjectMember__c
-                    WHERE User__c = :userId AND Project__c = :projectId AND RecordStatus__c != 'delete'
-                    LIMIT 1
-                ];
-                ProjectMember__c creator = rows.isEmpty() ? null : rows[0];
+                ProjectMember__c creator = ProjectService.findActiveMemberByUserAndProject(userId, projectId);
                 DomainCompleteValidator.requireCurrentUserMemberForProject(creator, userId);
                 ticket.Creator__c = creator.Id;
             }

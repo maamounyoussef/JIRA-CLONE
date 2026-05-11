@@ -48,6 +48,20 @@ public with sharing class ProjectService {
         }
     }
 
+    public static ProjectMember__c findActiveMemberByUserAndProject(String userId, String projectId) {
+        try {
+            List<ProjectMember__c> rows = [
+                SELECT Id, User__c, Project__c, RecordStatus__c
+                FROM ProjectMember__c
+                WHERE User__c = :userId AND Project__c = :projectId AND RecordStatus__c != 'delete'
+                LIMIT 1
+            ];
+            return rows.isEmpty() ? null : rows[0];
+        } catch (Exception ex) {
+            throw new ServiceException('Error finding project member: ' + ex.getMessage());
+        }
+    }
+
     public static List<ProjectMember__c> loadProjectMembers(Project__c project) {
         try {
                 return [

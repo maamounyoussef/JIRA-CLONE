@@ -1,0 +1,153 @@
+USECASE1 : CREATE TICKET 
+	CALLER PLACE : ManageBacklogPage
+	METHODID : TICKET-001
+	Class.Method: TicketController.createTicket
+	Signature: createTicket(name, summary, ticketTypeId, currentStateId, description, storyPoint, assignedToId, epicId, sprintId, priority) : APIResponse
+	Scenario 1: Create Ticket from Backlog
+		API Request:
+			POST /services/apexrest/tickets
+			Content-Type: application/json
+
+			{
+			  "name": "TICK-001",
+			  "summary": "Implement login validation",
+			  "ticketTypeId": "a01XXXXXXXXXXXX",
+			  "currentStateId": "a02XXXXXXXXXXXX",
+			  "description": "Add client-side validation for the login form",
+			  "storyPoint": 5,
+			  "assignedToId": "a03XXXXXXXXXXXX",
+			  "epicId": "a04XXXXXXXXXXXX",
+			  "sprintId": null,
+			  "priority": "Medium"
+			}
+			example Backend call:
+			TicketController.createTicket(
+			  "TICK-001", "Implement login validation", ticketTypeId,
+			  currentStateId, description, 5, assignedToId, epicId, 
+			  null,            // ← sprintId is null
+			  "Medium"
+			)
+			
+	Scenario 2: Create Ticket from Sprint
+		API Request:
+			POST /services/apexrest/tickets
+			Content-Type: application/json
+
+			{
+			  "name": "TICK-002",
+			  "summary": "Fix payment gateway timeout",
+			  "ticketTypeId": "a01XXXXXXXXXXXX",
+			  "currentStateId": "a02XXXXXXXXXXXX",
+			  "description": "Increase timeout threshold for the payment API",
+			  "storyPoint": 3,
+			  "assignedToId": "a03XXXXXXXXXXXX",
+			  "epicId": "a04XXXXXXXXXXXX",
+			  "sprintId": "a05XXXXXXXXXXXX",
+			  "priority": "High"
+			}
+			example BACKEND call: 
+			TicketController.createTicket(
+			  "TICK-002", "Fix payment gateway timeout", ticketTypeId,
+			  currentStateId, description, 3, assignedToId, epicId,
+			  "a05XXXXXXXXXXXX",   // ← sprintId is provided
+			  "High"
+			)
+			
+		# Sequence Descriptions: 
+
+		## Sequence: Create Ticket from Backlog
+
+			**Participants:** Actor (User) → TicketController → DomainCorrectness → TicketService → TicketTypeService → ProjectService → DomainCompleteValidator → StatusService → Database
+
+			**Flow:**
+
+			1. **Actor** sends `POST /tickets` request with ticket fields (sprintId is `null`).
+			2. **TicketController.createTicket()** receives the request.
+			3. **TicketController** performs input validation:
+			   - Checks `name`, `summary`, `ticketTypeId` are not blank → returns `APIResponse(false, ...)` if any is missing.
+			4. **TicketController** → **DomainCorrectness**:
+			   - `requireTicketTypeExists(ticketTypeId)`
+			   - `requireOptionalProjectMemberActive(assignedToId)`
+			   - `requireOptionalEpicActive(epicId)`
+			   - `requireOptionalSprintExists(sprintId)` *(skipped since sprintId is null)*
+			5. **TicketController** builds the `Ticket__c` SObject from the input parameters.
+			6. **TicketController** → **TicketService.createTicket(ticket)**.
+			7. **TicketService** → **TicketTypeService.getTicketTypeById(ticketTypeId)** → returns `TicketType__c` to resolve the `projectId`.
+			8. **TicketService** checks `ticket.Creator__c`:
+			   - Gets current `userId` via `UserInfo.getUserId()`.
+			   - Calls **ProjectService.findActiveMemberByUserAndProject(userId, projectId)**.
+			   - Calls **DomainCompleteValidator.requireCurrentUserMemberForProject(creator, userId)**.
+			   - Sets `ticket.Creator__c = creator.Id`.
+			9. **TicketService** sets defaults:
+			   - If `Priority__c` is blank → defaults to `'Medium'`.
+			10. **TicketService** resolves the status:
+				- If `CurrentState__c` is blank → **StatusService.getStartStatus(projectId)**.
+				- Else → **StatusService.findStatus(currentStateId)**.
+				- Assigns the resolved status to `ticket.CurrentState__c`.
+			11. **TicketService** sets `RecordStatus__c = 'active'`.
+			12. **TicketService** → **Database**: `insert ticket`.
+			13. **TicketService** checks `ticket.Sprint__c` → blank, so **the sprint update branch is skipped**.
+			14. **TicketService** returns `CreateTicketResponse(ticket)` *(no updated sprint)*.
+			15. **TicketController** wraps the response in a `Map` with `createdTicket` only (`updatedSprint` is null).
+			16. **TicketController** returns `APIResponse(true, 'Ticket created successfully', responseData)` to the actor.
+
+			**Post-condition:** A new active ticket exists in the backlog. No sprint is modified.
+
+		---
+
+		## Sequence: Create Ticket from Sprint
+
+			**Participants:** Actor (User) → TicketController → DomainCorrectness → TicketService → TicketTypeService → ProjectService → DomainCompleteValidator → StatusService → SprintService → Database
+
+			**Flow:**
+
+			1. **Actor** sends `POST /tickets` request with ticket fields, **`sprintId` populated**.
+			2. **TicketController.createTicket()** receives the request.
+			3. **TicketController** performs input validation:
+			   - Checks `name`, `summary`, `ticketTypeId` are not blank.
+			4. **TicketController** → **DomainCorrectness**:
+			   - `requireTicketTypeExists(ticketTypeId)`
+			   - `requireOptionalProjectMemberActive(assignedToId)`
+			   - `requireOptionalEpicActive(epicId)`
+			   - **`requireOptionalSprintExists(sprintId)`** *(actually executes — confirms the sprint exists)*.
+			5. **TicketController** builds the `Ticket__c` SObject from the input parameters (including `Sprint__c`).
+			6. **TicketController** → **TicketService.createTicket(ticket)**.
+			7. **TicketService** → **TicketTypeService.getTicketTypeById(ticketTypeId)** → returns `TicketType__c` to resolve the `projectId`.
+			8. **TicketService** sets the creator:
+			   - Gets current `userId` via `UserInfo.getUserId()`.
+			   - Calls **ProjectService.findActiveMemberByUserAndProject(userId, projectId)**.
+			   - Calls **DomainCompleteValidator.requireCurrentUserMemberForProject(creator, userId)**.
+			   - Sets `ticket.Creator__c = creator.Id`.
+			9. **TicketService** sets defaults:
+			   - If `Priority__c` is blank → defaults to `'Medium'`.
+			10. **TicketService** resolves the status:
+				- If `CurrentState__c` is blank → **StatusService.getStartStatus(projectId)**.
+				- Else → **StatusService.findStatus(currentStateId)**.
+			11. **TicketService** sets `RecordStatus__c = 'active'`.
+			12. **TicketService** → **Database**: `insert ticket`.
+			13. **TicketService** checks `ticket.Sprint__c` → **populated, sprint update branch executes**:
+				- Calls **DomainCompleteValidator.isEndStatus(status)**:
+				  - **If true (status is an end status):**
+					- **SprintService.increaseTotalAndEndedStoryPoint(sprintId, storyPoint, storyPoint)** — increments both total and ended story points.
+				  - **If false (status is not an end status):**
+					- **SprintService.increaseTotalAndEndedStoryPoint(sprintId, storyPoint, 0)** — increments only total story points.
+				- Returns the `updatedSprint`.
+			14. **TicketService** returns `CreateTicketResponse(ticket, updatedSprint)`.
+			15. **TicketController** wraps the response in a `Map` containing both `createdTicket` and `updatedSprint`.
+			16. **TicketController** returns `APIResponse(true, 'Ticket created successfully', responseData)` to the actor.
+
+		**Post-condition:** A new active ticket exists, linked to the sprint. The sprint's `totalStoryPoint` is increased; if the ticket was created already in an end status, `endedStoryPoint` is also increased.
+
+	---
+
+	## Key Differences
+
+	The two flows are **identical from step 1 through step 12**. They diverge at step 13:
+
+	| Step | Backlog | Sprint |
+	|---|---|---|
+	| Pre-check sprint exists | Skipped (null) | Executes |
+	| `ticket.Sprint__c` field | Not set | Set |
+	| Sprint update branch (step 13) | Skipped | Executes — calls `SprintService.increaseTotalAndEndedStoryPoint` |
+	| Response payload | `createdTicket` only | `createdTicket` + `updatedSprint` |
+	| Post-condition | Ticket exists in backlog | Ticket exists + sprint story points updated |
