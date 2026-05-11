@@ -25,47 +25,59 @@ public with sharing class TicketService {
         }
     }
 
-    public static CreateTicketResponse createTicket(Ticket__c ticket) {
+    public static CreateTicketResponse createTicketWithoutSprint(Ticket__c ticket, TicketType__c ticketType) {
         try {
-            TicketType__c ticketType = getTicketTypeById(ticket.Ticket_Type__c);
-            String projectId = ticketType.Project__c;
-
-            if (String.isBlank(ticket.Creator__c)) {
-                String userId = UserInfo.getUserId();
-                ProjectMember__c creator = ProjectService.findActiveMemberByUserAndProject(userId, projectId);
-                DomainCompleteValidator.requireCurrentUserMemberForProject(creator, userId);
-                ticket.Creator__c = creator.Id;
-            }
-
-            if (String.isBlank(ticket.Priority__c)) ticket.Priority__c = 'Medium';
-
-            Status__c status;
-            if (String.isBlank(ticket.CurrentState__c)) {
-                status = StatusService.getStartStatus(projectId);
-            } else {
-                status = StatusService.findStatus(ticket.CurrentState__c);
-            }
-            ticket.CurrentState__c = status.Id;
-
-            ticket.RecordStatus__c = 'active';
+            prepareTicketForInsert(ticket, ticketType);
             insert ticket;
-
-            Sprint__c updatedSprint = null;
-            if(!String.isBlank(ticket.Sprint__c))
-            {
-                
-                if (DomainCompleteValidator.isEndStatus(status)) 
-                    updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c,ticket.StoryPoint__c);  
-                else 
-                    updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c,0);
-                return new CreateTicketResponse(ticket, updatedSprint);
-            }
             return new CreateTicketResponse(ticket);
         } catch (DmlException dex) {
             throw new ServiceException('DML error creating ticket: ' + dex.getMessage());
         } catch (Exception ex) {
             throw new ServiceException('Error creating ticket: ' + ex.getMessage());
         }
+    }
+
+    public static CreateTicketResponse createTicketWithSprint(Ticket__c ticket, TicketType__c ticketType) {
+        try {
+            Status__c status = prepareTicketForInsert(ticket, ticketType);
+            insert ticket;
+
+            Sprint__c updatedSprint;
+            if (DomainCompleteValidator.isEndStatus(status)) {
+                updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c, ticket.StoryPoint__c);
+            } else {
+                updatedSprint = SprintService.increaseTotalAndEndedStoryPoint(ticket.Sprint__c, ticket.StoryPoint__c, 0);
+            }
+            return new CreateTicketResponse(ticket, updatedSprint);
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error creating ticket: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error creating ticket: ' + ex.getMessage());
+        }
+    }
+
+    private static Status__c prepareTicketForInsert(Ticket__c ticket, TicketType__c ticketType) {
+        String projectId = ticketType.Project__c;
+
+        if (String.isBlank(ticket.Creator__c)) {
+            String userId = UserInfo.getUserId();
+            ProjectMember__c creator = ProjectService.findActiveMemberByUserAndProject(userId, projectId);
+            DomainCompleteValidator.requireCurrentUserMemberForProject(creator, userId);
+            ticket.Creator__c = creator.Id;
+        }
+
+        if (String.isBlank(ticket.Priority__c)) ticket.Priority__c = 'Medium';
+
+        Status__c status;
+        if (String.isBlank(ticket.CurrentState__c)) {
+            status = StatusService.getStartStatus(projectId);
+        } else {
+            status = StatusService.findStatus(ticket.CurrentState__c);
+        }
+        ticket.CurrentState__c = status.Id;
+
+        ticket.RecordStatus__c = 'active';
+        return status;
     }
 
     public static Ticket__c updateTicket(Ticket__c ticket) {

@@ -296,16 +296,15 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
-    public static APIResponse createTicket(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String sprintId, String priority) {
+    public static APIResponse createTicketFromBacklog(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String priority) {
         try {
             if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
 
-            DomainCorrectness.requireTicketTypeExists(ticketTypeId);
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
             DomainCorrectness.requireOptionalProjectMemberActive(assignedToId);
             DomainCorrectness.requireOptionalEpicActive(epicId);
-            DomainCorrectness.requireOptionalSprintExists(sprintId);
 
             Ticket__c ticket = new Ticket__c();
             ticket.Name = name;
@@ -315,11 +314,45 @@ public with sharing class ManageBacklogController {
             if (storyPoint != null) ticket.StoryPoint__c = storyPoint;
             if (String.isNotBlank(assignedToId)) ticket.AssignedTo__c = assignedToId;
             if (String.isNotBlank(epicId)) ticket.Epic__c = epicId;
-            if (String.isNotBlank(sprintId)) ticket.Sprint__c = sprintId;
             if (String.isNotBlank(priority)) ticket.Priority__c = priority;
             if (String.isNotBlank(currentStateId)) ticket.CurrentState__c = currentStateId;
 
-            CreateTicketResponse createTicketResponse = TicketService.createTicket(ticket);
+            CreateTicketResponse createTicketResponse = TicketService.createTicketWithoutSprint(ticket, ticketType);
+            Map<String, Object> responseData = new Map<String, Object>{
+                'createdTicket' => createTicketResponse.createdTicket
+            };
+            return new APIResponse(true, 'Ticket created successfully', responseData);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error creating ticket: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static APIResponse createTicketFromSprint(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String sprintId, String priority) {
+        try {
+            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
+            if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
+            if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
+            if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
+
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
+            DomainCorrectness.requireOptionalProjectMemberActive(assignedToId);
+            DomainCorrectness.requireOptionalEpicActive(epicId);
+            DomainCorrectness.requireOptionalSprintExists(sprintId);
+
+            Ticket__c ticket = new Ticket__c();
+            ticket.Name = name;
+            ticket.Summary__c = summary;
+            ticket.Ticket_Type__c = ticketTypeId;
+            ticket.Sprint__c = sprintId;
+            if (description != null) ticket.Description__c = description;
+            if (storyPoint != null) ticket.StoryPoint__c = storyPoint;
+            if (String.isNotBlank(assignedToId)) ticket.AssignedTo__c = assignedToId;
+            if (String.isNotBlank(epicId)) ticket.Epic__c = epicId;
+            if (String.isNotBlank(priority)) ticket.Priority__c = priority;
+            if (String.isNotBlank(currentStateId)) ticket.CurrentState__c = currentStateId;
+
+            CreateTicketResponse createTicketResponse = TicketService.createTicketWithSprint(ticket, ticketType);
             Map<String, Object> responseData = new Map<String, Object>{
                 'createdTicket' => createTicketResponse.createdTicket,
                 'updatedSprint' => createTicketResponse.updatedSprint

@@ -1,7 +1,8 @@
 import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadStyle } from 'lightning/platformResourceLoader';
-import createTicket          from '@salesforce/apex/ManageBacklogController.createTicket';
+import createTicketFromSprint          from '@salesforce/apex/ManageBacklogController.createTicketFromSprint';
+import createTicketFromBacklog          from '@salesforce/apex/ManageBacklogController.createTicketFromBacklog';
 import loadBacklogData       from '@salesforce/apex/ManageBacklogController.loadBacklogData';
 import loadBacklogTickets    from '@salesforce/apex/ManageBacklogController.loadBacklogTickets';
 import moveTicketToSprint    from '@salesforce/apex/ManageBacklogController.moveTicketToSprint';
@@ -394,7 +395,7 @@ export default class ManageBacklog extends LightningElement {
     handleSprintTicketCreate(event) {
         const data        = event.detail;
         const ticketModal = event.target;
-        createTicket(data)
+        createTicketFromSprint(data)
             .then(res => {
                 if (!res.success) { ticketModal.errors = res.message; return; }
                 const ticket = formatTicket(res.data.createdTicket, this.ticketTypeOptions, data.ticketTypeId);
@@ -409,7 +410,7 @@ export default class ManageBacklog extends LightningElement {
     handleBacklogTicketCreate(event) {
         const data        = event.detail;
         const ticketModal = event.target;
-        createTicket(data)
+        createTicketFromBacklog(data)
             .then(res => {
                 if (!res.success) { ticketModal.errors = res.message; return; }
                 this.backlogTickets         = [...this.backlogTickets, formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId)];
