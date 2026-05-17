@@ -117,20 +117,19 @@ export default class ManageBacklog extends LightningElement {
     // -- Bulk Delete --
     _executeBulkDelete() {
         const ids = [...this._selectedTicketIds];
+        this.isLoading = true;
         deleteTickets({ ticketIds: ids })
             .then(res => {
-                this.isLoading = true;
-                if (!res.success) { this.errorMessage = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error deleting tickets');
                 this.backlogTickets     = this.backlogTickets.filter(t => !ids.includes(t.Id));
                 this._selectedTicketIds = new Set();
                 const updatedSprints = (res.data?.updatedSprints || []).map(formatSprint);
-                this._enrichSprintsWithoutTickets(ids, updatedSprints);
+                this._deleteTicketsFromSprints(ids, updatedSprints);
                 this._showSuccess('Tickets deleted');
             })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error deleting tickets'; })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error deleting tickets'))
             .finally(() => { this.isLoading = false; });
-
-        }
+    }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
 
@@ -146,7 +145,7 @@ export default class ManageBacklog extends LightningElement {
         this.backlogTickets = this.backlogTickets.map(t =>
             t.Id === ticketId ? { ...t, isSelected: selected } : t
         );
-        this._enrichSprintsWithTicketSelection(ticketId, selected);
+        this._updateSprintsTicketSelection(ticketId, selected);
     }
 
     // -- Ticket Bubble Events from c-ao-ticket-item --
@@ -154,82 +153,73 @@ export default class ManageBacklog extends LightningElement {
     // from c-ao-ticket-item
     handleTicketDelete(event) {
         const { ticketId } = event.detail;
-        const ticketItem   = event.target;
+        this.isLoading = true;
         deleteTicket({ ticketId })
             .then(res => {
-                this.isLoading = true;
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error deleting ticket');
                 this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
                 this._selectedTicketIds.delete(ticketId);
                 this._selectedTicketIds = new Set(this._selectedTicketIds);
                 const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
-                this._enrichSprintsWithoutTicket(ticketId, updatedSprint);
+                this._deleteTicketFromSprints(ticketId, updatedSprint);
                 this._showSuccess('Ticket deleted');
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting ticket'; })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error deleting ticket'))
             .finally(() => { this.isLoading = false; });
-
     }
 
     // from c-ao-ticket-item
     handleTicketSummaryUpdate(event) {
         const { ticketId, summary } = event.detail;
-        const ticketItem            = event.target;
+        this.isLoading = true;
         updateTicketSummary({ ticketId, summary })
             .then(res => {
-                this.isLoading = true;
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error updating ticket summary');
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Summary__c: summary } : t
                 );
-                this._enrichSprintsWithTicketSummary(ticketId, summary);
+                this._updateSprintsTicketSummary(ticketId, summary);
                 this._showSuccess('Summary updated');
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating summary'; })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating ticket summary'))
             .finally(() => { this.isLoading = false; });
-
-        }
+    }
 
     // from c-ao-ticket-item
     handleTicketPriorityUpdate(event) {
         const { ticketId, priority } = event.detail;
-        const ticketItem             = event.target;
         const error = validatePriorityForUpdate(priority);
-        if (error) { ticketItem.ticketError = error; return; }
+        if (error) { this._showError(error); return; }
+        this.isLoading = true;
         updateTicketPriority({ ticketId, priority })
             .then(res => {
-                this.isLoading = true;
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error updating ticket priority');
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Priority__c: priority } : t
                 );
-                this._enrichSprintsWithTicketPriority(ticketId, priority);
+                this._updateSprintsTicketPriority(ticketId, priority);
                 this._showSuccess('Priority updated');
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating priority'; })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating ticket priority'))
             .finally(() => { this.isLoading = false; });
     }
 
     // from c-ao-ticket-item
     handleTicketStateChange(event) {
         const { ticketId, fromStatusId, toStatusId } = event.detail;
+        this.isLoading = true;
         changeTicketState({ ticketId, fromStatusId, toStatusId })
             .then(res => {
-                this.isLoading = true;
-                if (!res.success) {
-                    this._reKeyTicket(ticketId);
-                    this.errorMessage = res.message;
-                    return;
-                }
+                if (!res.success) throw new Error(res.message || 'Error updating ticket state');
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, CurrentState__c: toStatusId } : t
                 );
-                this._enrichSprintsWithTicketState(ticketId, toStatusId);
+                this._updateSprintsTicketState(ticketId, toStatusId);
                 const isEndStatus   = res.data?.isEndStatus;
                 const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
                 if (isEndStatus) {
                     if (updatedSprint) {
-                        this._enrichSprintWithStoryPoints(updatedSprint);
+                        this._updateSprintStoryPoints(updatedSprint);
                     }
                     this.dispatchEvent(new ShowToastEvent({
                         title  : 'Final Status Reached',
@@ -242,7 +232,7 @@ export default class ManageBacklog extends LightningElement {
             })
             .catch(err => {
                 this._reKeyTicket(ticketId);
-                this.errorMessage = err.body?.message || 'Error updating state';
+                this._showError(err.body?.message || err.message || 'Error updating ticket state');
             })
             .finally(() => { this.isLoading = false; });
     }
@@ -250,67 +240,59 @@ export default class ManageBacklog extends LightningElement {
     // from c-ao-ticket-item
     handleTicketAssigneeChange(event) {
         const { ticketId, memberId } = event.detail;
-        const ticketItem             = event.target;
         assignTicket({ ticketId, memberId })
             .then(res => {
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error assigning ticket');
                 const found        = this.memberOptions.find(m => m.value === memberId);
                 const assigneeName = found ? found.label : '';
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, AssignedTo__c: memberId, assigneeName } : t
                 );
-                this._enrichSprintsWithTicketAssignee(ticketId, memberId, assigneeName);
+                this._updateSprintsTicketAssignee(ticketId, memberId, assigneeName);
                 this._showSuccess('Assignee updated');
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error assigning ticket'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error assigning ticket'));
     }
 
     // from c-ao-ticket-item
     handleTicketEpicUpdate(event) {
         const { ticketId, epicId } = event.detail;
-        const ticketItem = event.target;
         updateTicketEpic({ ticketId, epicId })
             .then(res => {
-                if (!res.success) { ticketItem.errors = res.message; return; }
-                ticketItem.errors = null;
+                if (!res.success) throw new Error(res.message || 'Error updating ticket epic');
                 const found    = this.epics.find(e => e.Id === epicId);
                 const epicName = found ? found.Name : '';
                 this.backlogTickets = this.backlogTickets.map(t =>
                     t.Id === ticketId ? { ...t, Epic__c: epicId, epicName } : t
                 );
-                this._enrichSprintsWithTicketEpic(ticketId, epicId, epicName);
+                this._updateSprintsTicketEpic(ticketId, epicId, epicName);
                 this._showSuccess('Epic updated');
             })
-            .catch(err => { ticketItem.errors = err.body?.message || 'Error updating epic'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating ticket epic'));
     }
 
     // from c-ao-ticket-item
     handleEpicCreateForTicket(event) {
         const { ticketId, name, summary, description, startDate, endDate } = event.detail;
-        const ticketItem = event.target;
         let createdEpic;
         createEpic({ name, summary, projectId: this._projectId, description, startDate, endDate })
             .then(res => {
-                if (!res.success) { ticketItem.errors = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error creating epic');
                 createdEpic = res.data;
                 return updateTicketEpic({ ticketId, epicId: createdEpic.Id });
             })
             .then(res => {
-                if (!createdEpic) return;
-                if (res && !res.success) { ticketItem.errors = res.message; return; }
-                if (res) {
-                    ticketItem.errors = null;
-                    if (!this.epics.some(e => e.Id === createdEpic.Id)) {
-                        this.epics = [...this.epics, createdEpic];
-                    }
-                    this.backlogTickets = this.backlogTickets.map(t =>
-                        t.Id === ticketId ? { ...t, Epic__c: createdEpic.Id, epicName: createdEpic.Name } : t
-                    );
-                    this._enrichSprintsWithTicketEpic(ticketId, createdEpic.Id, createdEpic.Name);
-                    this._showSuccess('Epic created and assigned');
+                if (!res.success) throw new Error(res.message || 'Error assigning epic to ticket');
+                if (!this.epics.some(e => e.Id === createdEpic.Id)) {
+                    this.epics = [...this.epics, createdEpic];
                 }
+                this.backlogTickets = this.backlogTickets.map(t =>
+                    t.Id === ticketId ? { ...t, Epic__c: createdEpic.Id, epicName: createdEpic.Name } : t
+                );
+                this._updateSprintsTicketEpic(ticketId, createdEpic.Id, createdEpic.Name);
+                this._showSuccess('Epic created and assigned');
             })
-            .catch(err => { ticketItem.errors = err.body?.message || 'Error creating epic'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating epic'));
     }
 
     // -- Subtask Bubble Events from c-ao-ticket-item --
@@ -321,30 +303,33 @@ export default class ManageBacklog extends LightningElement {
         const ticketItem = event.target;
         createSubtask({ summary, ticketId, description, assigneeId, currentStateId, storyPoint, startDate: null })
             .then(res => {
-                if (!res.success) { ticketItem.errors = res.message; return; }
-                ticketItem.errors = null;
+                if (!res.success) throw new Error(res.message || 'Error creating subtask');
                 ticketItem.refreshSubtasks();
                 this._showSuccess('Subtask created');
             })
-            .catch(err => { ticketItem.errors = err.body?.message || 'Error creating subtask'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating subtask'));
     }
 
     // from c-ao-ticket-item
     handleSubtaskSummaryUpdate(event) {
         const { subtaskId, summary } = event.detail;
-        const ticketItem             = event.target;
         updateSubtaskSummary({ subtaskId, summary })
-            .then(() => { this._showSuccess('Subtask summary updated'); })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error updating subtask summary'; });
+            .then(res => {
+                if (res && !res.success) throw new Error(res.message || 'Error updating subtask summary');
+                this._showSuccess('Subtask summary updated');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating subtask summary'));
     }
 
     // from c-ao-ticket-item
     handleSubtaskAssigneeChange(event) {
         const { subtaskId, memberId } = event.detail;
-        const ticketItem              = event.target;
         assignSubtask({ subtaskId, memberId })
-            .then(() => { this._showSuccess('Subtask assignee updated'); })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error assigning subtask'; });
+            .then(res => {
+                if (res && !res.success) throw new Error(res.message || 'Error assigning subtask');
+                this._showSuccess('Subtask assignee updated');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error assigning subtask'));
     }
 
     // from c-ao-ticket-item
@@ -353,11 +338,11 @@ export default class ManageBacklog extends LightningElement {
         const ticketItem    = event.target;
         deleteSubtask({ subtaskId })
             .then(res => {
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error deleting subtask');
                 ticketItem.refreshSubtasks();
                 this._showSuccess('Subtask deleted');
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting subtask'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error deleting subtask'));
     }
 
     // from c-ao-ticket-item
@@ -366,11 +351,11 @@ export default class ManageBacklog extends LightningElement {
         const ticketItem     = event.target;
         deleteSubtasks({ subtaskIds })
             .then(res => {
-                if (!res.success) { ticketItem.ticketError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error deleting subtasks');
                 ticketItem.refreshSubtasks();
                 this._showSuccess('Subtasks deleted');
             })
-            .catch(err => { ticketItem.ticketError = err.body?.message || 'Error deleting subtasks'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error deleting subtasks'));
     }
 
     // -- Bulk Selection --
@@ -393,31 +378,29 @@ export default class ManageBacklog extends LightningElement {
     }
 
     handleSprintTicketCreate(event) {
-        const data        = event.detail;
-        const ticketModal = event.target;
+        const data = event.detail;
         createTicketFromSprint(data)
             .then(res => {
-                if (!res.success) { ticketModal.errors = res.message; return; }
-                const ticket = formatTicket(res.data.createdTicket, this.ticketTypeOptions, data.ticketTypeId);
+                if (!res.success) throw new Error(res.message || 'Error creating ticket from sprint');
+                const ticket        = formatTicket(res.data.createdTicket, this.ticketTypeOptions, data.ticketTypeId);
                 const updatedSprint = formatSprint(res.data.updatedSprint);
                 this._enrichSprintWithAddedTicket(updatedSprint, ticket);
                 this.showSprintTicketModal = false;
                 this._showSuccess('Ticket added to sprint');
             })
-            .catch(err => { ticketModal.errors = err.body?.message || 'Error creating ticket'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating ticket from sprint'));
     }
 
     handleBacklogTicketCreate(event) {
-        const data        = event.detail;
-        const ticketModal = event.target;
+        const data = event.detail;
         createTicketFromBacklog(data)
             .then(res => {
-                if (!res.success) { ticketModal.errors = res.message; return; }
-                this.backlogTickets         = [...this.backlogTickets, formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId)];
+                if (!res.success) throw new Error(res.message || 'Error creating ticket from backlog');
+                this._enrichBacklogWithTicket(formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId));
                 this.showBacklogTicketModal = false;
                 this._showSuccess('Ticket created');
             })
-            .catch(err => { ticketModal.errors = err.body?.message || 'Error creating ticket'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating ticket from backlog'));
     }
 
     handleCreateTicketCancel() {
@@ -457,7 +440,7 @@ export default class ManageBacklog extends LightningElement {
             goal,
         })
             .then(res => {
-                if (!res.success) { this.modalError = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error updating sprint');
                 const sid = this._editingSprintId;
                 this.sprints = this.sprints.map(s =>
                     s.Id === sid
@@ -467,10 +450,8 @@ export default class ManageBacklog extends LightningElement {
                 this.showSprintModal = false;
                 this._showSuccess('Sprint updated');
             })
-            .catch(err => { this.modalError = err.body?.message || 'Error updating sprint'; })
-            .finally(() => {
-                this.isLoading = false;
-            });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating sprint'))
+            .finally(() => { this.isLoading = false; });
     }
 
     // -- Create Sprint --
@@ -484,22 +465,15 @@ export default class ManageBacklog extends LightningElement {
             goal,
             projectId: this._projectId,
         })
-        .then(res => {
-            if (!res.success) {
-                this.modalError = res.message;
-                return;
-            }
-            this.sprints = [...this.sprints, formatSprint(res.data)];
-            this.showSprintModal = false;
-            this.sprintForm = emptySprintForm();
-            this._showSuccess('Sprint created');
-        })
-        .catch(err => {
-            this.modalError = err.body?.message || 'Error creating sprint';
-        })
-        .finally(() => {
-            this.isLoading = false;
-        });
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error creating sprint');
+                this.sprints         = [...this.sprints, formatSprint(res.data)];
+                this.showSprintModal = false;
+                this.sprintForm      = emptySprintForm();
+                this._showSuccess('Sprint created');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating sprint'))
+            .finally(() => { this.isLoading = false; });
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
@@ -558,14 +532,13 @@ export default class ManageBacklog extends LightningElement {
         this._confirm('Delete this sprint? Tickets will be moved to backlog.', () => {
             deleteSprint({ sprintId })
                 .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
+                    if (!res.success) throw new Error(res.message || 'Error deleting sprint');
                     this.sprints = this.sprints.filter(s => s.Id !== sprintId);
                     this._loadData();
                     this._showSuccess('Sprint deleted');
                 })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error deleting sprint'; });
-
-            });
+                .catch(err => this._showError(err.body?.message || err.message || 'Error deleting sprint'));
+        });
     }
 
     handleSprintComplete(event) {
@@ -573,11 +546,11 @@ export default class ManageBacklog extends LightningElement {
         this._confirm('Mark this sprint as complete?', () => {
             completeSprint({ sprintId })
                 .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
+                    if (!res.success) throw new Error(res.message || 'Error completing sprint');
                     this.sprints = this.sprints.filter(s => s.Id !== sprintId);
                     this._showSuccess('Sprint completed');
                 })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error completing sprint'; });
+                .catch(err => this._showError(err.body?.message || err.message || 'Error completing sprint'));
         });
     }
 
@@ -586,10 +559,10 @@ export default class ManageBacklog extends LightningElement {
         this._confirm('Start this sprint?', () => {
             startSprint({ sprintId })
                 .then(res => {
-                    if (!res.success) { this.errorMessage = res.message; return; }
+                    if (!res.success) throw new Error(res.message || 'Error starting sprint');
                     this._showSuccess('Sprint started');
                 })
-                .catch(err => { this.errorMessage = err.body?.message || 'Error starting sprint'; });
+                .catch(err => this._showError(err.body?.message || err.message || 'Error starting sprint'));
         });
     }
 
@@ -686,14 +659,14 @@ export default class ManageBacklog extends LightningElement {
         if (this._draggingFromSprint) return;
         const sprintId = event.currentTarget.dataset.sprintId;
         this._dragTargetSprintId = sprintId;
-        this._enrichSprintWithDragOver(sprintId);
+        this._updateSprintDragOver(sprintId);
         this._isBacklogDragOver = false;
     }
 
     handleDragLeaveSprint(event) {
         if (!event.currentTarget.contains(event.relatedTarget)) {
             const sprintId = event.currentTarget.dataset.sprintId;
-            this._enrichSprintWithDragReset(sprintId);
+            this._updateSprintDragReset(sprintId);
         }
     }
 
@@ -712,7 +685,7 @@ export default class ManageBacklog extends LightningElement {
     handleDropOnSprint(event) {
         event.preventDefault();
         const targetSprintId = event.currentTarget.dataset.sprintId;
-        this._enrichSprintWithDragReset(targetSprintId);
+        this._updateSprintDragReset(targetSprintId);
         if (this._draggingFromSprint) return;
         const raw = event.dataTransfer.getData('text/plain');
         if (!raw) return;
@@ -737,9 +710,8 @@ export default class ManageBacklog extends LightningElement {
     _executeMoveTicketToSprint(ticketId, sprintId) {
         moveTicketToSprint({ ticketId, sprintId })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
-                const movedTicket = this.backlogTickets.find(t => t.Id === ticketId);
-                this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
+                if (!res.success) throw new Error(res.message || 'Error moving ticket to sprint');
+                const movedTicket   = this._deleteBacklogTicket(ticketId);
                 const updatedSprint = formatSprint(res.data?.updatedSprint);
 
                 if (movedTicket && updatedSprint) {
@@ -750,19 +722,19 @@ export default class ManageBacklog extends LightningElement {
                 }
                 this._showSuccess('Ticket moved to sprint');
             })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error moving ticket to sprint'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error moving ticket to sprint'));
     }
 
     _executeMoveTicketToBacklog(ticket) {
         moveTicketToBacklog({ ticketId: ticket.Id })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error moving ticket to backlog');
                 const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
-                this._enrichSprintsWithoutTicket(ticket.Id, updatedSprint);
-                this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
+                this._deleteTicketFromSprints(ticket.Id, updatedSprint);
+                this._enrichBacklogWithTicket(ticket);
                 this._showSuccess('Ticket moved to backlog');
             })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error moving ticket to backlog'; });
+            .catch(err => this._showError(err.body?.message || err.message || 'Error moving ticket to backlog'));
     }
 
 
@@ -774,7 +746,7 @@ export default class ManageBacklog extends LightningElement {
         this.isLoading = true;
         loadBacklogData({ projectId: this._projectId })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Failed to load backlog data');
 
                 const { sprints = [], status = [], members = [], epics = [], ticketTypes = [], backlogTickets = [], priorityOptions = [] } = res.data;
 
@@ -789,7 +761,7 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogHasMore    = backlogTickets.length === PAGE_SIZE;
                 this.backlogTickets    = enrichTickets(backlogTickets, epics, this.ticketTypeOptions, this.memberOptions);
             })
-            .catch(err => { this.errorMessage = err.body?.message || 'Failed to load backlog data'; })
+            .catch(err => this._showError(err.body?.message || err.message || 'Failed to load backlog data'))
             .finally(() => { this.isLoading = false; });
     }
 
@@ -800,25 +772,24 @@ export default class ManageBacklog extends LightningElement {
     }
 
     _loadSprintTickets(sprintId, offset) {
-        this._enrichSprintWithLoadingTicketState(sprintId, true);
+        this._updateSprintLoadingTicketState(sprintId, true);
         loadTicketsBySprint({ sprintId, offset, pageSize: PAGE_SIZE })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
+                if (!res.success) throw new Error(res.message || 'Error loading sprint tickets');
                 const rawTickets = res.data || [];
                 const tickets    = enrichTickets(rawTickets, this.epics, this.ticketTypeOptions, this.memberOptions);
                 const hasMore    = rawTickets.length === PAGE_SIZE;
 
-                this._enrichSprintWithLoadedTickets(sprintId, {
+                this._updateSprintWithLoadedTickets(sprintId, {
                     tickets,
                     offset,
                     hasMore
                 });
             })
             .catch(err => {
-                this._enrichSprintWithLoadingTicketState(sprintId, false);
-                this.errorMessage = err.body?.message || 'Error loading sprint tickets';
-            })
-
+                this._updateSprintLoadingTicketState(sprintId, false);
+                this._showError(err.body?.message || err.message || 'Error loading sprint tickets');
+            });
     }
 
     handleBacklogPrevPage() {
@@ -835,17 +806,28 @@ export default class ManageBacklog extends LightningElement {
         this.backlogIsLoading = true;
         loadBacklogTickets({ projectId: this._projectId, offset, pageSize: PAGE_SIZE })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
-                const rawTickets = res.data || [];
-                this.backlogTickets   = enrichTickets(rawTickets, this.epics, this.ticketTypeOptions, this.memberOptions);
-                this.backlogOffset    = offset;
-                this.backlogHasMore   = rawTickets.length === PAGE_SIZE;
+                if (!res.success) throw new Error(res.message || 'Error loading backlog tickets');
+                const rawTickets    = res.data || [];
+                this.backlogTickets = enrichTickets(rawTickets, this.epics, this.ticketTypeOptions, this.memberOptions);
+                this.backlogOffset  = offset;
+                this.backlogHasMore = rawTickets.length === PAGE_SIZE;
             })
-            .catch(err => { this.errorMessage = err.body?.message || 'Error loading backlog tickets'; })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error loading backlog tickets'))
             .finally(() => { this.backlogIsLoading = false; });
     }
 
-    // -- Sprint enrichers (single sprint) --
+    // -- Backlog mutators --
+    _deleteBacklogTicket(ticketId) {
+        const ticket = this.backlogTickets.find(t => t.Id === ticketId);
+        this.backlogTickets = this.backlogTickets.filter(t => t.Id !== ticketId);
+        return ticket;
+    }
+
+    _enrichBacklogWithTicket(ticket) {
+        this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
+    }
+
+    // -- Sprint mutators (single sprint) --
     _enrichSprintWithAddedTicket(updatedSprint, ticket) {
         this.sprints = this.sprints.map(s => {
             if (s.Id !== updatedSprint.Id) return s;
@@ -861,7 +843,7 @@ export default class ManageBacklog extends LightningElement {
         });
     }
 
-    _enrichSprintWithStoryPoints(updatedSprint) {
+    _updateSprintStoryPoints(updatedSprint) {
         this.sprints = this.sprints.map(s => {
             if (s.Id !== updatedSprint.Id) return s;
             return {
@@ -872,25 +854,25 @@ export default class ManageBacklog extends LightningElement {
         });
     }
 
-    _enrichSprintWithDragOver(sprintId) {
+    _updateSprintDragOver(sprintId) {
         this.sprints = this.sprints.map(s =>
             s.Id === sprintId ? { ...s, dropTargetClass: 'sprint-container drop-target-active' } : s
         );
     }
 
-    _enrichSprintWithDragReset(sprintId) {
+    _updateSprintDragReset(sprintId) {
         this.sprints = this.sprints.map(s =>
             s.Id === sprintId ? { ...s, dropTargetClass: 'sprint-container' } : s
         );
     }
 
-    _enrichSprintWithLoadingTicketState(sprintId, isLoadingTickets) {
+    _updateSprintLoadingTicketState(sprintId, isLoadingTickets) {
         this.sprints = this.sprints.map(s =>
             s.Id === sprintId ? { ...s, isLoadingTickets } : s
         );
     }
 
-    _enrichSprintWithLoadedTickets(sprintId, payload) {
+    _updateSprintWithLoadedTickets(sprintId, payload) {
         const { tickets, offset, hasMore} = payload;
         this.sprints = this.sprints.map(s => {
             if (s.Id !== sprintId) return s;
@@ -909,15 +891,15 @@ export default class ManageBacklog extends LightningElement {
         });
     }
 
-    // -- Ticket-in-sprints enrichers (all sprints) --
-    _enrichSprintsWithTicketSelection(ticketId, isSelected) {
+    // -- Ticket-in-sprints mutators (all sprints) --
+    _updateSprintsTicketSelection(ticketId, isSelected) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, isSelected } : t),
         }));
     }
 
-    _enrichSprintsWithoutTicket(ticketId, updatedSprint) {
+    _deleteTicketFromSprints(ticketId, updatedSprint) {
         this.sprints = this.sprints.map(s => {
             const tickets = s.tickets.filter(t => t.Id !== ticketId);
             if (s.Id === updatedSprint?.Id) {
@@ -934,7 +916,7 @@ export default class ManageBacklog extends LightningElement {
         });
     }
 
-    _enrichSprintsWithoutTickets(ticketIds, updatedSprints) {
+    _deleteTicketsFromSprints(ticketIds, updatedSprints) {
         const updatedSprintMap = {};
         updatedSprints.forEach(sprint => {
             updatedSprintMap[sprint.Id] = sprint;
@@ -958,42 +940,42 @@ export default class ManageBacklog extends LightningElement {
         });
     }
 
-    _enrichSprintsWithTicketSummary(ticketId, summary) {
+    _updateSprintsTicketSummary(ticketId, summary) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Summary__c: summary } : t),
         }));
     }
 
-    _enrichSprintsWithTicketPriority(ticketId, priority) {
+    _updateSprintsTicketPriority(ticketId, priority) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Priority__c: priority } : t),
         }));
     }
 
-    _enrichSprintsWithTicketState(ticketId, statusId) {
+    _updateSprintsTicketState(ticketId, statusId) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, CurrentState__c: statusId } : t),
         }));
     }
 
-    _enrichSprintsWithTicketAssignee(ticketId, memberId, assigneeName) {
+    _updateSprintsTicketAssignee(ticketId, memberId, assigneeName) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, AssignedTo__c: memberId, assigneeName } : t),
         }));
     }
 
-    _enrichSprintsWithTicketEpic(ticketId, epicId, epicName) {
+    _updateSprintsTicketEpic(ticketId, epicId, epicName) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Epic__c: epicId, epicName } : t),
         }));
     }
 
-    _enrichSprintsWithTicketRekey(ticketId, key) {
+    _updateSprintsTicketRekey(ticketId, key) {
         this.sprints = this.sprints.map(s => ({
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, _key: key } : t),
@@ -1005,10 +987,14 @@ export default class ManageBacklog extends LightningElement {
         this.backlogTickets = this.backlogTickets.map(t =>
             t.Id === ticketId ? { ...t, _key: newKey } : t
         );
-        this._enrichSprintsWithTicketRekey(ticketId, newKey);
+        this._updateSprintsTicketRekey(ticketId, newKey);
     }
 
     _showSuccess(message) {
         this.dispatchEvent(new ShowToastEvent({ title: 'Success', message, variant: 'success' }));
+    }
+
+    _showError(message) {
+        this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: message || 'An error occurred', variant: 'error' }));
     }
 }
