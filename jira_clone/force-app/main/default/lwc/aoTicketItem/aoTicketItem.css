@@ -103,9 +103,9 @@
     background-color: #F4F5F7;
 }
 
-.ticket-row[draggable="true"] { cursor: grab; }
+.ticket-row { cursor: grab; }
 
-.ticket-row[draggable="true"]:active {
+.ticket-row:active {
     cursor: grabbing;
     opacity: 0.7;
 }

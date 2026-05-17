@@ -38,6 +38,8 @@ export default class AoTicketItem extends LightningElement {
         }));
     }
 
+    @track isDraggable       = false;
+
     @track isEditingSummary  = false;
     @track summaryDraft      = '';
 
@@ -199,6 +201,18 @@ export default class AoTicketItem extends LightningElement {
             this.isEditingPriority = false;
             this.errorMessage      = null;
         }
+    }
+
+    handleRowMouseDown(event) {
+        if (event.button === 0) this.isDraggable = true;
+    }
+
+    handleRowMouseUp() {
+        this.isDraggable = false;
+    }
+
+    handleRowClick() {
+        console.log('Ticket row clicked:', this.ticket.Id, this.ticket.Name);
     }
 
     handleDragStart(event) {

@@ -166,7 +166,14 @@
     <!-- ROW VARIANT (used by manageBacklog, default) -->
     <template if:true={isRowVariant}>
 
-        <div class="ticket-row" draggable="true" ondragstart={handleDragStart}>
+        <div class="ticket-row"
+             draggable={isDraggable}
+             onmousedown={handleRowMouseDown}
+             onmouseup={handleRowMouseUp}
+             onmouseleave={handleRowMouseUp}
+             ondragstart={handleDragStart}
+             ondragend={handleRowMouseUp}
+             onclick={handleRowClick}>
 
             <div class="ticket-left">
 
