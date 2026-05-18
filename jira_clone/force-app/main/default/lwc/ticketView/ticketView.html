@@ -1,0 +1,175 @@
+<template>
+    <div class="tv">
+
+        <!-- ─── SUMMARY ───────────────────────────────────────────────── -->
+        <section class="tv-section">
+            <template if:true={summaryViewMode}>
+                <h1 class="tv-summary tv-summary--view" onclick={handleSummaryEditOpen}>
+                    {summaryText}
+                </h1>
+            </template>
+
+            <template if:true={summaryEditMode}>
+                <div class="tv-summary tv-summary--edit">
+                    <c-ao-input
+                        variant="label-hidden"
+                        value={summaryDraft}
+                        onchange={handleSummaryDraftChange}>
+                    </c-ao-input>
+                    <div class="tv-inline-actions">
+                        <button class="tv-icon-btn tv-icon-btn--confirm"
+                                title="Save"
+                                onclick={handleTicketSummaryUpdate}>
+                            &#x2714;
+                        </button>
+                        <button class="tv-icon-btn tv-icon-btn--cancel"
+                                title="Cancel"
+                                onclick={handleSummaryEditCancel}>
+                            &#x2715;
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <!-- ─── CURRENT STATE ─────────────────────────────────────────── -->
+        <section class="tv-section">
+            <label class="tv-label">Status</label>
+            <c-ao-combobox
+                variant="label-hidden"
+                placeholder="State"
+                value={currentStatusId}
+                options={statusOptions}
+                onchange={handleTicketCurrentStateUpdate}>
+            </c-ao-combobox>
+        </section>
+
+        <!-- ─── DESCRIPTION ───────────────────────────────────────────── -->
+        <section class="tv-section">
+            <label class="tv-label">Description</label>
+
+            <template if:true={descriptionViewMode}>
+                <div class="tv-desc tv-desc--view" onclick={handleDescriptionEditOpen}>
+                    <template if:true={hasDescription}>
+                        <lightning-formatted-rich-text value={descriptionText}>
+                        </lightning-formatted-rich-text>
+                    </template>
+                    <template if:false={hasDescription}>
+                        <span class="tv-desc__placeholder">Add a description...</span>
+                    </template>
+                </div>
+            </template>
+
+            <template if:true={descriptionEditMode}>
+                <div class="tv-desc tv-desc--edit">
+                    <lightning-input-rich-text
+                        value={descriptionDraft}
+                        placeholder="Type [] to jot down things that don't need to be tracked elsewhere."
+                        onchange={handleDescriptionDraftChange}>
+                    </lightning-input-rich-text>
+                    <div class="tv-form-actions">
+                        <button class="tv-btn tv-btn--primary"
+                                onclick={handleTicketDescriptionUpdate}>
+                            Save
+                        </button>
+                        <button class="tv-btn tv-btn--ghost"
+                                onclick={handleDescriptionEditCancel}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <!-- ─── LINKED WORK ITEMS ─────────────────────────────────────── -->
+        <section class="tv-section tv-linked">
+            <div class="tv-linked__header">
+                <button class="tv-chevron-btn"
+                        title={linkedToExpandTitle}
+                        onclick={handleLinkedToExpandToggle}>
+                    <span class="tv-chevron">{linkedToChevron}</span>
+                    <span class="tv-linked__title">Linked work items</span>
+                </button>
+
+                <template if:true={linkedToExpanded}>
+                    <button class="tv-icon-btn tv-icon-btn--add"
+                            title="Add link"
+                            onclick={handleLinkedToAddOpen}>
+                        &#x2B;
+                    </button>
+                </template>
+            </div>
+
+            <template if:true={linkedToExpanded}>
+                <div class="tv-linked__body">
+
+                    <template for:each={linkedGroups} for:item="group">
+                        <div key={group.key} class="tv-linked__group">
+                            <div class="tv-linked__sublabel">{group.label}</div>
+
+                            <template for:each={group.items} for:item="item">
+                                <div key={item.Id} class="tv-linked__row">
+                                    <c-ao-checkbox></c-ao-checkbox>
+
+                                    <span class="tv-linked__name">{item.ticketName}</span>
+                                    <span class="tv-linked__summary">{item.ticketSummary}</span>
+
+                                    <c-ao-combobox
+                                        class="tv-linked__status"
+                                        variant="label-hidden"
+                                        placeholder="State"
+                                        value={item.currentStatusId}
+                                        options={statusOptions}
+                                        data-id={item.Id}
+                                        onchange={handleTicketLinkedToStatusUpdate}>
+                                    </c-ao-combobox>
+
+                                    <span class="tv-linked__priority">{item.priority}</span>
+                                    <span class="tv-linked__assignee">{item.assigneeName}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:true={showAddLinkForm}>
+                        <div class="tv-add-form">
+                            <div class="tv-add-form__row">
+                                <c-ao-combobox
+                                    class="tv-add-form__type"
+                                    variant="label-hidden"
+                                    placeholder="Link type"
+                                    value={_selectedLinkType}
+                                    options={ticketLinkedToType}
+                                    onchange={handleLinkedToTypeSelect}>
+                                </c-ao-combobox>
+
+                                <c-auto-complete-combo-box
+                                    class="tv-add-form__ticket"
+                                    variant="label-hidden"
+                                    placeholder="Search ticket (min 2 chars)..."
+                                    value={_selectedLinkTicket}
+                                    options={ticketOptions}
+                                    onchange={handleLinkedToTicketSelect}>
+                                </c-auto-complete-combo-box>
+                            </div>
+
+                            <div class="tv-form-actions">
+                                <button class="tv-btn tv-btn--primary"
+                                        disabled={isLinkBtnDisabled}
+                                        onclick={handleTicketLinkedToCreate}>
+                                    Link
+                                </button>
+                                <button class="tv-btn tv-btn--ghost"
+                                        onclick={handleLinkedToAddCancel}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                </div>
+            </template>
+        </section>
+
+    </div>
+</template>
