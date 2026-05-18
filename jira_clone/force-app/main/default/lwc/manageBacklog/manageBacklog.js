@@ -102,6 +102,8 @@ export default class ManageBacklog extends LightningElement {
     @track
     _selectedTicketIds = new Set();
 
+    @track openedTicket = null;
+
     backlogOffset     = 0;
     backlogHasMore    = false;
     backlogIsLoading  = false;
@@ -149,6 +151,16 @@ export default class ManageBacklog extends LightningElement {
     }
 
     // -- Ticket Bubble Events from c-ao-ticket-item --
+
+    // from c-ao-ticket-item — row click opens the ticket view modal
+    handleTicketOpen(event) {
+        console.log('[manageBacklog] handleTicketOpen', event.detail);
+        this.openedTicket = event.detail.ticket || null;
+    }
+
+    handleCloseTicketView() {
+        this.openedTicket = null;
+    }
 
     // from c-ao-ticket-item
     handleTicketDelete(event) {

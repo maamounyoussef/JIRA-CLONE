@@ -124,6 +124,35 @@
 
 .modal--sm { width: min(420px, calc(100vw - 32px)); }
 
+.ticket-view-modal { width: min(780px, calc(100vw - 32px)); }
+
+.ticket-view-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #DFE1E6;
+}
+
+.ticket-view-modal__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    color: #6B778C;
+    padding: 6px 10px;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+.ticket-view-modal__close:hover {
+    background-color: #EBECF0;
+    color: #172B4D;
+}
+
+.ticket-view-modal__body {
+    padding: 16px 20px;
+}
+
 .modal__header { padding: 20px 24px 8px; }
 
 .modal__title {

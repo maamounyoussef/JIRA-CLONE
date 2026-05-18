@@ -211,8 +211,20 @@ export default class AoTicketItem extends LightningElement {
         this.isDraggable = false;
     }
 
-    handleRowClick() {
-        console.log('Ticket row clicked:', this.ticket.Id, this.ticket.Name);
+    handleRowClick(event) {
+        // Skip when the click originated inside an inline control so editing
+        // priority/state/summary/checkbox etc. does not open the ticket view.
+        const interactive = event.target.closest(
+            'c-ao-btn, c-ao-input, c-ao-combobox, c-ao-checkbox, .modal, .modal-backdrop, button, input, select'
+        );
+        if (interactive) return;
+        this.handleOpenTicketView(event);
+    }
+
+    handleOpenTicketView(event) {
+        if (event) event.stopPropagation();
+        console.log('[aoTicketItem] dispatch ticketopen', this.ticket.Id, this.ticket.Name);
+        this._dispatch('ticketopen', { ticketId: this.ticket.Id, ticket: this.ticket });
     }
 
     handleDragStart(event) {

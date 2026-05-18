@@ -155,6 +155,18 @@
     min-width: 0;
 }
 
+.ticket-open-target {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+.ticket-open-target:hover {
+    background-color: #EBECF0;
+    color: #0052CC;
+    text-decoration: underline;
+}
+
 .summary-input {
     flex: 1 1 0;
     min-width: 0;

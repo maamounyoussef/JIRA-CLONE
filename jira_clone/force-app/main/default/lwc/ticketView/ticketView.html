@@ -1,0 +1,151 @@
+<template>
+    <div class="ticket-view">
+
+        <!-- ══════════════════════════════════════════
+             SUMMARY  (inline editable)
+             ══════════════════════════════════════════ -->
+        <section class="tv-section tv-summary">
+            <template if:false={isSummaryEditing}>
+                <h1 class="tv-summary__label" onclick={handleSummaryEditOpen}>{ticket.summary}</h1>
+            </template>
+
+            <template if:true={isSummaryEditing}>
+                <div class="tv-summary__edit">
+                    <c-ao-input
+                        variant="label-hidden"
+                        value={summaryDraft}
+                        onchange={handleSummaryChange}>
+                    </c-ao-input>
+                    <div class="tv-inline-actions">
+                        <button class="tv-icon-btn tv-icon-btn--confirm" title="Confirm" onclick={handleSummaryConfirm}>
+                            <lightning-icon icon-name="utility:check" size="x-small" variant="inverse"></lightning-icon>
+                        </button>
+                        <button class="tv-icon-btn tv-icon-btn--cancel" title="Cancel" onclick={handleSummaryCancel}>
+                            <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             STATUS
+             ══════════════════════════════════════════ -->
+        <section class="tv-section tv-status">
+            <span class="tv-field-label">Status</span>
+            <c-ao-combobox
+                variant="label-hidden"
+                value={ticket.currentStatusId}
+                options={statusOptions}
+                onchange={handleStatusChange}>
+            </c-ao-combobox>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             DESCRIPTION  (inline editable, rich text)
+             ══════════════════════════════════════════ -->
+        <section class="tv-section tv-description">
+            <span class="tv-field-label">Description</span>
+
+            <template if:false={isDescriptionEditing}>
+                <template if:true={hasDescription}>
+                    <div class="tv-description__view" onclick={handleDescriptionEditOpen}>
+                        <lightning-formatted-rich-text value={ticket.description}></lightning-formatted-rich-text>
+                    </div>
+                </template>
+                <template if:false={hasDescription}>
+                    <p class="tv-description__placeholder" onclick={handleDescriptionEditOpen}>Add a description...</p>
+                </template>
+            </template>
+
+            <template if:true={isDescriptionEditing}>
+                <div class="tv-description__edit">
+                    <lightning-input-rich-text
+                        value={descriptionDraft}
+                        placeholder="Type [] to jot down things that don't need to be tracked elsewhere."
+                        onchange={handleDescriptionChange}>
+                    </lightning-input-rich-text>
+                    <div class="tv-block-actions">
+                        <c-ao-btn label="Save"   variant="primary" onclick={handleDescriptionSave}></c-ao-btn>
+                        <c-ao-btn label="Cancel" variant="ghost"   onclick={handleDescriptionCancel}></c-ao-btn>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             LINKED WORK ITEMS  (collapsible)
+             ══════════════════════════════════════════ -->
+        <section class="tv-section tv-linked">
+            <div class="tv-linked__header">
+                <button class="tv-linked__toggle" onclick={handleLinkedToggle} title={linkedToggleTitle}>
+                    <lightning-icon icon-name={linkedChevronIcon} size="x-small"></lightning-icon>
+                </button>
+                <span class="tv-linked__title">Linked work items</span>
+                <template if:true={isLinkedExpanded}>
+                    <button class="tv-linked__add" onclick={handleLinkedAddOpen} title="Add linked work item">+</button>
+                </template>
+            </div>
+
+            <template if:true={isLinkedExpanded}>
+                <div class="tv-linked__body">
+                    <span class="tv-linked__sublabel">blocks</span>
+
+                    <template if:true={hasLinkedItems}>
+                        <template for:each={computedLinkedItems} for:item="item">
+                            <div key={item.linkId} class="tv-link-row">
+                                <c-ao-checkbox
+                                    checked={item.isSelected}
+                                    data-link-id={item.linkId}
+                                    onchange={handleLinkedItemCheckboxChange}>
+                                </c-ao-checkbox>
+                                <span class="tv-link-id" hidden>{item.Id}</span>
+                                <span class="tv-link-name">{item.ticketName}</span>
+                                <span class="tv-link-summary">{item.summary}</span>
+                                <c-ao-combobox
+                                    variant="label-hidden"
+                                    value={item.currentStatusId}
+                                    options={statusOptions}
+                                    data-link-id={item.linkId}
+                                    onchange={handleLinkedItemStatusChange}>
+                                </c-ao-combobox>
+                                <span class="tv-link-priority">{item.priority}</span>
+                                <span class="tv-link-assignee">{item.assigneeName}</span>
+                            </div>
+                        </template>
+                    </template>
+
+                    <template if:false={hasLinkedItems}>
+                        <p class="tv-linked__empty">No linked items</p>
+                    </template>
+
+                    <template if:true={showAddLinkForm}>
+                        <div class="tv-link-form">
+                            <div class="tv-link-form__row">
+                                <c-ao-combobox
+                                    variant="label-hidden"
+                                    placeholder="Link type"
+                                    value={newLinkType}
+                                    options={linkTypeOptions}
+                                    onchange={handleLinkTypeChange}>
+                                </c-ao-combobox>
+                                <c-ao-combobox
+                                    variant="label-hidden"
+                                    placeholder="Ticket or Epic"
+                                    value={newLinkTargetId}
+                                    options={linkTargetOptions}
+                                    onchange={handleLinkTargetChange}>
+                                </c-ao-combobox>
+                            </div>
+                            <div class="tv-link-form__actions">
+                                <c-ao-btn label="Cancel" variant="ghost"   onclick={handleLinkCancel}></c-ao-btn>
+                                <c-ao-btn label="Link"   variant="primary" disabled={isLinkButtonDisabled} onclick={handleLinkConfirm}></c-ao-btn>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </section>
+
+    </div>
+</template>

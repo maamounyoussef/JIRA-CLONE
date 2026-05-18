@@ -55,6 +55,20 @@
         </section>
     </template>
 
+    <!-- Ticket View Modal -->
+    <template if:true={openedTicket}>
+        <div class="modal-backdrop" onclick={handleCloseTicketView}></div>
+        <section role="dialog" aria-modal="true" class="modal ticket-view-modal">
+            <header class="modal__header ticket-view-modal__header">
+                <h2 class="modal__title">{openedTicket.Name}</h2>
+                <button class="ticket-view-modal__close" onclick={handleCloseTicketView} title="Close">&#x2715;</button>
+            </header>
+            <div class="modal__content ticket-view-modal__body">
+                <c-ticket-view></c-ticket-view>
+            </div>
+        </section>
+    </template>
+
     <!-- ══════════════════════════════════════════
          MAIN LAYOUT
          ══════════════════════════════════════════ -->
@@ -134,6 +148,7 @@
                                 priority-options={priorityOptions}
                                 project-id={_projectId}
                                 epics={epics}
+                                onticketopen={handleTicketOpen}
                                 onticketselect={handleTicketSelect}
                                 onticketdelete={handleTicketDelete}
                                 onticketsummaryupdate={handleTicketSummaryUpdate}
@@ -224,6 +239,7 @@
                     priority-options={priorityOptions}
                     project-id={_projectId}
                     epics={epics}
+                    onticketopen={handleTicketOpen}
                     onticketselect={handleTicketSelect}
                     onticketdelete={handleTicketDelete}
                     onticketsummaryupdate={handleTicketSummaryUpdate}

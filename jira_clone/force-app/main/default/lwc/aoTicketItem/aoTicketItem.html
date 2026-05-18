@@ -191,10 +191,10 @@
                 </c-ao-btn>
 
                 <div class="ticket-identity">
-                    <span class="ticket-key">{ticket.Name}</span>
+                    <span class="ticket-key ticket-open-target" onclick={handleOpenTicketView}>{ticket.Name}</span>
 
                     <template if:false={isEditingSummary}>
-                        <span class="ticket-summary">{ticket.Summary__c}</span>
+                        <span class="ticket-summary ticket-open-target" onclick={handleOpenTicketView}>{ticket.Summary__c}</span>
                         <c-ao-btn
                             icon-name="utility:edit"
                             variant="bare"
@@ -355,7 +355,7 @@
 
             <div class="card-summary-section">
                 <template if:false={isEditingSummary}>
-                    <span class="card-summary-text">{ticket.Summary__c}</span>
+                    <span class="card-summary-text ticket-open-target" onclick={handleOpenTicketView}>{ticket.Summary__c}</span>
                     <c-ao-btn
                         icon-name="utility:edit"
                         variant="bare"
