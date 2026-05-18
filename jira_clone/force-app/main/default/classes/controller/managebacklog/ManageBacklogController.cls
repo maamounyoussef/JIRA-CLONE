@@ -43,6 +43,25 @@ public with sharing class ManageBacklogController {
         }
     }
 
+        @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketLinkedTo(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+
+            DomainCorrectness.requireTicketExists(ticketId);
+
+            List<TicketLinkToDto> links = TicketService.getTicketLinkedTo(ticketId);
+
+            Map<String, Object> data = new Map<String, Object>{
+                'ticketLinkTo' => links
+            };
+
+            return new APIResponse(true, 'Linked tickets loaded', data);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading linked tickets: ' + ex.getMessage());
+        }
+    }
+
     // ========== Project Actions ==========
 
     @AuraEnabled(cacheable=true)

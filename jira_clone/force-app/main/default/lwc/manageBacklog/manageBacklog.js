@@ -1,6 +1,8 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadStyle } from 'lightning/platformResourceLoader';
+import loadTicketLinkedTo  from '@salesforce/apex/ManageBacklogController.loadTicketLinkedTo';
+import loadTicketLinkTypes from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkTypes';
 import createTicketFromSprint          from '@salesforce/apex/ManageBacklogController.createTicketFromSprint';
 import createTicketFromBacklog          from '@salesforce/apex/ManageBacklogController.createTicketFromBacklog';
 import loadBacklogData       from '@salesforce/apex/ManageBacklogController.loadBacklogData';
@@ -103,6 +105,15 @@ export default class ManageBacklog extends LightningElement {
     _selectedTicketIds = new Set();
 
     @track openedTicket = null;
+    @track linkTypeOptions = [];
+
+    // ─── WIRE ─────────────────────────────────────────────────────────────────
+    @wire(loadTicketLinkTypes, { projectId: '$_projectId' })
+    handleLinkTypesWire({ data }) {
+        if (data && data.success) {
+            this.linkTypeOptions = (data.data && data.data.ticketLinkTypes) || [];
+        }
+    }
 
     backlogOffset     = 0;
     backlogHasMore    = false;
@@ -160,6 +171,20 @@ export default class ManageBacklog extends LightningElement {
 
     handleCloseTicketView() {
         this.openedTicket = null;
+    }
+
+    // from c-ticket-view — user expanded the "Linked work items" section
+    handleExpandLinkedTo(event) {
+        const { ticketId } = event.detail;
+        if (!ticketId || !this.openedTicket || this.openedTicket.Id !== ticketId) return;
+        loadTicketLinkedTo({ ticketId })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error loading linked items');
+                const linkedItems = (res.data && res.data.ticketLinkTo) || [];
+                // enrich the currently-open ticket so c-ticket-view re-renders with the data
+                this.openedTicket = { ...this.openedTicket, linkedItems };
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error loading linked items'));
     }
 
     // from c-ao-ticket-item

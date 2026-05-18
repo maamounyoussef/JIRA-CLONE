@@ -64,7 +64,12 @@
                 <button class="ticket-view-modal__close" onclick={handleCloseTicketView} title="Close">&#x2715;</button>
             </header>
             <div class="modal__content ticket-view-modal__body">
-                <c-ticket-view></c-ticket-view>
+                <c-ticket-view
+                    ticket={openedTicket}
+                    status-options={statusOptions}
+                    link-type-options={linkTypeOptions}
+                    onexpandlinkedto={handleExpandLinkedTo}>
+                </c-ticket-view>
             </div>
         </section>
     </template>

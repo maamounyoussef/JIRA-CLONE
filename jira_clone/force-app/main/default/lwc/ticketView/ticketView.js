@@ -1,36 +1,40 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement, api, track } from 'lwc';
 
 export default class TicketView extends LightningElement {
 
-    // ─── TICKET STATE (single complex object — mutate per handle-state.md) ────
-    @track ticket = {
-        Id: 'TCK-001',
-        summary: 'Implement user authentication flow',
-        description: '',
-        currentStatusId: 'in-progress',
-        linkedItems: [
-            {
-                linkId:          'L1',
-                Id:              'TCK-101',
-                ticketName:      'TCK-101',
-                summary:         'Set up login page UI',
-                currentStatusId: 'todo',
-                priority:        'High',
-                assigneeName:    'Sam',
-                isSelected:      false
-            },
-            {
-                linkId:          'L2',
-                Id:              'TCK-102',
-                ticketName:      'TCK-102',
-                summary:         'Wire up OAuth callback',
-                currentStatusId: 'in-progress',
-                priority:        'Medium',
-                assigneeName:    'Alex',
-                isSelected:      false
-            }
-        ]
+    // ─── @api INPUTS FROM PARENT ──────────────────────────────────────────────
+    @track _ticket = {
+        Id:              '',
+        summary:         '',
+        description:     '',
+        currentStatusId: '',
+        linkedItems:     []
     };
+
+    @api
+    get ticket() { return this._ticket; }
+    set ticket(value) {
+        if (!value) return;
+        // Accept either internal shape (summary / currentStatusId / description)
+        // or Salesforce field names (Summary__c / CurrentState__c / Description__c).
+        // linkedItems is enriched by the parent after `expandlinkedto` fires.
+        this._ticket = {
+            Id:              value.Id              || '',
+            summary:         value.summary         || value.Summary__c        || '',
+            description:     value.description     || value.Description__c    || '',
+            currentStatusId: value.currentStatusId || value.CurrentState__c   || '',
+            linkedItems:     Array.isArray(value.linkedItems) ? value.linkedItems : []
+        };
+    }
+
+    @api statusOptions = [
+        { label: 'To Do',       value: 'todo' },
+        { label: 'In Progress', value: 'in-progress' },
+        { label: 'In Review',   value: 'in-review' },
+        { label: 'Done',        value: 'done' }
+    ];
+
+    @api linkTypeOptions = [];
 
     // ─── EDIT-MODE FLAGS ──────────────────────────────────────────────────────
     isSummaryEditing      = false;
@@ -44,22 +48,6 @@ export default class TicketView extends LightningElement {
     newLinkType           = '';
     newLinkTargetId       = '';
 
-    // ─── STATIC OPTIONS (TODO: replace with @api inputs from parent) ─────────
-    statusOptions = [
-        { label: 'To Do',       value: 'todo' },
-        { label: 'In Progress', value: 'in-progress' },
-        { label: 'In Review',   value: 'in-review' },
-        { label: 'Done',        value: 'done' }
-    ];
-
-    // TODO: replace with @api linkTypeOptions
-    linkTypeOptions = [
-        { label: 'blocks',      value: 'blocks' },
-        { label: 'is blocked by', value: 'is-blocked-by' },
-        { label: 'relates to',  value: 'relates-to' },
-        { label: 'duplicates',  value: 'duplicates' }
-    ];
-
     // TODO: replace with @api linkTargetOptions (tickets + epics)
     linkTargetOptions = [
         { label: 'TCK-201 — Profile page',     value: 'TCK-201' },
@@ -70,7 +58,7 @@ export default class TicketView extends LightningElement {
 
     // ─── DERIVED GETTERS ──────────────────────────────────────────────────────
     get hasDescription() {
-        return !!this.ticket.description && this.ticket.description.trim() !== '';
+        return !!this._ticket.description && this._ticket.description.trim() !== '';
     }
 
     get linkedChevronIcon() {
@@ -82,11 +70,11 @@ export default class TicketView extends LightningElement {
     }
 
     get hasLinkedItems() {
-        return Array.isArray(this.ticket.linkedItems) && this.ticket.linkedItems.length > 0;
+        return Array.isArray(this._ticket.linkedItems) && this._ticket.linkedItems.length > 0;
     }
 
     get computedLinkedItems() {
-        return this.ticket.linkedItems.map(item => ({ ...item, _key: item.linkId }));
+        return (this._ticket.linkedItems || []).map(item => ({ ...item, _key: item.linkId }));
     }
 
     get isLinkButtonDisabled() {
@@ -97,7 +85,7 @@ export default class TicketView extends LightningElement {
     // SUMMARY  — inline edit
     // ═══════════════════════════════════════════════════════════════════════════
     handleSummaryEditOpen() {
-        this.summaryDraft     = this.ticket.summary;
+        this.summaryDraft     = this._ticket.summary;
         this.isSummaryEditing = true;
     }
 
@@ -112,11 +100,11 @@ export default class TicketView extends LightningElement {
             return;
         }
         // Spread root because we are replacing one primitive field
-        this.ticket = { ...this.ticket, summary: next };
+        this._ticket = { ...this._ticket, summary: next };
         this.isSummaryEditing = false;
 
         // TODO: dispatchEvent('summaryupdate', { ticketId, summary: next })
-        console.log('[ticketView] summary update', { ticketId: this.ticket.Id, summary: next });
+        console.log('[ticketView] summary update', { ticketId: this._ticket.Id, summary: next });
     }
 
     handleSummaryCancel() {
@@ -129,17 +117,17 @@ export default class TicketView extends LightningElement {
     // ═══════════════════════════════════════════════════════════════════════════
     handleStatusChange(event) {
         const next = event.detail.value;
-        this.ticket = { ...this.ticket, currentStatusId: next };
+        this._ticket = { ...this._ticket, currentStatusId: next };
 
         // TODO: dispatchEvent('statuschange', { ticketId, statusId: next })
-        console.log('[ticketView] status change', { ticketId: this.ticket.Id, statusId: next });
+        console.log('[ticketView] status change', { ticketId: this._ticket.Id, statusId: next });
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // DESCRIPTION — inline edit (rich text)
     // ═══════════════════════════════════════════════════════════════════════════
     handleDescriptionEditOpen() {
-        this.descriptionDraft     = this.ticket.description || '';
+        this.descriptionDraft     = this._ticket.description || '';
         this.isDescriptionEditing = true;
     }
 
@@ -148,11 +136,11 @@ export default class TicketView extends LightningElement {
     }
 
     handleDescriptionSave() {
-        this.ticket = { ...this.ticket, description: this.descriptionDraft || '' };
+        this._ticket = { ...this._ticket, description: this.descriptionDraft || '' };
         this.isDescriptionEditing = false;
 
         // TODO: dispatchEvent('descriptionupdate', { ticketId, description })
-        console.log('[ticketView] description update', { ticketId: this.ticket.Id, description: this.ticket.description });
+        console.log('[ticketView] description update', { ticketId: this._ticket.Id, description: this._ticket.description });
     }
 
     handleDescriptionCancel() {
@@ -165,7 +153,14 @@ export default class TicketView extends LightningElement {
     // ═══════════════════════════════════════════════════════════════════════════
     handleLinkedToggle() {
         this.isLinkedExpanded = !this.isLinkedExpanded;
-        if (!this.isLinkedExpanded) {
+        if (this.isLinkedExpanded) {
+            // tell the parent to fetch & enrich linkedItems for this ticket
+            this.dispatchEvent(new CustomEvent('expandlinkedto', {
+                bubbles:  true,
+                composed: true,
+                detail:   { ticketId: this._ticket.Id }
+            }));
+        } else {
             this.showAddLinkForm = false;
         }
     }
@@ -193,7 +188,7 @@ export default class TicketView extends LightningElement {
     handleLinkConfirm() {
         if (this.isLinkButtonDisabled) return;
         const payload = {
-            fromTicketId: this.ticket.Id,
+            fromTicketId: this._ticket.Id,
             linkType:     this.newLinkType,
             toItemId:     this.newLinkTargetId
         };
@@ -207,12 +202,12 @@ export default class TicketView extends LightningElement {
     }
 
     handleLinkedItemCheckboxChange(event) {
-        const linkId = event.target.dataset.linkId;
+        const linkId  = event.target.dataset.linkId;
         const checked = event.detail.checked;
-        // Spread root → linkedItems → matched row (primitive isSelected just assigned)
-        this.ticket = {
-            ...this.ticket,
-            linkedItems: this.ticket.linkedItems.map(item =>
+        // Spread root → linkedItems → matched row (per handle-state.md)
+        this._ticket = {
+            ...this._ticket,
+            linkedItems: this._ticket.linkedItems.map(item =>
                 item.linkId === linkId ? { ...item, isSelected: checked } : item
             )
         };
@@ -221,9 +216,9 @@ export default class TicketView extends LightningElement {
     handleLinkedItemStatusChange(event) {
         const linkId = event.target.dataset.linkId;
         const next   = event.detail.value;
-        this.ticket = {
-            ...this.ticket,
-            linkedItems: this.ticket.linkedItems.map(item =>
+        this._ticket = {
+            ...this._ticket,
+            linkedItems: this._ticket.linkedItems.map(item =>
                 item.linkId === linkId ? { ...item, currentStatusId: next } : item
             )
         };
