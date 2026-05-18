@@ -1,0 +1,258 @@
+:host {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+    display: block;
+}
+
+.ticket-view {
+    background-color: #FFFFFF;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.tv-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tv-section__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+
+.tv-section__label--bold {
+    color: #172B4D;
+    font-size: 0.875rem;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.tv-error {
+    color: #DE350B;
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+/* ── Summary ─────────────────────────────────────────────────────────────── */
+.tv-summary__label {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #172B4D;
+    margin: 0;
+    padding: 4px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    line-height: 1.25;
+}
+
+.tv-summary__label:hover {
+    background-color: #EBECF0;
+}
+
+.tv-summary__editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tv-summary__input {
+    width: 100%;
+}
+
+.tv-summary__input .ao-field__input,
+.tv-summary__input input {
+    border: 2px solid #4C9AFF !important;
+    box-shadow: 0 0 0 1px rgba(76, 154, 255, 0.25);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.tv-summary__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+/* ── Status ──────────────────────────────────────────────────────────────── */
+.tv-status {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.tv-status__combo {
+    flex: 0 0 240px;
+}
+
+/* ── Description ─────────────────────────────────────────────────────────── */
+.tv-description__view {
+    padding: 8px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.tv-description__view:hover {
+    background-color: #F4F5F7;
+}
+
+.tv-description__placeholder {
+    margin: 0;
+    padding: 8px 10px;
+    color: #6B778C;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.tv-description__placeholder:hover {
+    background-color: #F4F5F7;
+}
+
+.tv-description__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* ── Linked work items ───────────────────────────────────────────────────── */
+.tv-linked {
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    padding: 12px 14px;
+    background-color: #FAFBFC;
+}
+
+.tv-linked__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tv-linked__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    color: #172B4D;
+    font-family: inherit;
+}
+
+.tv-linked__toggle:hover {
+    background-color: #EBECF0;
+}
+
+.tv-linked__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.tv-linked__body {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tv-linked__sublabel {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tv-linked__empty {
+    margin: 0;
+    padding: 8px 0;
+    color: #6B778C;
+    font-size: 0.8125rem;
+}
+
+.tv-linked__row {
+    display: grid;
+    grid-template-columns: auto 1fr 2fr 140px 80px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 4px;
+}
+
+.tv-linked__hidden-id {
+    display: none;
+}
+
+.tv-linked__check {
+    margin: 0;
+}
+
+.tv-linked__name {
+    font-weight: 600;
+    color: #0052CC;
+    font-size: 0.8125rem;
+}
+
+.tv-linked__summary {
+    color: #172B4D;
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tv-linked__priority {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #FF991F;
+}
+
+.tv-linked__assignee {
+    color: #6B778C;
+    font-size: 0.8125rem;
+}
+
+/* ── Add-link form ───────────────────────────────────────────────────────── */
+.tv-linked__form {
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px dashed #C1C7D0;
+    border-radius: 4px;
+    background-color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tv-linked__form-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tv-linked__form-type {
+    flex: 0 0 160px;
+}
+
+.tv-linked__form-ticket {
+    flex: 1;
+}
+
+.tv-linked__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}

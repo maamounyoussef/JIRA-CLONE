@@ -43,6 +43,65 @@ public with sharing class ManageBacklogController {
         }
     }
 
+    
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketBySearchTerm(String projectId, String searchTerm) {
+        try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            if (String.isBlank(searchTerm)) return new APIResponse(false, 'searchTerm is required');
+
+            Project__c project = DomainCorrectness.requireProjectExists(projectId);
+
+            List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :project.Id];
+            if (types.isEmpty()) {
+                return new APIResponse(true, 'Tickets loaded', new List<Ticket__c>());
+            }
+            List<Id> typeIds = new List<Id>();
+            for (TicketType__c t : types) typeIds.add(t.Id);
+
+            // Escape special SOSL characters
+            String sanitized = searchTerm
+                .replace('\\', '\\\\')
+                .replace('"', '\\"')
+                .replace('?', '\\?')
+                .replace('&', '\\&')
+                .replace('|', '\\|')
+                .replace('!', '\\!')
+                .replace('{', '\\{')
+                .replace('}', '\\}')
+                .replace('[', '\\[')
+                .replace(']', '\\]')
+                .replace('(', '\\(')
+                .replace(')', '\\)')
+                .replace('^', '\\^')
+                .replace('~', '\\~')
+                .replace('*', '\\*')
+                .replace(':', '\\:')
+                .replace('\'', '\\\'');
+
+            // SOSL search across Name and Summary fields
+            String typeIdSet = '(\'' + String.join(typeIds, '\',\'') + '\')';
+
+            String soslQuery = 'FIND {*' + sanitized + '*} IN ALL FIELDS ' +
+                            'RETURNING Ticket__c(' +
+                            'Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c, ' +
+                            'AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c, ' +
+                            'StartDate__c, EndDate__c ' +
+                            'WHERE (Name LIKE \'%' + sanitized + '%\' OR Summary__c LIKE \'%' + sanitized + '%\') ' +
+                            'AND Ticket_Type__c IN ' + typeIdSet + ' ' +
+                            'AND RecordStatus__c = \'active\' ' +
+                            'ORDER BY Name ASC LIMIT 2000)';
+
+            List<List<SObject>> searchResults = Search.query(soslQuery);
+            List<Ticket__c> tickets = (List<Ticket__c>) searchResults[0];
+            Integer size = tickets.size();
+
+            return new APIResponse(true, 'Tickets loaded', tickets);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading tickets: ' + ex.getMessage());
+        }
+    }
+
     // ========== Project Actions ==========
 
     @AuraEnabled(cacheable=true)
@@ -394,6 +453,28 @@ public with sharing class ManageBacklogController {
             return new APIResponse(true, 'Ticket summary updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket summary: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static APIResponse updateTicketDescription(String ticketId, String description) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            Ticket__c updated = TicketService.updateTicketDescription(existing, description);
+            return new APIResponse(true, 'Ticket description updated', updated);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error updating ticket description: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketLinkedToType() {
+        try {
+            List<Map<String, String>> linkTypes = TicketService.getTicketLinkTypes();
+            return new APIResponse(true, 'Ticket link types loaded', linkTypes);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading ticket link types: ' + ex.getMessage());
         }
     }
 

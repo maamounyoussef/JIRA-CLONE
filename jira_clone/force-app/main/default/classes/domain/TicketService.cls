@@ -235,6 +235,15 @@ public with sharing class TicketService {
         }
     }
 
+    public static Ticket__c updateTicketDescription(Ticket__c existing, String description) {
+        try {
+            existing.Description__c = description;
+            return updateTicket(existing);
+        } catch (Exception ex) {
+            throw new ServiceException('Error updating ticket description: ' + ex.getMessage());
+        }
+    }
+
     public static Sprint__c removeTicketSprint(Ticket__c ticket) {
         try {
             if (String.isNotBlank(ticket.Sprint__c)) {
