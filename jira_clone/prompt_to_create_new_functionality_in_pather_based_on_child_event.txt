@@ -50,6 +50,8 @@ START OF CONVERSATION
 PER-EVENT LOOP
 	For each dispatched event, run STEP 0 → STEP 10. Ask one question, get the
 	answer, branch, repeat.
+	AFTER STUDY THE CURRENT DISPATCH EVENT QUESTIONS CHECK  IF YOU HIT THE 50%  SESSION LIMIT COMPACT AND START A NEW SESSION AND CONTINUE FROM WHERE WE ARE.
+	ONCE YOU FINISH ALL QUESTIONS GO AND DO  THE IMPLEMENTATION IN THE CODE DIRECTLY.
 
 TURN DISCIPLINE
 	- After EVERY user reply you are STILL inside the interview. It is NOT over
@@ -68,11 +70,12 @@ TURN DISCIPLINE
 	  does not mean the task is done. Resume automatically on the next reply.
   
  start : 
-	Question - 0. AI asks which state we are working on in the pather.
+	Question - 0. AI asks which state we are working on (UPDATE/LOAD/SEARCH) in the pather.
 
 		User provides the state name in the code (a user can say i do not know so ai will analyse which one is based on the dispatched event name).
 		AI checks whether this state is stored in an array or as a single (separate) value.
 		If it is separate: just make an imperative Apex call and update the state with the data returned by the Apex call (for consistency) THEN GO TO STEP 10 DIRECTLY.
+		show also a option for there was no a specific state simply that is mean we need to use @wire with it is own state to remember values if we want (we know that in next questions) so just go with next question 
 		Otherwise: continue.
 
 	Question - 1. AI asks: "Do we have multiple writes on this functionality at the same time(Can other users (or other browser sessions) modify this data while this component is open)?" AI shows: Yes / No.
@@ -86,9 +89,9 @@ TURN DISCIPLINE
 		Important → go to Step 4.
 		Not important → go to Step 5.
 
-	Question - 3. Use @wire with refreshApex on every applicable request that comes from the child.
-	Question - 4. Use @wire with refreshApex only on actions that are related to this data.
-	Question - 5. Use @wire without refreshApex.
+	Question - 3. Use @wire with refreshApex on every applicable request that comes from the child THEN GO TO 6.
+	Question - 4. Use @wire with refreshApex only on actions that are related to this data THEN GO TO 6.
+	Question - 5. Use @wire without refreshApex THEN GO TO 6.
 	Question - 6. ASK THE USER  this dispatch caused by expand action (USER CAN SAY YES , NO , DO YOUR OWN CHECK (SO USER TELL AI TO CHECK IN THAT CASE AI WILL ANALYSE THE DISPATCH EVENT NAME if it indicates an expand action)):
 
 		If yes → go to Step 7.
@@ -132,17 +135,20 @@ TURN DISCIPLINE
 			}
 			
 				
-	STEP 10 — APEX METHOD RESOLUTION
+	STEP 10 — APEX METHOD RESOLUTION: (you can show another option to mirror a function so user enter the function that need to mirror)
 		Ask (one question):
 		"Which Apex method should handle this? Choose one:
 		 (A) Enter Apex class + method name + the line where this method is exist 
 		 (B) I don't know the name — I'll tell you WHERE to look and you find it.
 		 (C) The method doesn't exist yet — create it."
 
-		BRANCH A — user provides class + method
-			Record <ApexClass>.<method>. Verify the method exists (only if the line is not  given by the user or if the singnature is not  clear) and its signature
-			matches what this event needs. Then proceed to FINAL OUTPUT for this event.
+		Branch A — Line Provided by User:
+			If the user specifies the line number where the method exists, the AI will skip verification entirely — it will not check whether the method exists, whether the class exists, or whether the signature matches. It will simply record <ApexClass>.<method> at the given line and proceed directly to FINAL OUTPUT for this event.
+			Verification (method existence + signature check) is only triggered when:
 
+			No line is provided, AND
+			The method signature is not already clear from what the user gave
+		
 		BRANCH B — user points to a location, not a name
 			Ask where to search (folder/path/class). Search there, identify the
 			matching method, confirm it back to the user, record it, then proceed
