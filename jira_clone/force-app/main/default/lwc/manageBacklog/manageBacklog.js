@@ -68,8 +68,8 @@ export default class ManageBacklog extends LightningElement {
      *       StartDate__c: '2026-05-01',
      *       Goal__c: 'Ship OAuth flow',
      *       endDate: '2026-05-15',
-     *       totalStoryPoints: 21,
-     *       endedStoryPoints: 8,
+     *       TotalStoryPoint__c: 21,
+     *       TotalEndedStoryPoint__c: 8,
      *       storyPointsPercent: 38,
      *       isExpanded: true,
      *       chevronIcon: 'utility:chevrondown',
@@ -1059,9 +1059,9 @@ export default class ManageBacklog extends LightningElement {
                 ...s,
                 tickets,
                 hasTickets        : true,
-                totalStoryPoints  : updatedSprint.totalStoryPoints,
-                endedStoryPoints  : updatedSprint.endedStoryPoints,
-                storyPointsPercent: updatedSprint.storyPointsPercent,
+                TotalStoryPoint__c     : updatedSprint.TotalStoryPoint__c,
+                TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c,
+                storyPointsPercent     : updatedSprint.storyPointsPercent,
             };
         });
     }
@@ -1071,8 +1071,8 @@ export default class ManageBacklog extends LightningElement {
             if (s.Id !== updatedSprint.Id) return s;
             return {
                 ...s,
-                totalStoryPoints: updatedSprint.totalStoryPoints,
-                endedStoryPoints: updatedSprint.endedStoryPoints
+                TotalStoryPoint__c: updatedSprint.TotalStoryPoint__c,
+                TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c
             };
         });
     }
@@ -1130,8 +1130,8 @@ export default class ManageBacklog extends LightningElement {
                     ...s,
                     tickets,
                     hasTickets: tickets.length > 0,
-                    totalStoryPoints: updatedSprint.totalStoryPoints,
-                    endedStoryPoints: updatedSprint.endedStoryPoints,
+                    TotalStoryPoint__c: updatedSprint.TotalStoryPoint__c,
+                    TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c,
                     storyPointsPercent: updatedSprint.storyPointsPercent
                 };
             }
@@ -1154,8 +1154,8 @@ export default class ManageBacklog extends LightningElement {
                     ...s,
                     tickets,
                     hasTickets: tickets.length > 0,
-                    totalStoryPoints: updatedSprint.totalStoryPoints,
-                    endedStoryPoints: updatedSprint.endedStoryPoints,
+                    TotalStoryPoint__c: updatedSprint.TotalStoryPoint__c,
+                    TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c,
                     storyPointsPercent: updatedSprint.storyPointsPercent
                 };
             }

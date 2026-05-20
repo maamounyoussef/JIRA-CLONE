@@ -39,8 +39,6 @@ export function formatSprint(raw) {
         currentPage         : 1,
         offsetLabel         : 'No tickets',
         dropTargetClass     : 'sprint-container',
-        endedStoryPoints,
-        totalStoryPoints,
         storyPointsPercent,
     };
 }
