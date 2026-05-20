@@ -40,15 +40,4 @@ export function dispatchTicketDragEnd(component, ticketId, newCurrentStatusId) {
     }));
 }
 
-/**
- * Fired when the user clicks the "View linked items" button on a ticket card.
- * manageTicketTracking handles the wire call and renders the popup directly —
- * no data is drilled through ticketBoardColumn.
- */
-export function dispatchOpenLinkedTo(component, ticketId) {
-    component.dispatchEvent(new CustomEvent('openlinkedto', {
-        detail:   { ticketId },
-        bubbles:  true,
-        composed: true
-    }));
-}
+

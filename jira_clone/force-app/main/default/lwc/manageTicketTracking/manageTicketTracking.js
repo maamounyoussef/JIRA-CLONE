@@ -1,15 +1,8 @@
 import { LightningElement, track, wire } from 'lwc';
 import { loadStyle }    from 'lightning/platformResourceLoader';
-import { refreshApex }  from '@salesforce/apex';
 import loadManageTicketTrackingPage from '@salesforce/apex/ManageTicketTrackingController.loadManageTicketTrackingPage';
 import changeTicketState            from '@salesforce/apex/ManageTicketTrackingController.changeTicketState';
 import loadTicketLinkTypes          from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkTypes';
-import createTicketLink             from '@salesforce/apex/ManageTicketTrackingController.createTicketLink';
-import mbUpdateTicketSummary        from '@salesforce/apex/ManageBacklogController.updateTicketSummary';
-import mbUpdateTicketDescription    from '@salesforce/apex/ManageBacklogController.updateTicketDescription';
-import mbChangeTicketState          from '@salesforce/apex/ManageBacklogController.changeTicketState';
-import mbLoadTicketLinkedToType     from '@salesforce/apex/ManageBacklogController.loadTicketLinkedToType';
-import mbLoadTicketBySearchTerm     from '@salesforce/apex/ManageBacklogController.loadTicketBySearchTerm';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -49,22 +42,6 @@ export default class ManageTicketTracking extends LightningElement {
     _dragTicketTypeId = null;
     _dragToStatusId   = null;
 
-    // Linked-to popup state
-    _ticketLinkTypes        = [];
-    _linkedToTicketId       = null;
-    _showLinkedToPopup      = false;
-    _linkedToWireId         = '';       // reactive param — empty string prevents wire from firing
-    _linkedToItems          = [];
-    _linkedToListKey        = '';
-    _wiredLinkedItemsResult = null;     // stored for refreshApex
-
-    // ─── TICKET VIEW STATE ────────────────────────────────────────────────────
-    @track _showTicketView           = false;
-    @track _activeTicketViewData     = null;
-    @track _ticketLinkedToTypeOptions = [];
-    @track _ticketViewSearchOptions   = [];
-    _ticketViewSearchTerm = '';
-
     // ─── WIRE ─────────────────────────────────────────────────────────────────
 
 
@@ -72,26 +49,6 @@ export default class ManageTicketTracking extends LightningElement {
     handleLinkedTypeTicketWire({ data }) {
         if (data && data.success) {
             this._ticketLinkTypes = (data.data && data.data.ticketLinkTypes) || [];
-        }
-    }
-
-    @wire(mbLoadTicketLinkedToType)
-    wiredTicketLinkedToType({ data }) {
-        if (data && data.success) {
-            this._ticketLinkedToTypeOptions = (data.data || []).map(t => ({
-                label: t.label || t.Name || t.value || '',
-                value: t.value || t.Id || ''
-            }));
-        }
-    }
-
-    @wire(mbLoadTicketBySearchTerm, { projectId: '$_projectId', searchTerm: '$_ticketViewSearchTerm' })
-    wiredTicketViewSearch({ data }) {
-        if (data && data.success) {
-            this._ticketViewSearchOptions = (data.data || []).map(t => ({
-                label: `${t.Name} — ${t.Summary__c || ''}`,
-                value: t.Id
-            }));
         }
     }
 
@@ -104,11 +61,6 @@ export default class ManageTicketTracking extends LightningElement {
     get linkedToListKey()     { return this._linkedToListKey; }
     get ticketLinkTypes()  { return this._ticketLinkTypes || []; }
     get tickets() {return this._sprintTickets || [];}
-
-    get showTicketView()             { return this._showTicketView; }
-    get activeTicketViewData()       { return this._activeTicketViewData; }
-    get ticketLinkedToTypeOptions()  { return this._ticketLinkedToTypeOptions; }
-    get ticketViewSearchOptions()    { return this._ticketViewSearchOptions; }
 
     get sprintDateRange() {
         return formatSprintDateRange(this._sprint);
@@ -190,88 +142,6 @@ export default class ManageTicketTracking extends LightningElement {
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     clearError() { this.errorMessage = null; }
 
-    // ─── TICKET VIEW HANDLERS ─────────────────────────────────────────────────
-    handleOpenTicketView(event) {
-        const t = event.detail.ticket || {};
-        this._activeTicketViewData = { ...t, linkedTo: t.linkedTo || [] };
-        this._showTicketView = true;
-    }
-
-    handleCloseTicketView() {
-        this._showTicketView       = false;
-        this._activeTicketViewData = null;
-    }
-
-    handleTicketViewSummaryUpdate(event) {
-        const { ticketId, summary } = event.detail;
-        mbUpdateTicketSummary({ ticketId, summary })
-            .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
-                this._patchSprintTicket(ticketId, { Summary__c: summary });
-                if (this._activeTicketViewData && this._activeTicketViewData.Id === ticketId) {
-                    this._activeTicketViewData = { ...this._activeTicketViewData, Summary__c: summary };
-                }
-            })
-            .catch(err => { this.errorMessage = err.body?.message || err.message || 'Error updating summary'; });
-    }
-
-    handleTicketViewStatusChange(event) {
-        const { ticketId, fromStatusId, toStatusId } = event.detail;
-        mbChangeTicketState({ ticketId, fromStatusId, toStatusId })
-            .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
-                this._patchSprintTicket(ticketId, { CurrentState__c: toStatusId });
-                if (this._activeTicketViewData && this._activeTicketViewData.Id === ticketId) {
-                    this._activeTicketViewData = { ...this._activeTicketViewData, CurrentState__c: toStatusId };
-                }
-            })
-            .catch(err => { this.errorMessage = err.body?.message || err.message || 'Error updating status'; });
-    }
-
-    handleTicketViewDescriptionUpdate(event) {
-        const { ticketId, description } = event.detail;
-        mbUpdateTicketDescription({ ticketId, description })
-            .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
-                this._patchSprintTicket(ticketId, { Description__c: description });
-                if (this._activeTicketViewData && this._activeTicketViewData.Id === ticketId) {
-                    this._activeTicketViewData = { ...this._activeTicketViewData, Description__c: description };
-                }
-            })
-            .catch(err => { this.errorMessage = err.body?.message || err.message || 'Error updating description'; });
-    }
-
-    handleTicketSearch(event) {
-        const term = (event.detail.searchTerm || '').trim();
-        this._ticketViewSearchTerm = term.length >= 2 ? term : '';
-    }
-
-    handleTicketViewLinkCreate(event) {
-        console.log('[manageTicketTracking] ticketlinkcreate', event.detail);
-    }
-
-    _patchSprintTicket(ticketId, patch) {
-        this._sprintTickets = this._sprintTickets.map(t =>
-            t.Id === ticketId ? { ...t, ...patch } : t
-        );
-    }
-
-    handleTicketStateChange(event) {
-        const { ticketId, fromStatusId, toStatusId } = event.detail;
-        if (toStatusId === fromStatusId) return;
-        const ticket = this._sprintTickets.find(t => t.Id === ticketId);
-        if (!ticket) return;
-        const transitionId = findTransitionId(
-            ticket.Ticket_Type__c, fromStatusId, toStatusId, this._ticketTypes, this._workflowTransitions
-        );
-        if (!transitionId) { this.errorMessage = 'This transition is not allowed by the workflow.'; return; }
-        this._sprintTickets = this._sprintTickets.map(t =>
-            t.Id === ticketId ? { ...t, CurrentState__c: toStatusId } : t
-        );
-        this.columns = buildColumns(this._statuses, this._sprintTickets);
-        this._callChangeTicketState(ticketId, fromStatusId, toStatusId);
-    }
-
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                          TICKET SECTION                                   ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
@@ -334,40 +204,4 @@ export default class ManageTicketTracking extends LightningElement {
         this.columns = this.columns.map(col => ({ ...col, isValidTarget: false }));
     }
 
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║                       LINKED-TO POPUP SECTION                            ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
-
-    // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
-    handleOpenLinkedTo(evt) {
-        const { ticketId } = evt.detail;
-        this._linkedToTicketId  = ticketId;
-        this._showLinkedToPopup = true;
-    }
-
-    handleExpandLinkedTo(evt) {
-        const { ticketId } = evt.detail;
-        if (this._linkedToWireId === ticketId) {
-            refreshApex(this._wiredLinkedItemsResult);
-        } else {
-            this._linkedToWireId = ticketId;
-        }
-    }
-
-    handleCloseLinkedTo() {
-        this._showLinkedToPopup  = false;
-        this._linkedToTicketId   = null;
-        this._linkedToItems      = [];
-        this._linkedToListKey    = '';
-    }
-
-    handleCreateTicketLink(event) {
-        const { fromTicketId, toTicketId, linkType } = event.detail;
-        createTicketLink({ fromTicketId, toTicketId, linkType })
-            .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
-                refreshApex(this._wiredLinkedItemsResult);
-            })
-            .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error creating ticket link'; });
-    }
 }
