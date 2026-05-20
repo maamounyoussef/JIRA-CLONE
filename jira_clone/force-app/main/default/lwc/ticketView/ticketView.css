@@ -12,6 +12,11 @@
     gap: 22px;
 }
 
+.tv-header {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .tv-section {
     display: flex;
     flex-direction: column;

@@ -215,6 +215,11 @@ export default class AoTicketItem extends LightningElement {
         console.log('Ticket row clicked:', this.ticket.Id, this.ticket.Name);
     }
 
+    handleOpenTicketView(event) {
+        event.stopPropagation();
+        this._dispatch('ticketviewopen', { ticketId: this.ticket.Id, ticket: this.ticket });
+    }
+
     handleDragStart(event) {
         event.dataTransfer.setData('text/plain', JSON.stringify({
             ticketId    : this.ticket.Id,

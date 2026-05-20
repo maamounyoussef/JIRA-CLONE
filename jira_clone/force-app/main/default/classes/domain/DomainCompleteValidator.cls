@@ -152,6 +152,20 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // TICKET LINK — business rules
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Both tickets in a link must belong to the same project.
+     * Project is resolved from each ticket's TicketType.
+     */
+    public static void requireSameProjectForTicketLink(TicketType__c fromTicketType, TicketType__c toTicketType) {
+        if (fromTicketType.Project__c != toTicketType.Project__c) {
+            throw new ServiceException('Cannot link tickets that belong to different projects');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // PAGINATION — utilities
     // ═══════════════════════════════════════════════════════════════
 

@@ -1,0 +1,297 @@
+Create a parent functionality that handles events from a child:
+Rule 0 (universal state-update rule):
+	After any Apex response returns, update the principal state from the response data — never from optimistic local values.
+
+	This applies to BOTH call styles:
+	- Imperative Apex: update state inside the .then() / await result.
+	- @wire: use the wired-FUNCTION form, not the wired-property form.
+	  Inside the wire handler, read the result and update state manually
+	  the same way you would in an imperative call.
+
+	  Example shape:
+		@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
+		wiredTicketLinkedTo(result) {
+			if (result.data && result.data.success && this._linkedToTargetTicketId) {
+				const linkedTo = result.data.data?.ticketLinkTo || [];
+				this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
+			}
+		}
+
+	  Note the pattern:
+	  - The wire input ($_linkedToTargetTicketId) gates the call — when it's set, the wire fires.
+	  - Inside the handler, validate success and the input is still set.
+	  - Extract the relevant slice from the response (result.data.data?.ticketLinkTo).
+	  - Update principal state via a dedicated mutator (_patchTicketEverywhere),
+		which keeps de-normalized state consistent across the component.
+
+	  Do NOT use:
+		@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' }) ticketLinkedTo;
+	  …because that binds the response to a property directly and bypasses R0,
+	  meaning principal state is never updated and derived getters (R2) won't see the new data.
+Rule 1: Create a handle JS function for each event.
+	example : 
+            <c-ticket-view
+                ticket={activeTicketViewModel}
+                status-options={statusOptions}
+                ticket-linked-to-type-options={ticketLinkedToTypeOptions}
+                ticket-options={ticketViewSearchOptions}
+                onticketsummaryupdate={handleTicketViewSummaryUpdate}
+                onticketstatuschange={handleTicketViewStatusChange}
+                onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
+                onticketsearch={handleTicketSearch}
+                onticketlinkcreate={handleTicketLinkCreate}
+                onticketlinkedtoexpand={handleTicketLinkedToExpand}
+                oncloseticketview={handleCloseTicketView}>
+            </c-ticket-view>
+Rule 2: For state that should be passed to the child: do not create a new data state for the child. Instead, declare derived functions that compute values from the de-normalized principal state (Derived values must be computed on read (getters), not stored.).
+example : 
+
+    get activeTicketViewModel() {
+        if (!this._activeTicketViewId) return null;
+        const ticket = this._findTicketById(this._activeTicketViewId);
+        return ticket ? this._toTicketViewModel(ticket) : null;
+    }
+	
+	 _findTicketById(ticketId) {
+        const fromBacklog = this.backlogTickets.find(t => t.Id === ticketId);
+        if (fromBacklog) return fromBacklog;
+        for (const sprint of this.sprints) {
+            const found = sprint.tickets.find(t => t.Id === ticketId);
+            if (found) return found;
+        }
+        return null;
+    }
+	
+	where this is the de-normalized principal state : 
+	  *   sprints: [
+     *     {
+     *       Id: '0061x00000Sprint1',
+     *       Name: 'Sprint 12',
+     *       Duration__c: 2,
+     *       StartDate__c: '2026-05-01',
+     *       Goal__c: 'Ship OAuth flow',
+     *       endDate: '2026-05-15',
+     *       totalStoryPoints: 21,
+     *       endedStoryPoints: 8,
+     *       storyPointsPercent: 38,
+     *       isExpanded: true,
+     *       chevronIcon: 'utility:chevrondown',
+     *       isLoadingTickets: false,
+     *       offset: 0,
+     *       hasMore: false,
+     *       isFirstPage: true,
+     *       isLastPage: true,
+     *       currentPage: 1,
+     *       offsetLabel: 'Showing 1–3',
+     *       dropTargetClass: 'sprint-container',
+     *       hasTickets: true,
+     *       tickets: [
+     *         {
+     *           Id: '0061x00000ABcDeFGHI',
+     *           Name: 'TIC-00042',
+     *           Summary__c: 'Add OAuth login',
+     *           Description__c: 'Support Google and GitHub sign-in flows',
+     *           Priority__c: 'High',
+     *           CurrentState__c: '0061x00000Status01',
+     *           AssignedTo__c: '0051x00000User01',
+     *           Epic__c: '0061x00000Epic01',
+     *           Ticket_Type__c: '0061x00000Type01',
+     *           StoryPoint__c: 5,
+     *           assigneeName: 'Jane Doe',
+     *           epicName: 'Authentication revamp',
+     *           ticketTypeName: 'Story',
+     *           isSelected: false,
+     *           _key: 'k2x9q7p1',
+     *           linkedTo: [
+     *             { id: '0061x00000ABc002', linkType: 'BLOCKS', label: 'TIC-00050 — Refresh tokens' }
+     *           ]
+     *         }
+     *       ]
+     *     }
+     *   ],
+     *   backlogTickets: [
+     *     {
+     *       Id: '0061x00000XyZ',
+     *       Name: 'TIC-00099',
+     *       Summary__c: 'Spike: rate limiting',
+     *       Description__c: 'Investigate Redis token bucket',
+     *       Priority__c: 'Medium',
+     *       CurrentState__c: '0061x00000Status01',
+     *       AssignedTo__c: '0051x00000User02',
+     *       Epic__c: '0061x00000Epic02',
+     *       Ticket_Type__c: '0061x00000Type02',
+     *       StoryPoint__c: 3,
+     *       assigneeName: 'John Smith',
+     *       epicName: 'Platform hardening',
+     *       ticketTypeName: 'Spike',
+     *       isSelected: false,
+     *       _key: 'a8b2c4d6',
+     *       linkedTo: []
+     *     }
+     *   ]
+
+Rule 3: We need a get function for  presentation state to control how the component is shown.: 
+	example : get isTicketViewOpen()           { return this._activeTicketViewId !== null; }
+	For state that is stored in an array:
+Rule 4: Store the object's Id in a separate data state (outside the de-normalized principal state) so we know which child is currently shown.
+	example : @track _activeTicketViewId        = null;
+Rule 5: Provide methods to find, update, delete, and create (names can be domain-specific — e.g., enrich).
+	examples : 
+	_patchTicketEverywhere(ticketId, patch) {
+        this.backlogTickets = this.backlogTickets.map(t =>
+            t.Id === ticketId ? { ...t, ...patch } : t
+        );
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, ...patch } : t)
+        }));
+    }
+	 _deleteTicketsFromSprints(ticketIds, updatedSprints) {
+        const updatedSprintMap = {};
+        updatedSprints.forEach(sprint => {
+            updatedSprintMap[sprint.Id] = sprint;
+        });
+
+        this.sprints = this.sprints.map(s => {
+            const tickets = s.tickets.filter(t => !ticketIds.includes(t.Id));
+            const updatedSprint = updatedSprintMap[s.Id];
+
+            if (updatedSprint) {
+                return {
+                    ...s,
+                    tickets,
+                    hasTickets: tickets.length > 0,
+                    totalStoryPoints: updatedSprint.totalStoryPoints,
+                    endedStoryPoints: updatedSprint.endedStoryPoints,
+                    storyPointsPercent: updatedSprint.storyPointsPercent
+                };
+            }
+            return { ...s, tickets, hasTickets: tickets.length > 0 };
+        });
+    }
+
+    _updateSprintsTicketSummary(ticketId, summary) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Summary__c: summary } : t),
+        }));
+    }
+
+    _updateSprintsTicketPriority(ticketId, priority) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Priority__c: priority } : t),
+        }));
+    }
+
+    _updateSprintsTicketState(ticketId, statusId) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, CurrentState__c: statusId } : t),
+        }));
+    }
+
+    _updateSprintsTicketAssignee(ticketId, memberId, assigneeName) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, AssignedTo__c: memberId, assigneeName } : t),
+        }));
+    }
+
+    _updateSprintsTicketEpic(ticketId, epicId, epicName) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Epic__c: epicId, epicName } : t),
+        }));
+    }
+
+    _updateSprintsTicketRekey(ticketId, key) {
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, _key: key } : t),
+        }));
+    }
+	
+	Rule 6 : in case of fail just call dispatch Toast Event 
+	example : 
+		 this.dispatchEvent(new ShowToastEvent({
+            title  : 'Final Status Reached',
+            message: 'This ticket has no further transitions available.',
+            variant: 'success'
+        }));
+
+
+THE RULES IS USED TO TELL AI HOW TO WORK IT WAS NOT A RESULT. 
+AFTER USER RESPOND TO QUESTIONS THE AI WILL GENERATE THE CODE BASED ON RULE + USER ANSWER.
+IF USER SAY I DO NOT KNOW AI SHOULD ANALYSE AND GET THE BEST decision.
+
+Final output must include: (a) the chosen Apex call style with justification, (b) the event handler stub (R1), (c) the wire or imperative call with R0-compliant state update, (d) the derived getter(s) for child props (R2), (e) the find/update/delete/create mutators (R5), (f) presentation state declarations (R3).
+
+
+Prompt flow:
+for each dispatch event ai will through  : 
+	0. AI asks which state we are working on.
+
+		User provides the state name in the code (a user can say i do not know so ai will analyse which one is based on the dispatched event name).
+		AI checks whether this state is stored in an array or as a single (separate) value.
+		If it is separate: just make an imperative Apex call and update the state with the data returned by the Apex call (for consistency) THEN GO TO STEP 10 DIRECTLY.
+		Otherwise: continue.
+
+	1. AI asks: "Do we have multiple writes on this functionality at the same time(Can other users (or other browser sessions) modify this data while this component is open)?" AI shows: Yes / No.
+
+		If Yes → go to Step 2.
+		If No → go to Step 6.
+
+	2. AI asks: "Do you want this value to be visible to other users as soon as possible?" AI shows: Very important to show to other user as soon as possible  / Important to show to other user as soon as possible / Not important to show to other user as soon as possible .
+
+		Very important → go to Step 3.
+		Important → go to Step 4.
+		Not important → go to Step 5.
+
+	3. Use @wire with refreshApex on every applicable request that comes from the child.
+	4. Use @wire with refreshApex only on actions that are related to this data.
+	5. Use @wire without refreshApex.
+	6. ASK THE USER  whether we have a dispatch caused by expand (USER CAN SAY YES , NO , DO YOUR OWN CHECK (SO USER TELL AI TO CHECK IN THAT CASE AI WILL ANALYSE THE DISPATCH EVENT NAME if it indicates an expand action)):
+
+		If yes → go to Step 7.
+		If no → go to Step 9.
+
+	7. AI asks: "Do you want to load the objects the first time when the child is created, or when it is expanded?" AI shows: Expanded / Created.
+
+		Expanded → go to Step 8  .
+		Created → go to Step 9.
+
+	8. Create a new state field (separate from activeObjectId) and use it as the @wire input instead of activeObjectId (so the wire fires on expand, not on object selection).
+		>> GO TO STEP 10
+		example: 
+			handleTicketLinkedToExpand(event) {
+				const { ticketId} = event.detail;
+				this._linkedToTargetTicketId = ticketId;
+			}
+			
+			 @track _linkedToTargetTicketId = null;
+			@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
+			wiredTicketLinkedTo(result) {
+				if (result.data && result.data.success && this._linkedToTargetTicketId) {
+					const linkedTo = result.data.data?.ticketLinkTo || [];
+					this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
+				}
+			}
+	9. Place the @wire on activeObjectId.
+
+		example : 
+			handleTicketLinkedToExpand(event) {
+			   // no need for this method only if we need to call refresh apex 
+			   // example if the  user choose  important so here we should refresh apex every time 
+			}
+
+			@wire(loadTicketLinkedTo, { ticketId: '$activeTicketViewId' })
+			wiredTicketLinkedTo(result) {
+				if (result.data && result.data.success ) {
+					const linkedTo = result.data.data?.ticketLinkTo || [];
+					this._patchTicketEverywhere(this.activeTicketViewId, { linkedTo });
+				}
+			}
+			
+			
+	10. for each dispatch event ai will ask for the apex method to call (if user does not know where the function is he can tell ai where to search instead of the function name and apex class name)

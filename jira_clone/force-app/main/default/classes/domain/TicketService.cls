@@ -482,49 +482,77 @@ public with sharing class TicketService {
         }
     }
 
+    public static TicketLinkToDto linkToTicket(Ticket__c fromTicket, Ticket__c toTicket, TicketType__c fromTicketType, TicketType__c toTicketType, String linkType) {
+        try {
+            DomainCompleteValidator.requireSameProjectForTicketLink(fromTicketType, toTicketType);
+
+            TicketLink__c link = new TicketLink__c(
+                LinkedFromTicket__c = fromTicket.Id,
+                LinkedToTicket__c   = toTicket.Id,
+                Type__c             = linkType,
+                RecordStatus__c     = 'active'
+            );
+            insert link;
+
+            TicketLinkToDto dto   = new TicketLinkToDto();
+            dto.linkId            = link.Id;
+            dto.type              = linkType;
+            dto.recordStatus      = link.RecordStatus__c;
+            dto.ticketFromId      = fromTicket.Id;
+            dto.linkedToTicket    = toLinkedToTicketFormat(toTicket);
+            return dto;
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error linking ticket: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error linking ticket: ' + ex.getMessage());
+        }
+    }
+
     public static List<TicketLinkToDto> getTicketLinkedTo(String ticketId) {
         try {
             List<TicketLink__c> links = [
-                SELECT Id, Type__c,
+                SELECT Id, Type__c, RecordStatus__c,
+                       LinkedFromTicket__c,
                        LinkedToTicket__c,
+                       LinkedToTicket__r.Id,
                        LinkedToTicket__r.Name,
                        LinkedToTicket__r.Summary__c,
-                       LinkedToTicket__r.CurrentState__c,
-                       LinkedToTicket__r.CurrentState__r.Name,
-                       LinkedToTicket__r.AssignedTo__c,
-                       LinkedToTicket__r.AssignedTo__r.User__r.Name,
                        LinkedToTicket__r.Priority__c,
-                       LinkedToTicket__r.Ticket_Type__c,
-                       LinkedToTicket__r.Ticket_Type__r.Name
+                       LinkedToTicket__r.CurrentState__c,
+                       LinkedToTicket__r.AssignedTo__c,
+                       LinkedToTicket__r.Ticket_Type__c
                 FROM TicketLink__c
                 WHERE LinkedFromTicket__c = :ticketId AND RecordStatus__c != 'delete'
             ];
 
             List<TicketLinkToDto> result = new List<TicketLinkToDto>();
             for (TicketLink__c link : links) {
-                TicketLinkToDto dto     = new TicketLinkToDto();
-                dto.linkId              = link.Id;
-                dto.linkType            = link.Type__c;
-                dto.ticketId            = link.LinkedToTicket__c;
-                dto.ticketName          = link.LinkedToTicket__r.Name;
-                dto.summary             = link.LinkedToTicket__r.Summary__c;
-                dto.currentStatusId     = link.LinkedToTicket__r.CurrentState__c;
-                dto.currentStatusName   = link.LinkedToTicket__r.CurrentState__r.Name;
-                dto.assigneeId          = link.LinkedToTicket__r.AssignedTo__c;
-                dto.assigneeName        = (link.LinkedToTicket__r.AssignedTo__c != null &&
-                                           link.LinkedToTicket__r.AssignedTo__r != null &&
-                                           link.LinkedToTicket__r.AssignedTo__r.User__r != null)
-                                          ? link.LinkedToTicket__r.AssignedTo__r.User__r.Name
-                                          : null;
-                dto.priority            = link.LinkedToTicket__r.Priority__c;
-                dto.ticketTypeId        = link.LinkedToTicket__r.Ticket_Type__c;
-                dto.ticketTypeName      = link.LinkedToTicket__r.Ticket_Type__r.Name;
+                TicketLinkToDto dto  = new TicketLinkToDto();
+                dto.linkId         = link.Id;
+                dto.type           = link.Type__c;
+                dto.recordStatus   = link.RecordStatus__c;
+                dto.ticketFromId   = link.LinkedFromTicket__c;
+                dto.linkedToTicket = toLinkedToTicketFormat(link.LinkedToTicket__r);
                 result.add(dto);
             }
             return result;
         } catch (Exception ex) {
             throw new ServiceException('Error loading linked tickets: ' + ex.getMessage());
         }
+    }
+
+    // Single flat format for TicketLinkToDto.linkedToTicket, so links produced by
+    // linkToTicket and getTicketLinkedTo always serialize identically (no __r).
+    private static Ticket__c toLinkedToTicketFormat(Ticket__c t) {
+        return new Ticket__c(
+            Id              = t.Id,
+            Name            = t.Name,
+            Summary__c      = t.Summary__c,
+            Priority__c     = t.Priority__c,
+            CurrentState__c = t.CurrentState__c,
+            AssignedTo__c   = t.AssignedTo__c,
+            Ticket_Type__c  = t.Ticket_Type__c
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -146,7 +146,8 @@
                                 onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
                                 onsubtaskassigneechange={handleSubtaskAssigneeChange}
                                 onsubtaskdelete={handleSubtaskDelete}
-                                onsubtasksbulkdelete={handleSubtasksBulkDelete}>
+                                onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                                onticketviewopen={handleOpenTicketView}>
                             </c-ao-ticket-item>
                         </template>
 
@@ -236,7 +237,8 @@
                     onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
                     onsubtaskassigneechange={handleSubtaskAssigneeChange}
                     onsubtaskdelete={handleSubtaskDelete}
-                    onsubtasksbulkdelete={handleSubtasksBulkDelete}>
+                    onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                    onticketviewopen={handleOpenTicketView}>
                 </c-ao-ticket-item>
             </template>
 
@@ -268,4 +270,24 @@
         </section>
 
     </div>
+
+    <!-- Ticket View Modal -->
+    <template if:true={isTicketViewOpen}>
+        <div class="modal-backdrop" onclick={handleCloseTicketView}></div>
+        <section role="dialog" aria-modal="true" class="modal modal--ticket-view">
+            <c-ticket-view
+                ticket={activeTicketViewModel}
+                status-options={statusOptions}
+                ticket-linked-to-type-options={ticketLinkedToTypeOptions}
+                ticket-options={ticketViewSearchOptions}
+                onticketsummaryupdate={handleTicketViewSummaryUpdate}
+                onticketstatuschange={handleTicketViewStatusChange}
+                onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
+                onticketsearch={handleTicketSearch}
+                onticketlinkcreate={handleTicketLinkCreate}
+                onticketlinkedtoexpand={handleTicketLinkedToExpand}
+                oncloseticketview={handleCloseTicketView}>
+            </c-ticket-view>
+        </section>
+    </template>
 </template>

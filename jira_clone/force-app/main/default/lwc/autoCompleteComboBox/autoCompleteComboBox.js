@@ -137,6 +137,11 @@ export default class AutoCompleteComboBox extends LightningElement {
         this._inputText = event.target.value;
         this._isOpen = true;
         this._activeIndex = -1;
+        this.dispatchEvent(new CustomEvent('search', {
+            detail: { searchTerm: this._inputText },
+            bubbles: true,
+            composed: true
+        }));
     }
 
     handleClick() {

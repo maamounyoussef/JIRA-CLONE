@@ -41,7 +41,8 @@
 
         <div class="board-columns"
              onticketstatechange={handleTicketStateChange}
-             onopenlinkedto={handleOpenLinkedTo}>
+             onopenlinkedto={handleOpenLinkedTo}
+             onticketviewopen={handleOpenTicketView}>
             <template for:each={columns} for:item="col">
                 <c-ticket-board-column
                     key={col.statusId}
@@ -72,6 +73,25 @@
                 oncloselinkedto={handleCloseLinkedTo}
                 oncreateticketlink={handleCreateTicketLink}
             ></c-ticket-linked-to>
+        </template>
+
+        <!-- Ticket View Modal -->
+        <template if:true={showTicketView}>
+            <div class="modal-backdrop" onclick={handleCloseTicketView}></div>
+            <section role="dialog" aria-modal="true" class="modal modal--ticket-view">
+                <c-ticket-view
+                    ticket={activeTicketViewData}
+                    status-options={statusOptions}
+                    ticket-linked-to-type-options={ticketLinkedToTypeOptions}
+                    ticket-options={ticketViewSearchOptions}
+                    onticketsummaryupdate={handleTicketViewSummaryUpdate}
+                    onticketstatuschange={handleTicketViewStatusChange}
+                    onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
+                    onticketsearch={handleTicketSearch}
+                    onticketlinkcreate={handleTicketViewLinkCreate}
+                    oncloseticketview={handleCloseTicketView}>
+                </c-ticket-view>
+            </section>
         </template>
 
     </template>

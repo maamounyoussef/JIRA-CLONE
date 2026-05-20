@@ -29,12 +29,16 @@ export default class TicketView extends LightningElement {
     // ─── @api INPUTS ──────────────────────────────────────────────────────────
 
     /**
-     * The ticket being viewed. Expected shape:
+     * The ticket being viewed — the raw ticket record:
      *   {
-     *     id, summary, currentStatusId, description,
-     *     priority, assigneeName,
-     *     linkedTo: [ { linkId, type, ticketId, ticketName, summary,
-     *                   statusId, priority, assigneeName } ]
+     *     Id, Name, Summary__c, Description__c, Priority__c,
+     *     CurrentState__c, AssignedTo__c, Ticket_Type__c,
+     *     assigneeName, ticketTypeName,
+     *     linkedTo: [ {
+     *       linkId, type, recordStatus, ticketFromId,
+     *       linkedToTicket: { Id, Name, Summary__c, Priority__c,
+     *                         CurrentState__c, AssignedTo__c, Ticket_Type__c }
+     *     } ]
      *   }
      */
     _ticket = {};
@@ -43,8 +47,8 @@ export default class TicketView extends LightningElement {
     get ticket() { return this._ticket; }
     set ticket(value) {
         this._ticket = value || {};
-        this._draftSummary     = this._ticket.summary     || '';
-        this._draftDescription = this._ticket.description || '';
+        this._draftSummary     = this._ticket.Summary__c     || '';
+        this._draftDescription = this._ticket.Description__c || '';
     }
 
     /** [{ label, value }] — status options for the Current State combobox. */
@@ -54,7 +58,7 @@ export default class TicketView extends LightningElement {
     @api ticketLinkedToTypeOptions = [];
 
     /** [{ label, value }] — ticket options for the auto-complete combobox.
-     *  Parent should populate in response to the `tickettypesearch` event. */
+     *  Parent should populate in response to the `ticketsearch` event. */
     @api ticketOptions = [];
 
 
@@ -82,12 +86,12 @@ export default class TicketView extends LightningElement {
     get draftSummary()         { return this._draftSummary; }
     get summaryError()         { return this._summaryError; }
 
-    get currentStatusId()      { return this._ticket.currentStatusId || ''; }
+    get currentStatusId()      { return this._ticket.CurrentState__c || ''; }
     get statusError()          { return this._statusError; }
 
     get isDescriptionEditing() { return this._isDescriptionEditing; }
     get draftDescription()     { return this._draftDescription; }
-    get hasDescription()       { return !!(this._ticket.description && this._ticket.description.trim()); }
+    get hasDescription()       { return !!(this._ticket.Description__c && this._ticket.Description__c.trim()); }
 
     get isLinkedToExpanded()   { return this._isLinkedToExpanded; }
     get chevronIcon()          { return this._isLinkedToExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
@@ -112,7 +116,7 @@ export default class TicketView extends LightningElement {
     // ╚══════════════════════════════════════════════════════════════════════╝
 
     handleTicketSummaryEdit() {
-        this._draftSummary    = this._ticket.summary || '';
+        this._draftSummary    = this._ticket.Summary__c || '';
         this._summaryError    = null;
         this._isSummaryEditing = true;
     }
@@ -126,7 +130,7 @@ export default class TicketView extends LightningElement {
         const error = validateTicketSummary(this._draftSummary);
         if (error) { this._summaryError = error; return; }
 
-        const detail = { ticketId: this._ticket.id, summary: this._draftSummary.trim() };
+        const detail = { ticketId: this._ticket.Id, summary: this._draftSummary.trim() };
         console.log('[ticket-view] dispatch ticketsummaryupdate', detail);
         this.dispatchEvent(new CustomEvent('ticketsummaryupdate', {
             detail, bubbles: true, composed: true
@@ -135,7 +139,7 @@ export default class TicketView extends LightningElement {
     }
 
     handleTicketSummaryCancel() {
-        this._draftSummary    = this._ticket.summary || '';
+        this._draftSummary    = this._ticket.Summary__c || '';
         this._summaryError    = null;
         this._isSummaryEditing = false;
     }
@@ -152,8 +156,8 @@ export default class TicketView extends LightningElement {
         this._statusError = null;
 
         const detail = {
-            ticketId:     this._ticket.id,
-            fromStatusId: this._ticket.currentStatusId || null,
+            ticketId:     this._ticket.Id,
+            fromStatusId: this._ticket.CurrentState__c || null,
             toStatusId:   newStatusId
         };
         console.log('[ticket-view] dispatch ticketstatuschange', detail);
@@ -168,7 +172,7 @@ export default class TicketView extends LightningElement {
     // ╚══════════════════════════════════════════════════════════════════════╝
 
     handleTicketDescriptionEdit() {
-        this._draftDescription     = this._ticket.description || '';
+        this._draftDescription     = this._ticket.Description__c || '';
         this._isDescriptionEditing = true;
     }
 
@@ -177,7 +181,7 @@ export default class TicketView extends LightningElement {
     }
 
     handleTicketDescriptionSave() {
-        const detail = { ticketId: this._ticket.id, description: this._draftDescription };
+        const detail = { ticketId: this._ticket.Id, description: this._draftDescription };
         console.log('[ticket-view] dispatch ticketdescriptionupdate', detail);
         this.dispatchEvent(new CustomEvent('ticketdescriptionupdate', {
             detail, bubbles: true, composed: true
@@ -186,7 +190,7 @@ export default class TicketView extends LightningElement {
     }
 
     handleTicketDescriptionCancel() {
-        this._draftDescription     = this._ticket.description || '';
+        this._draftDescription     = this._ticket.Description__c || '';
         this._isDescriptionEditing = false;
     }
 
@@ -197,7 +201,13 @@ export default class TicketView extends LightningElement {
 
     handleTicketLinkedToToggle() {
         this._isLinkedToExpanded = !this._isLinkedToExpanded;
-        if (!this._isLinkedToExpanded) {
+        if (this._isLinkedToExpanded) {
+            const detail = { ticketId: this._ticket.Id};
+            console.log('[ticket-view] dispatch ticketlinkedtoexpand', detail);
+            this.dispatchEvent(new CustomEvent('ticketlinkedtoexpand', {
+                detail, bubbles: true, composed: true
+            }));
+        } else {
             this._showLinkedToAddForm = false;
             this._linkedToError       = null;
         }
@@ -221,9 +231,15 @@ export default class TicketView extends LightningElement {
         if (this._linkedToError) this._linkedToError = null;
     }
 
-    // TODO dispatchEvent: when parent-driven ticket search is wired,
-    // dispatch `tickettypesearch` from the autocomplete (min 2 chars)
-    // so the parent can populate `ticketOptions` from Apex.
+    handleTicketLinkedToTicketSearch(event) {
+        const searchTerm = (event.detail.searchTerm || '').trim();
+        if (searchTerm.length < 2) return;
+        this.dispatchEvent(new CustomEvent('ticketsearch', {
+            detail: { searchTerm },
+            bubbles: true,
+            composed: true
+        }));
+    }
 
     handleTicketLinkCreate() {
         const error = validateTicketLink({
@@ -233,13 +249,14 @@ export default class TicketView extends LightningElement {
         if (error) { this._linkedToError = error; return; }
 
         const data = {
-            fromTicketId: this._ticket.id,
+            fromTicketId: this._ticket.Id,
             toTicketId:   this._selectedLinkedTicket,
             linkType:     this._selectedLinkType
         };
 
-        // TODO dispatchEvent: wire to parent (handleTicketLinkCreate) once Apex is ready.
-        console.log('[ticket-view] ticketlinkcreate (pending dispatch)', data);
+        this.dispatchEvent(new CustomEvent('ticketlinkcreate', {
+            detail: data, bubbles: true, composed: true
+        }));
 
         this._showLinkedToAddForm  = false;
         this._selectedLinkType     = '';
@@ -251,5 +268,16 @@ export default class TicketView extends LightningElement {
         this._selectedLinkType     = '';
         this._selectedLinkedTicket = '';
         this._linkedToError        = null;
+    }
+
+
+    // ╔══════════════════════════════════════════════════════════════════════╗
+    // ║                          CLOSE                                       ║
+    // ╚══════════════════════════════════════════════════════════════════════╝
+
+    handleClose() {
+        this.dispatchEvent(new CustomEvent('closeticketview', {
+            bubbles: true, composed: true
+        }));
     }
 }

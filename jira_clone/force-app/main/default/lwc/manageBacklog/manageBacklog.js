@@ -1,4 +1,4 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadStyle } from 'lightning/platformResourceLoader';
 import createTicketFromSprint          from '@salesforce/apex/ManageBacklogController.createTicketFromSprint';
@@ -16,6 +16,7 @@ import startSprint           from '@salesforce/apex/ManageBacklogController.star
 import loadTicketsBySprint   from '@salesforce/apex/ManageBacklogController.loadTicketsBySprint';
 import deleteTicket          from '@salesforce/apex/ManageBacklogController.deleteTicket';
 import updateTicketSummary   from '@salesforce/apex/ManageBacklogController.updateTicketSummary';
+import updateTicketDescription from '@salesforce/apex/ManageBacklogController.updateTicketDescription';
 import updateTicketPriority  from '@salesforce/apex/ManageBacklogController.updateTicketPriority';
 import changeTicketState     from '@salesforce/apex/ManageBacklogController.changeTicketState';
 import assignTicket          from '@salesforce/apex/ManageBacklogController.assignTicket';
@@ -26,6 +27,10 @@ import updateSubtaskSummary  from '@salesforce/apex/ManageBacklogController.upda
 import assignSubtask         from '@salesforce/apex/ManageBacklogController.assignSubtask';
 import deleteSubtask         from '@salesforce/apex/ManageBacklogController.deleteSubtask';
 import deleteSubtasks        from '@salesforce/apex/ManageBacklogController.deleteSubtasks';
+import loadTicketLinkedToType from '@salesforce/apex/ManageBacklogController.loadTicketLinkedToType';
+import loadTicketLinkedTo     from '@salesforce/apex/ManageBacklogController.loadTicketLinkedTo';
+import loadTicketBySearchTerm from '@salesforce/apex/ManageBacklogController.loadTicketBySearchTerm';
+import linkToTicket          from '@salesforce/apex/ManageBacklogController.linkToTicket';
 import aoThemeResource       from '@salesforce/resourceUrl/aoTheme';
 
 import { validateSprintForm }        from './backlogSprintValidator';
@@ -53,6 +58,90 @@ export default class ManageBacklog extends LightningElement {
     _mqList    = null;
     _mqHandler = null;
 
+    /*
+     * {
+     *   sprints: [
+     *     {
+     *       Id: '0061x00000Sprint1',
+     *       Name: 'Sprint 12',
+     *       Duration__c: 2,
+     *       StartDate__c: '2026-05-01',
+     *       Goal__c: 'Ship OAuth flow',
+     *       endDate: '2026-05-15',
+     *       totalStoryPoints: 21,
+     *       endedStoryPoints: 8,
+     *       storyPointsPercent: 38,
+     *       isExpanded: true,
+     *       chevronIcon: 'utility:chevrondown',
+     *       isLoadingTickets: false,
+     *       offset: 0,
+     *       hasMore: false,
+     *       isFirstPage: true,
+     *       isLastPage: true,
+     *       currentPage: 1,
+     *       offsetLabel: 'Showing 1–3',
+     *       dropTargetClass: 'sprint-container',
+     *       hasTickets: true,
+     *       tickets: [
+     *         {
+     *           Id: '0061x00000ABcDeFGHI',
+     *           Name: 'TIC-00042',
+     *           Summary__c: 'Add OAuth login',
+     *           Description__c: 'Support Google and GitHub sign-in flows',
+     *           Priority__c: 'High',
+     *           CurrentState__c: '0061x00000Status01',
+     *           AssignedTo__c: '0051x00000User01',
+     *           Epic__c: '0061x00000Epic01',
+     *           Ticket_Type__c: '0061x00000Type01',
+     *           StoryPoint__c: 5,
+     *           assigneeName: 'Jane Doe',
+     *           epicName: 'Authentication revamp',
+     *           ticketTypeName: 'Story',
+     *           isSelected: false,
+     *           _key: 'k2x9q7p1',
+     *           linkedTo: [
+                    {
+                        "linkId": "a0Bd200000qgR5tEAE",
+                        "type": "Blocks",
+                        "recordStatus": "active",
+                        "ticketFromId": "a0Cd200001EShGIEA1",
+                        "linkedToTicket": {
+                            "Id": "a0Cd200001EShOtherEA1",
+                            "Name": "new Ticket",
+                            "Summary__c": "aaaaaaa",
+                            "Priority__c": "Low",
+                            "CurrentState__c": "a02d200000YKyncAAD",
+                            "AssignedTo__c": "a01...",
+                            "Ticket_Type__c": "a05d200000P51DBAAZ"
+                        }
+                    }
+                    ]
+     *         }
+     *       ]
+     *     }
+     *   ],
+     *   backlogTickets: [
+     *     {
+     *       Id: '0061x00000XyZ',
+     *       Name: 'TIC-00099',
+     *       Summary__c: 'Spike: rate limiting',
+     *       Description__c: 'Investigate Redis token bucket',
+     *       Priority__c: 'Medium',
+     *       CurrentState__c: '0061x00000Status01',
+     *       AssignedTo__c: '0051x00000User02',
+     *       Epic__c: '0061x00000Epic02',
+     *       Ticket_Type__c: '0061x00000Type02',
+     *       StoryPoint__c: 3,
+     *       assigneeName: 'John Smith',
+     *       epicName: 'Platform hardening',
+     *       ticketTypeName: 'Spike',
+     *       isSelected: false,
+     *       _key: 'a8b2c4d6',
+     *       linkedTo: []
+     *     }
+     *   ]
+     * }
+     */
     @track sprints           = [];
     @track backlogTickets    = [];
     @track statusOptions     = [];
@@ -62,6 +151,50 @@ export default class ManageBacklog extends LightningElement {
     @track priorityOptions   = [];
 
     _statuses = [];
+
+    // ─── TICKET VIEW STATE ────────────────────────────────────────────────────
+    @track _activeTicketViewId        = null;
+    @track _ticketLinkedToTypeOptions = [];
+    @track _ticketViewSearchOptions   = [];
+    _ticketViewSearchTerm = '';
+
+    @wire(loadTicketLinkedToType)
+    wiredTicketLinkedToType({ data }) {
+        if (data && data.success) {
+            this._ticketLinkedToTypeOptions = (data.data || []).map(t => ({
+                label: t.label || t.Name || t.value || '',
+                value: t.value || t.Id || ''
+            }));
+        }
+    }
+
+    @wire(loadTicketBySearchTerm, { projectId: '$_projectId', searchTerm: '$_ticketViewSearchTerm' })
+    wiredTicketViewSearch({ data }) {
+        if (data && data.success) {
+            this._ticketViewSearchOptions = (data.data || []).map(t => ({
+                label: `${t.Name} — ${t.Summary__c || ''}`,
+                value: t.Id
+            }));
+        }
+    }
+
+
+    @track _linkedToTargetTicketId = null;
+    @wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
+    wiredTicketLinkedTo(result) {
+        if (result.data && result.data.success && this._linkedToTargetTicketId) {
+            const linkedTo = result.data.data?.ticketLinkTo || [];
+            this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
+        }
+    }
+
+    get isTicketViewOpen()           { return this._activeTicketViewId !== null; }
+    get activeTicketViewModel() {
+        if (!this._activeTicketViewId) return null;
+        return this._findTicketById(this._activeTicketViewId);
+    }
+    get ticketLinkedToTypeOptions()  { return this._ticketLinkedToTypeOptions; }
+    get ticketViewSearchOptions()    { return this._ticketViewSearchOptions; }
 
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
     connectedCallback() {
@@ -88,6 +221,96 @@ export default class ManageBacklog extends LightningElement {
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     clearError() { this.errorMessage = null; }
+
+    // ─── TICKET VIEW HANDLERS ─────────────────────────────────────────────────
+    handleOpenTicketView(event) {
+        const t = event.detail.ticket || {};
+        if (!t.Id) return;
+        this._activeTicketViewId = t.Id;
+    }
+
+    handleCloseTicketView() {
+        this._activeTicketViewId = null;
+    }
+
+    handleTicketViewSummaryUpdate(event) {
+        const { ticketId, summary } = event.detail;
+        updateTicketSummary({ ticketId, summary })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error updating summary');
+                this._patchTicketEverywhere(ticketId, { Summary__c: summary });
+                this._showSuccess('Summary updated');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating summary'));
+    }
+
+    handleTicketViewStatusChange(event) {
+        const { ticketId, fromStatusId, toStatusId } = event.detail;
+        changeTicketState({ ticketId, fromStatusId, toStatusId })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error updating status');
+                this._patchTicketEverywhere(ticketId, { CurrentState__c: toStatusId });
+                this._showSuccess('Status updated');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating status'));
+    }
+
+    handleTicketViewDescriptionUpdate(event) {
+        const { ticketId, description } = event.detail;
+        updateTicketDescription({ ticketId, description })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error updating description');
+                this._patchTicketEverywhere(ticketId, { Description__c: description });
+                this._showSuccess('Description updated');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating description'));
+    }
+
+    handleTicketSearch(event) {
+        const term = (event.detail.searchTerm || '').trim();
+        this._ticketViewSearchTerm = term ;
+    }
+
+    handleTicketLinkedToExpand(event) {
+        const { ticketId} = event.detail;
+        this._linkedToTargetTicketId = ticketId;
+    }
+
+    handleTicketLinkCreate(event) {
+        const { fromTicketId, toTicketId, linkType } = event.detail;
+        linkToTicket({ fromTicketId, toTicketId, linkType })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error linking ticket');
+                // Backend returns the new link already shaped as TicketLinkToDto.
+                const newLink = res.data?.ticketLink;
+                if (!newLink) throw new Error('Error linking ticket');
+                const linkedFromTicket = this._findTicketById(fromTicketId);
+                const existing         = linkedFromTicket?.linkedTo || [];
+                this._patchTicketEverywhere(fromTicketId, { linkedTo: [...existing, newLink] });
+                this._showSuccess('Ticket linked');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error linking ticket'));
+    }
+
+    _findTicketById(ticketId) {
+        const fromBacklog = this.backlogTickets.find(t => t.Id === ticketId);
+        if (fromBacklog) return fromBacklog;
+        for (const sprint of this.sprints) {
+            const found = sprint.tickets.find(t => t.Id === ticketId);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    _patchTicketEverywhere(ticketId, patch) {
+        this.backlogTickets = this.backlogTickets.map(t =>
+            t.Id === ticketId ? { ...t, ...patch } : t
+        );
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, ...patch } : t)
+        }));
+    }
 
 
 // ╔══════════════════════════════════════════════════════════════════════════╗

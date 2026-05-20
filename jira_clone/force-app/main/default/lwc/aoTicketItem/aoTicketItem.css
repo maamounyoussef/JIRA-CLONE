@@ -12,6 +12,22 @@
     --row-pad-inline: 0.75em;
 }
 
+.ticket-key--clickable,
+.ticket-summary--clickable,
+.card-summary-text--clickable {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 0 2px;
+}
+
+.ticket-key--clickable:hover,
+.ticket-summary--clickable:hover,
+.card-summary-text--clickable:hover {
+    background-color: #EBECF0;
+    color: #0052CC;
+    text-decoration: underline;
+}
+
 /* ── Modal (shared across all dialogs in this component) ──────────────────── */
 .modal-backdrop {
     position: fixed;

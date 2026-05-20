@@ -17,7 +17,7 @@ public class TicketServiceTest {
         );
         insert member;
 
-        Workflow__c workflow = new Workflow__c(Name = 'TestWorkflow', Project__c = project.Id);
+        Workflow__c workflow = new Workflow__c(Name = 'TestWorkflow', Project__c = project.Id, RecordStatus__c = 'active');
         insert workflow;
 
         Status__c todo = [SELECT Id FROM Status__c WHERE Project__c = :project.Id AND isStart__c = true LIMIT 1];
@@ -47,6 +47,10 @@ public class TicketServiceTest {
         return [SELECT Id, Name, Project__c, Workflow__c FROM TicketType__c LIMIT 1];
     }
 
+    private static ProjectMember__c getMember() {
+        return [SELECT Id FROM ProjectMember__c WHERE User__c = :UserInfo.getUserId() LIMIT 1];
+    }
+
     private static Status__c startStatus() {
         TicketType__c tt = getTicketType();
         return [SELECT Id, isStart__c, isEnd__c FROM Status__c WHERE Project__c = :tt.Project__c AND isStart__c = true LIMIT 1];
@@ -72,11 +76,16 @@ public class TicketServiceTest {
 
     private static Ticket__c buildTicket(String name, Integer storyPoint, Id stateId, Id sprintId) {
         TicketType__c tt = getTicketType();
+        ProjectMember__c member = getMember();
         Ticket__c ticket = new Ticket__c();
-        ticket.Name           = name;
-        ticket.Summary__c     = name;
-        ticket.Ticket_Type__c = tt.Id;
-        ticket.StoryPoint__c  = storyPoint;
+        ticket.Name            = name;
+        ticket.Summary__c      = name;
+        ticket.Ticket_Type__c  = tt.Id;
+        ticket.StoryPoint__c   = storyPoint;
+        ticket.Creator__c      = member.Id;
+        ticket.Description__c  = name + ' description';
+        ticket.Priority__c     = 'Medium';
+        ticket.RecordStatus__c = 'active';
         if (stateId != null)  ticket.CurrentState__c = stateId;
         if (sprintId != null) ticket.Sprint__c       = sprintId;
         return ticket;
@@ -372,5 +381,44 @@ public class TicketServiceTest {
         Assert.areEqual(1, result.size(), 'One sprint should be updated');
         Assert.areEqual(0, result[0].TotalStoryPoint__c, 'Total story points should be 0 after bulk delete');
         Assert.areEqual(0, result[0].TotalEndedStoryPoint__c, 'Ended story points should be 0 after bulk delete');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TICKET LINKS
+    // ─────────────────────────────────────────────────────────────
+
+    @isTest
+    static void testGetTicketLinkedTo() {
+        TicketType__c tt = getTicketType();
+        Ticket__c fromTicket = buildTicket('TCK-019', 3, null, null);
+        Ticket__c toTicket   = buildTicket('TCK-020', 5, null, null);
+        TicketService.createTicketWithoutSprint(fromTicket, tt);
+        TicketService.createTicketWithoutSprint(toTicket, tt);
+
+        TicketService.linkToTicket(fromTicket, toTicket, tt, tt, 'Blocks');
+
+        Test.startTest();
+        List<TicketLinkToDto> result = TicketService.getTicketLinkedTo(fromTicket.Id);
+        Test.stopTest();
+
+        Assert.areEqual(1, result.size(), 'Should return one linked ticket');
+        Assert.areEqual(toTicket.Id, result[0].linkedToTicket.Id, 'Linked ticket id should match toTicket');
+        Assert.areEqual('Blocks', result[0].type, 'Link type should match');
+        Assert.areEqual('TCK-020', result[0].linkedToTicket.Summary__c, 'Summary should match toTicket');
+        Assert.isNotNull(result[0].linkId, 'Link id should be populated');
+        Assert.isNotNull(result[0].linkedToTicket.CurrentState__c, 'Current status id should be populated');
+    }
+
+    @isTest
+    static void testGetTicketLinkedToReturnsEmptyWhenNoLinks() {
+        TicketType__c tt = getTicketType();
+        Ticket__c ticket = buildTicket('TCK-021', 2, null, null);
+        TicketService.createTicketWithoutSprint(ticket, tt);
+
+        Test.startTest();
+        List<TicketLinkToDto> result = TicketService.getTicketLinkedTo(ticket.Id);
+        Test.stopTest();
+
+        Assert.areEqual(0, result.size(), 'Should return empty list when no links exist');
     }
 }

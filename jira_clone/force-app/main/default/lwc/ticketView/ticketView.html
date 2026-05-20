@@ -1,13 +1,23 @@
 <template>
     <article class="ticket-view">
 
+        <header class="tv-header">
+            <c-ao-btn
+                icon-name="utility:close"
+                variant="bare"
+                size="sm"
+                title="Close"
+                onclick={handleClose}>
+            </c-ao-btn>
+        </header>
+
         <!-- ╔══════════════════════════════════════════════════════════════╗ -->
         <!-- ║                       SUMMARY                                ║ -->
         <!-- ╚══════════════════════════════════════════════════════════════╝ -->
         <section class="tv-section tv-summary">
             <template if:false={isSummaryEditing}>
                 <h1 class="tv-summary__label" onclick={handleTicketSummaryEdit} title="Click to edit">
-                    {ticket.summary}
+                    {ticket.Summary__c}
                 </h1>
             </template>
 
@@ -71,7 +81,7 @@
                 <template if:true={hasDescription}>
                     <div class="tv-description__view"
                          onclick={handleTicketDescriptionEdit}>
-                        <lightning-formatted-rich-text value={ticket.description}></lightning-formatted-rich-text>
+                        <lightning-formatted-rich-text value={ticket.Description__c}></lightning-formatted-rich-text>
                     </div>
                 </template>
                 <template if:false={hasDescription}>
@@ -141,21 +151,21 @@
                                        data-link-id={item.linkId} />
 
                                 <!-- ID intentionally hidden per spec -->
-                                <span class="tv-linked__hidden-id">{item.ticketId}</span>
+                                <span class="tv-linked__hidden-id">{item.linkedToTicket.Id}</span>
 
-                                <span class="tv-linked__name">{item.ticketName}</span>
-                                <span class="tv-linked__summary">{item.summary}</span>
+                                <span class="tv-linked__name">{item.linkedToTicket.Name}</span>
+                                <span class="tv-linked__summary">{item.linkedToTicket.Summary__c}</span>
 
                                 <c-ao-combobox
                                     class="tv-linked__status"
                                     variant="label-hidden"
                                     placeholder="State"
-                                    value={item.statusId}
+                                    value={item.linkedToTicket.CurrentState__c}
                                     options={statusOptions}>
                                 </c-ao-combobox>
 
-                                <span class="tv-linked__priority">{item.priority}</span>
-                                <span class="tv-linked__assignee">{item.assigneeName}</span>
+                                <span class="tv-linked__priority">{item.linkedToTicket.Priority__c}</span>
+                                <span class="tv-linked__assignee">{item.linkedToTicket.AssignedTo__c}</span>
                             </div>
                         </template>
                     </template>
@@ -180,7 +190,8 @@
                                     variant="label-hidden"
                                     placeholder="Search ticket (min 2 chars)..."
                                     options={ticketOptions}
-                                    onchange={handleTicketLinkedToTicketChange}>
+                                    onchange={handleTicketLinkedToTicketChange}
+                                    onsearch={handleTicketLinkedToTicketSearch}>
                                 </c-auto-complete-combo-box>
                             </div>
 

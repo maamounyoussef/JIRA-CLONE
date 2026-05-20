@@ -124,6 +124,11 @@
 
 .modal--sm { width: min(420px, calc(100vw - 32px)); }
 
+.modal--ticket-view {
+    width: min(880px, calc(100vw - 32px));
+    overflow-y: auto;
+}
+
 .modal__header { padding: 20px 24px 8px; }
 
 .modal__title {

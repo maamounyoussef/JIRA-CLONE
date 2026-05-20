@@ -1,14 +1,7 @@
 public class TicketLinkToDto {
-    @AuraEnabled public String linkId;
-    @AuraEnabled public String linkType;
-    @AuraEnabled public String ticketId;
-    @AuraEnabled public String ticketName;
-    @AuraEnabled public String summary;
-    @AuraEnabled public String currentStatusId;
-    @AuraEnabled public String currentStatusName;
-    @AuraEnabled public String assigneeId;
-    @AuraEnabled public String assigneeName;
-    @AuraEnabled public String priority;
-    @AuraEnabled public String ticketTypeId;
-    @AuraEnabled public String ticketTypeName;
+    @AuraEnabled public String linkId;          // TicketLink__c.Id
+    @AuraEnabled public String type;            // TicketLink__c.Type__c
+    @AuraEnabled public String recordStatus;    // TicketLink__c.RecordStatus__c
+    @AuraEnabled public String ticketFromId;    // TicketLink__c.LinkedFromTicket__c
+    @AuraEnabled public Ticket__c linkedToTicket; // TicketLink__c.LinkedToTicket__c
 }

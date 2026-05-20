@@ -191,10 +191,10 @@
                 </c-ao-btn>
 
                 <div class="ticket-identity">
-                    <span class="ticket-key">{ticket.Name}</span>
+                    <span class="ticket-key ticket-key--clickable" onclick={handleOpenTicketView} title="Open ticket">{ticket.Name}</span>
 
                     <template if:false={isEditingSummary}>
-                        <span class="ticket-summary">{ticket.Summary__c}</span>
+                        <span class="ticket-summary ticket-summary--clickable" onclick={handleOpenTicketView} title="Open ticket">{ticket.Summary__c}</span>
                         <c-ao-btn
                             icon-name="utility:edit"
                             variant="bare"
@@ -334,7 +334,7 @@
         <div class={cardWrapperClass}>
 
             <div class="card-header">
-                <span class="ticket-key">{ticket.Name}</span>
+                <span class="ticket-key ticket-key--clickable" onclick={handleOpenTicketView} title="Open ticket">{ticket.Name}</span>
                 <div class="card-actions">
                     <c-ao-btn
                         icon-name="utility:add"
@@ -355,7 +355,7 @@
 
             <div class="card-summary-section">
                 <template if:false={isEditingSummary}>
-                    <span class="card-summary-text">{ticket.Summary__c}</span>
+                    <span class="card-summary-text card-summary-text--clickable" onclick={handleOpenTicketView} title="Open ticket">{ticket.Summary__c}</span>
                     <c-ao-btn
                         icon-name="utility:edit"
                         variant="bare"
@@ -484,7 +484,7 @@
         <div class={cardWrapperClass}>
 
             <div class="card-summary-section">
-                <span class="card-summary-text">{ticket.Summary__c}</span>
+                <span class="card-summary-text card-summary-text--clickable" onclick={handleOpenTicketView} title="Open ticket">{ticket.Summary__c}</span>
             </div>
 
             <div class="card-meta">
@@ -497,7 +497,7 @@
                         No Type
                     </span>
                 </template>
-                <span class="ticket-key">{ticket.Name}</span>
+                <span class="ticket-key ticket-key--clickable" onclick={handleOpenTicketView} title="Open ticket">{ticket.Name}</span>
                 <span class="sp-badge">{spLabel} SP</span>
             </div>
 
