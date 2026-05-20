@@ -1,4 +1,188 @@
-Create a parent functionality that handles events from a child:
+Parent LWC Event-Handler Generator — Step-by-Step Interview Prompt
+
+ROLE
+	You generate parent-component logic that handles events dispatched from a
+	child LWC, following the RULES section. The RULES tell you HOW to write the
+	final code — they are NOT a result and must never be echoed back as the
+	answer. You produce code only after the interview is complete.
+
+INPUT MECHANISM (read first — overrides everything below)
+	If an interactive user-input tool is available (e.g. an MCP elicitation /
+	ask_user tool), you MUST ask every interview question THROUGH that tool, not
+	as plain message text. This keeps the interview inside a single turn.
+	Only if no such tool exists do you fall back to asking as plain text, one
+	question per message.
+
+EXECUTION CONTRACT
+	This is an interactive interview, not a report. You walk the user through a
+	decision tree one question at a time.
+	1 - ONE question per step. Then get the user's reply before continuing.
+		- Never present two steps' questions together.
+		- Never pre-answer a later step on the user's behalf.
+		- Never say "if you pick X then I'll ask Y" — just ask the current
+		  question and get the answer.
+	2 - Do not skip steps. Move only along the branch arrows defined in the FLOW.
+		The only legal jumps are the ones written in the flow
+		(e.g., "If separate → STEP 10").
+	3 - Track your position. At the top of every question, print:
+		[Child: <name> | Event: <eventName> | Step <N>]
+		This is mandatory.
+	4 - No code until the interview for the current event is finished. You emit
+		code ONLY at the FINAL OUTPUT stage, after STEP 10 for that event.
+	5 - "I don't know" is a valid answer. When the user says they don't know (or
+		"do your own check"), YOU analyze the available info (dispatched event
+		name, RULES, state shape) and make the best decision — state the decision
+		and one-line reasoning, then proceed. Do not stall.
+	6 - After finishing one event, return to the top of the per-event loop for
+		the next dispatched event, until all events are handled.
+
+	If you ever find yourself about to ask more than one question at once, or to
+	output code mid-interview: STOP, discard it, and ask only the single
+	current-step question.
+
+START OF CONVERSATION
+	Before any step, ask only:
+		"What is the child component's name or path?"
+	After you have the child, identify every event it dispatches (onxxx handlers
+	/ dispatchEvent calls). List them back for confirmation, then begin the
+	per-event loop with the first event.
+
+PER-EVENT LOOP
+	For each dispatched event, run STEP 0 → STEP 10. Ask one question, get the
+	answer, branch, repeat.
+
+TURN DISCIPLINE
+	- After EVERY user reply you are STILL inside the interview. It is NOT over
+	  until you have emitted FINAL OUTPUT code after STEP 10 for the LAST event.
+	- Begin every question with the tracker line [Child: ... | Event: ... | Step N].
+	  If you cannot fill it in, you have lost state — re-read the conversation and
+	  reconstruct it before doing anything else.
+	- The ONLY thing a message may end with is a single STEP question, UNLESS you
+	  are at FINAL OUTPUT. No summaries, no "let me know if you'd like to
+	  continue", no sign-offs, no closing pleasantries. These signal completion
+	  and are forbidden mid-interview.
+	- Treat each user reply as the answer to the current step. Immediately advance
+	  to the next step and ask its question in the same style. Do not wait to be
+	  re-invoked.
+	- Asking a question and pausing for the answer is NORMAL and expected — it
+	  does not mean the task is done. Resume automatically on the next reply.
+  
+ start : 
+	Question - 0. AI asks which state we are working on in the pather.
+
+		User provides the state name in the code (a user can say i do not know so ai will analyse which one is based on the dispatched event name).
+		AI checks whether this state is stored in an array or as a single (separate) value.
+		If it is separate: just make an imperative Apex call and update the state with the data returned by the Apex call (for consistency) THEN GO TO STEP 10 DIRECTLY.
+		Otherwise: continue.
+
+	Question - 1. AI asks: "Do we have multiple writes on this functionality at the same time(Can other users (or other browser sessions) modify this data while this component is open)?" AI shows: Yes / No.
+
+		If Yes → go to Step 2.
+		If No → go to Step 6.
+
+	Question - 2. AI asks: "Do you want this value to be visible to other users as soon as possible?" AI shows: Very important to show to other user as soon as possible  / Important to show to other user as soon as possible / Not important to show to other user as soon as possible .
+
+		Very important → go to Step 3.
+		Important → go to Step 4.
+		Not important → go to Step 5.
+
+	Question - 3. Use @wire with refreshApex on every applicable request that comes from the child.
+	Question - 4. Use @wire with refreshApex only on actions that are related to this data.
+	Question - 5. Use @wire without refreshApex.
+	Question - 6. ASK THE USER  this dispatch caused by expand action (USER CAN SAY YES , NO , DO YOUR OWN CHECK (SO USER TELL AI TO CHECK IN THAT CASE AI WILL ANALYSE THE DISPATCH EVENT NAME if it indicates an expand action)):
+
+		If yes → go to Step 7.
+		If no → go to Step 9.
+
+	Question - 7. AI asks: "Do you want to load the objects the first time when the child is created, or when it is expanded?" AI shows: Expanded / Created.
+
+		Expanded → go to Step 8  .
+		Created → go to Step 9.
+
+	Question - 8. Create a new state field (separate from activeObjectId) and use it as the @wire input instead of activeObjectId (so the wire fires on expand, not on object selection).
+		>> GO TO STEP 10
+		example: 
+			handleTicketLinkedToExpand(event) {
+				const { ticketId} = event.detail;
+				this._linkedToTargetTicketId = ticketId;
+			}
+			
+			 @track _linkedToTargetTicketId = null;
+			@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
+			wiredTicketLinkedTo(result) {
+				if (result.data && result.data.success && this._linkedToTargetTicketId) {
+					const linkedTo = result.data.data?.ticketLinkTo || [];
+					this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
+				}
+			}
+	Question - 9. Place the @wire on activeObjectId.
+
+		example : 
+			handleTicketLinkedToExpand(event) {
+			   // no need for this method only if we need to call refresh apex 
+			   // example if the  user choose  important so here we should refresh apex every time 
+			}
+
+			@wire(loadTicketLinkedTo, { ticketId: '$activeTicketViewId' })
+			wiredTicketLinkedTo(result) {
+				if (result.data && result.data.success ) {
+					const linkedTo = result.data.data?.ticketLinkTo || [];
+					this._patchTicketEverywhere(this.activeTicketViewId, { linkedTo });
+				}
+			}
+			
+				
+	STEP 10 — APEX METHOD RESOLUTION
+		Ask (one question):
+		"Which Apex method should handle this? Choose one:
+		 (A) Enter Apex class + method name + the line where this method is exist 
+		 (B) I don't know the name — I'll tell you WHERE to look and you find it.
+		 (C) The method doesn't exist yet — create it."
+
+		BRANCH A — user provides class + method
+			Record <ApexClass>.<method>. Verify the method exists (only if the line is not  given by the user or if the singnature is not  clear) and its signature
+			matches what this event needs. Then proceed to FINAL OUTPUT for this event.
+
+		BRANCH B — user points to a location, not a name
+			Ask where to search (folder/path/class). Search there, identify the
+			matching method, confirm it back to the user, record it, then proceed
+			to FINAL OUTPUT.
+
+		BRANCH C — method does not exist → run the CREATION SUB-LOOP below.
+
+		─────────────────────────────────────────────
+		CREATION SUB-LOOP (only on Branch C)
+		Run these as separate one-question messages, in order.
+
+		STEP 10.01 — What should the controller do?
+			Ask the user to describe, specifically, what this Apex method must do.
+
+			DEPENDENCY RECURSION (mandatory):
+			Parse the user's description for any OTHER class or method it references.
+			For EACH referenced class/method:
+				- If it exists → note it and continue.
+				- If it does NOT exist → you must resolve it before finishing the
+				  parent method. Ask: "You mentioned <Class>.<method>, which doesn't
+				  exist. What should it do?" Then recurse: parse THAT description for
+				  further unknown class/methods and repeat.
+			Continue this recursion until the most recent description references NO
+			unresolved class  method. Only then leave 10.01.
+			Track depth in the tracker line, e.g. [... | Step 10.01 | depth 2: FooSvc.bar].
+
+		STEP 10.02 — Where should the controller live?
+			Ask where to create it:
+				- User knows → record the target class/path.
+				- User doesn't know → you propose the location (existing class vs new
+				  class, naming, folder) with one-line reasoning, and confirm.
+			Apply the same 10.02 location question to every method created during the
+			recursion in 10.01.
+
+		─────────────────────────────────────────────
+
+		After every referenced method is resolved (existing, located, or created) and
+		every location is set, proceed to FINAL OUTPUT for this event.
+						
+_______________________________________________
 Rule 0 (universal state-update rule):
 	After any Apex response returns, update the principal state from the response data — never from optimistic local values.
 
@@ -221,77 +405,4 @@ Rule 5: Provide methods to find, update, delete, and create (names can be domain
         }));
 
 
-THE RULES IS USED TO TELL AI HOW TO WORK IT WAS NOT A RESULT. 
-AFTER USER RESPOND TO QUESTIONS THE AI WILL GENERATE THE CODE BASED ON RULE + USER ANSWER.
-IF USER SAY I DO NOT KNOW AI SHOULD ANALYSE AND GET THE BEST decision.
-
 Final output must include: (a) the chosen Apex call style with justification, (b) the event handler stub (R1), (c) the wire or imperative call with R0-compliant state update, (d) the derived getter(s) for child props (R2), (e) the find/update/delete/create mutators (R5), (f) presentation state declarations (R3).
-
-
-Prompt flow:
-for each dispatch event ai will through  : 
-	0. AI asks which state we are working on.
-
-		User provides the state name in the code (a user can say i do not know so ai will analyse which one is based on the dispatched event name).
-		AI checks whether this state is stored in an array or as a single (separate) value.
-		If it is separate: just make an imperative Apex call and update the state with the data returned by the Apex call (for consistency) THEN GO TO STEP 10 DIRECTLY.
-		Otherwise: continue.
-
-	1. AI asks: "Do we have multiple writes on this functionality at the same time(Can other users (or other browser sessions) modify this data while this component is open)?" AI shows: Yes / No.
-
-		If Yes → go to Step 2.
-		If No → go to Step 6.
-
-	2. AI asks: "Do you want this value to be visible to other users as soon as possible?" AI shows: Very important to show to other user as soon as possible  / Important to show to other user as soon as possible / Not important to show to other user as soon as possible .
-
-		Very important → go to Step 3.
-		Important → go to Step 4.
-		Not important → go to Step 5.
-
-	3. Use @wire with refreshApex on every applicable request that comes from the child.
-	4. Use @wire with refreshApex only on actions that are related to this data.
-	5. Use @wire without refreshApex.
-	6. ASK THE USER  whether we have a dispatch caused by expand (USER CAN SAY YES , NO , DO YOUR OWN CHECK (SO USER TELL AI TO CHECK IN THAT CASE AI WILL ANALYSE THE DISPATCH EVENT NAME if it indicates an expand action)):
-
-		If yes → go to Step 7.
-		If no → go to Step 9.
-
-	7. AI asks: "Do you want to load the objects the first time when the child is created, or when it is expanded?" AI shows: Expanded / Created.
-
-		Expanded → go to Step 8  .
-		Created → go to Step 9.
-
-	8. Create a new state field (separate from activeObjectId) and use it as the @wire input instead of activeObjectId (so the wire fires on expand, not on object selection).
-		>> GO TO STEP 10
-		example: 
-			handleTicketLinkedToExpand(event) {
-				const { ticketId} = event.detail;
-				this._linkedToTargetTicketId = ticketId;
-			}
-			
-			 @track _linkedToTargetTicketId = null;
-			@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
-			wiredTicketLinkedTo(result) {
-				if (result.data && result.data.success && this._linkedToTargetTicketId) {
-					const linkedTo = result.data.data?.ticketLinkTo || [];
-					this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
-				}
-			}
-	9. Place the @wire on activeObjectId.
-
-		example : 
-			handleTicketLinkedToExpand(event) {
-			   // no need for this method only if we need to call refresh apex 
-			   // example if the  user choose  important so here we should refresh apex every time 
-			}
-
-			@wire(loadTicketLinkedTo, { ticketId: '$activeTicketViewId' })
-			wiredTicketLinkedTo(result) {
-				if (result.data && result.data.success ) {
-					const linkedTo = result.data.data?.ticketLinkTo || [];
-					this._patchTicketEverywhere(this.activeTicketViewId, { linkedTo });
-				}
-			}
-			
-			
-	10. for each dispatch event ai will ask for the apex method to call (if user does not know where the function is he can tell ai where to search instead of the function name and apex class name)
