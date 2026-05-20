@@ -6,14 +6,124 @@ import loadTicketLinkTypes          from '@salesforce/apex/ManageTicketTrackingC
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
-import { buildColumns, enrichTicketsWithTypeName, enrichTicketsWithAssigneeName,
-         enrichTicketsWithStateChange, enrichSprintWithEndedTicket } from './ticketUtils';
+import { buildColumns, buildSprintTickets, enrichTicketsWithStateChange, newTicketKey } from './ticketUtils';
 import { getValidTargetStatusIds, findTransitionId } from './workflowUtils';
 import { formatSprintDateRange }                            from './sprintUtils';
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                           PAGE SECTION                                   ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
+
+// sprint  is the principale de-normalized state example of it : 
+/*
+{
+  "Id": "a06d200000LDNCPAA5",
+  "Name": "sprint1",
+  "Duration__c": 2,
+  "StartDate__c": "2026-05-06",
+  "Goal__c": "dasdsad",
+  "Project__c": "a00d200002j4o2wAAA",
+  "RecordStatus__c": "in_progress",
+  "TotalStoryPoint__c": 24,
+  "TotalEndedStoryPoint__c": 26,
+  "tickets": [
+    {
+      "Id": "a0Cd200001ChX6AEAV",
+      "Name": "dasdsa",
+      "Summary__c": "dsad",
+      "CurrentState__c": "a02d200000YKyncAAD",
+      "Priority__c": "Critical",
+      "StoryPoint__c": 2,
+      "Sprint__c": "a06d200000LDNCPAA5",
+      "Ticket_Type__c": "a05d200000P51DBAAZ",
+      "RecordStatus__c": "active",
+      "ticketType": {
+        "Id": "a05d200000P51DBAAZ",
+        "Name": "Story",
+        "Description__c": "Standard story ticket type",
+        "IconUrl__c": "https://example.com/icons/story.png",
+        "Project__c": "a00d200002j4o2wAAA",
+        "RecordStatus__c": "Active",
+        "Workflow__c": "a01d200001g7lT3AAI",
+        "Workflow__r": {
+          "Name": "Default Workflow",
+          "Id": "a01d200001g7lT3AAI"
+        },
+        "workflowTransitions": [
+          {
+            "Id": "a03d200001mtP9hAAE",
+            "Workflow__c": "a01d200001g7lT3AAI",
+            "FromStatus__c": "a02d200000YKynbAAD",
+            "ToStatus__c": "a02d200000YL6mnAAD"
+          },
+          {
+            "Id": "a03d200001mtPEXAA2",
+            "Workflow__c": "a01d200001g7lT3AAI",
+            "FromStatus__c": "a02d200000YL6mnAAD",
+            "ToStatus__c": "a02d200000YL6oPAAT"
+          },
+          {
+            "Id": "a03d200001mtPJNAA2",
+            "Workflow__c": "a01d200001g7lT3AAI",
+            "FromStatus__c": "a02d200000YL6oPAAT",
+            "ToStatus__c": "a02d200000YKyncAAD"
+          }
+        ]
+      },
+      "ticketTypeName": "Story",
+      "assigneeName": "",
+      "isEndStatus": true
+    },
+    {
+      "Id": "a0Cd200001CmpLpEAJ",
+      "Name": "dsad",
+      "Summary__c": "sadsa",
+      "CurrentState__c": "a02d200000YKyncAAD",
+      "Priority__c": "High",
+      "StoryPoint__c": 2,
+      "Sprint__c": "a06d200000LDNCPAA5",
+      "Ticket_Type__c": "a05d200000P51DBAAZ",
+      "RecordStatus__c": "active",
+      "ticketType": {
+        "Id": "a05d200000P51DBAAZ",
+        "Name": "Story",
+        "Description__c": "Standard story ticket type",
+        "IconUrl__c": "https://example.com/icons/story.png",
+        "Project__c": "a00d200002j4o2wAAA",
+        "RecordStatus__c": "Active",
+        "Workflow__c": "a01d200001g7lT3AAI",
+        "Workflow__r": {
+          "Name": "Default Workflow",
+          "Id": "a01d200001g7lT3AAI"
+        },
+        "workflowTransitions": [
+          {
+            "Id": "a03d200001mtP9hAAE",
+            "Workflow__c": "a01d200001g7lT3AAI",
+            "FromStatus__c": "a02d200000YKynbAAD",
+            "ToStatus__c": "a02d200000YL6mnAAD"
+          },
+          {
+            "Id": "a03d200001mtPEXAA2",
+            "Workflow__c": "a01d200001g7lT3AAI",
+            "FromStatus__c": "a02d200000YL6mnAAD",
+            "ToStatus__c": "a02d200000YL6oPAAT"
+          },
+          {
+            "Id": "a03d200001mtPJNAA2",
+            "Workflow__c": "a01d200001g7lT3AAI",
+            "FromStatus__c": "a02d200000YL6oPAAT",
+            "ToStatus__c": "a02d200000YKyncAAD"
+          }
+        ]
+      },
+      "ticketTypeName": "Story",
+      "assigneeName": "",
+      "isEndStatus": true
+    }
+  ]
+}
+*/
 
 export default class ManageTicketTracking extends LightningElement {
 
@@ -22,25 +132,20 @@ export default class ManageTicketTracking extends LightningElement {
     isLoading       = false;
     errorMessage    = null;
 
-    @track columns         = [];
     @track memberOptions   = [];
     @track statusOptions   = [];
     @track epics           = [];
     @track priorityOptions = [];
 
-
-
-    _sprint              = null;
-    _ticketTypes         = [];
-    _workflowTransitions = [];
-    _statuses            = [];
-    _sprintTickets       = [];
+    _sprint   = null;
+    _statuses = [];
 
     // Drag state
-    _dragTicketId     = null;
-    _dragFromStatusId = null;
-    _dragTicketTypeId = null;
-    _dragToStatusId   = null;
+    _dragTicketId        = null;
+    _dragFromStatusId    = null;
+    _dragTicketType      = null;
+    _dragToStatusId      = null;
+    _validTargetStatusIds = [];
 
     // ─── WIRE ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +165,13 @@ export default class ManageTicketTracking extends LightningElement {
     get linkedToItems()       { return this._linkedToItems; }
     get linkedToListKey()     { return this._linkedToListKey; }
     get ticketLinkTypes()  { return this._ticketLinkTypes || []; }
-    get tickets() {return this._sprintTickets || [];}
+    get tickets() { return (this._sprint && this._sprint.tickets) || []; }
+
+    // Columns are derived, never stored: statuses give the lanes, the sprint's
+    // tickets fill them, and the active drag decides which lanes are valid drops.
+    get columns() {
+        return buildColumns(this._statuses, this.tickets, this._validTargetStatusIds);
+    }
 
     get sprintDateRange() {
         return formatSprintDateRange(this._sprint);
@@ -90,28 +201,28 @@ export default class ManageTicketTracking extends LightningElement {
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
                 const response = res.data;
-                this._sprint              = response.sprint || null;
-                this._ticketTypes         = response.ticketTypes || [];
-                this._workflowTransitions = response.workflows   || [];
-                this._statuses            = response.status        || [];
-                const endStatusIds        = new Set(this._statuses.filter(s => s.isEnd__c).map(s => s.Id));
-                this._sprintTickets       = (response.sprint_tickets || []).map(t => ({
-                    ...t,
-                    isEndStatus: endStatusIds.has(t.CurrentState__c)
-                }));
-                this.epics                = response.epics          || [];
-                this.priorityOptions      = response.priorityOptions || [];
-                this.statusOptions        = this._statuses.map(s => ({ label: s.Name, value: s.Id }));
-                this.memberOptions        = (response.members || []).map(m => ({
+                this._statuses       = response.status         || [];
+                this.epics           = response.epics          || [];
+                this.priorityOptions = response.priorityOptions || [];
+                this.statusOptions   = this._statuses.map(s => ({ label: s.Name, value: s.Id }));
+                this.memberOptions   = (response.members || []).map(m => ({
                     label: (m.User__r && m.User__r.Name) || m.Name || '',
                     value: m.Id,
                 }));
-                this._sprintTickets = enrichTicketsWithTypeName(this._sprintTickets, this._ticketTypes);
-                this._sprintTickets = enrichTicketsWithAssigneeName(this._sprintTickets, response.members);
-                this.columns = buildColumns(this._statuses, this._sprintTickets);
 
-                console.log('Total Story Points:', this.sprint.TotalStoryPoint__c);
-                console.log('Ended Story Points:', this.sprint.TotalEndedStoryPoint__c);
+                const sprint = response.sprint;
+                this._sprint = sprint
+                    ? {
+                        ...sprint,
+                        tickets: buildSprintTickets(
+                            response.sprint_tickets,
+                            response.ticketTypes,
+                            response.workflows,
+                            this._statuses,
+                            response.members
+                        )
+                      }
+                    : null;
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error loading page'; })
             .finally(() => { this.isLoading = false; });
@@ -121,20 +232,17 @@ export default class ManageTicketTracking extends LightningElement {
         changeTicketState({ ticketId, fromStatusId, toStatusId })
             .then(res => {
                 if (!res.success) { this.errorMessage = res.message; return; }
-                const isEndStatus = res.data && res.data.isEndStatus;
+                const isEndStatus   = res.data && res.data.isEndStatus;
+                const updatedSprint = res.data && res.data.updatedSprint;
 
-                this._sprintTickets = enrichTicketsWithStateChange(
-                    this._sprintTickets, ticketId, toStatusId, this._statuses, isEndStatus
-                );
-
-                if (isEndStatus) {
-                    const updatedSprint = res.data && res.data.updatedSprint;
-                    const enriched = enrichSprintWithEndedTicket(
-                        this._sprint, this.columns, ticketId, updatedSprint
-                    );
-                    this.columns = enriched.columns;
-                    this._sprint = enriched.sprint;
+                const newSprint = {
+                    ...this._sprint,
+                    tickets: enrichTicketsWithStateChange(this.tickets, ticketId, toStatusId, isEndStatus)
+                };
+                if (isEndStatus && updatedSprint) {
+                    newSprint.TotalEndedStoryPoint__c = updatedSprint.TotalEndedStoryPoint__c;
                 }
+                this._sprint = newSprint;
             })
             .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })
     }
@@ -148,26 +256,22 @@ export default class ManageTicketTracking extends LightningElement {
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     handleTicketDragStart(evt) {
-        const { ticketId, fromStatusId, ticketTypeId } = evt.detail;
+        const { ticketId, fromStatusId } = evt.detail;
+        const ticket = this.tickets.find(t => t.Id === ticketId);
+
         this._dragTicketId     = ticketId;
         this._dragFromStatusId = fromStatusId;
-        this._dragTicketTypeId = ticketTypeId;
+        this._dragTicketType   = ticket ? ticket.ticketType : null;
 
-        const validTargets = getValidTargetStatusIds(
-            ticketTypeId, fromStatusId, this._ticketTypes, this._workflowTransitions
-        );
-
-        this.columns = this.columns.map(col => ({
-            ...col,
-            isValidTarget: validTargets.has(col.statusId)
-        }));
+        const validTargets = getValidTargetStatusIds(this._dragTicketType, fromStatusId);
+        this._validTargetStatusIds = [...validTargets];
     }
 
     handleTicketDrop(evt) {
         const { toStatusId }  = evt.detail;
         const ticketId        = this._dragTicketId;
         const fromStatusId    = this._dragFromStatusId;
-        const ticketTypeId    = this._dragTicketTypeId;
+        const ticketType      = this._dragTicketType;
 
         if (toStatusId === fromStatusId) return;
         this._dragToStatusId = toStatusId;
@@ -175,9 +279,7 @@ export default class ManageTicketTracking extends LightningElement {
         const error = validateChangeTicketState(ticketId, toStatusId);
         if (error) { this.errorMessage = error; return; }
 
-        const transitionId = findTransitionId(
-            ticketTypeId, fromStatusId, toStatusId, this._ticketTypes, this._workflowTransitions
-        );
+        const transitionId = findTransitionId(ticketType, fromStatusId, toStatusId);
         if (!transitionId) { this.errorMessage = 'This transition is not allowed by the workflow.'; return; }
 
         this._callChangeTicketState(ticketId, fromStatusId, toStatusId);
@@ -187,21 +289,23 @@ export default class ManageTicketTracking extends LightningElement {
         const { ticketId }         = evt.detail;
         const newCurrentStatusId   = this._dragToStatusId;
         if (ticketId && newCurrentStatusId) {
-            this._sprintTickets = this._sprintTickets.map(t =>
-                t.Id === ticketId ? { ...t, CurrentState__c: newCurrentStatusId } : t
-            );
+            this._sprint = {
+                ...this._sprint,
+                tickets: this.tickets.map(t =>
+                    t.Id === ticketId ? { ...t, key: newTicketKey(), CurrentState__c: newCurrentStatusId } : t
+                )
+            };
         }
         this._clearDragState();
-        this.columns = buildColumns(this._statuses, this._sprintTickets);
     }
 
     // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────
     _clearDragState() {
-        this._dragTicketId     = null;
-        this._dragFromStatusId = null;
-        this._dragTicketTypeId = null;
-        this._dragToStatusId   = null;
-        this.columns = this.columns.map(col => ({ ...col, isValidTarget: false }));
+        this._dragTicketId        = null;
+        this._dragFromStatusId    = null;
+        this._dragTicketType      = null;
+        this._dragToStatusId      = null;
+        this._validTargetStatusIds = [];
     }
 
 }
