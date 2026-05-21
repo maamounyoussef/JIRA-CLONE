@@ -228,4 +228,46 @@ public with sharing class ManageTicketTrackingController {
             return new APIResponse(false, 'Error loading tickets: ' + ex.getMessage());
         }
     }
+
+    // ========== Subtask Controller Actions ==========
+    // Mirrored from ManageBacklogController so the ticket-tracking page has its
+    // own subtask endpoints (load on expand, create from the detail panel).
+
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadSubtasks(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            Ticket__c ticket = DomainCorrectness.requireTicketExists(ticketId);
+            List<Subtask__c> subs = TicketService.getSubtasksByTicket(ticket);
+            return new APIResponse(true, 'Subtasks loaded', subs);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading subtasks: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static APIResponse createSubtask(String summary, String ticketId, String description, String assigneeId, String currentStateId, Integer storyPoint, DateTime startDate) {
+        try {
+            if (String.isBlank(summary))  return new APIResponse(false, 'summary is required');
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+
+            Ticket__c ticket = DomainCorrectness.requireTicketExists(ticketId);
+            DomainCorrectness.requireOptionalProjectMemberActive(assigneeId);
+            DomainCorrectness.requireOptionalStatusExists(currentStateId);
+
+            Subtask__c subtask = new Subtask__c();
+            subtask.Summary__c = summary;
+            subtask.Ticket__c = ticket.Id;
+            if (String.isNotBlank(description))    subtask.Description__c  = description;
+            if (String.isNotBlank(assigneeId))     subtask.Assignee__c     = assigneeId;
+            if (String.isNotBlank(currentStateId)) subtask.CurrentState__c = currentStateId;
+            if (storyPoint != null)                subtask.StoryPoint__c   = storyPoint;
+            if (startDate != null)                 subtask.StartDate__c    = startDate;
+
+            Subtask__c created = TicketService.createSubtask(subtask);
+            return new APIResponse(true, 'Subtask created', created);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error creating subtask: ' + ex.getMessage());
+        }
+    }
 }

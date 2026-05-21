@@ -9,10 +9,8 @@ import loadTicketBySearchTerm       from '@salesforce/apex/ManageTicketTrackingC
 import updateTicketSummary          from '@salesforce/apex/ManageTicketTrackingController.updateTicketSummary';
 import updateTicketDescription      from '@salesforce/apex/ManageTicketTrackingController.updateTicketDescription';
 import linkToTicket                 from '@salesforce/apex/ManageTicketTrackingController.linkToTicket';
-// Subtask Apex lives on the backlog controller; the tracking controller has no
-// subtask endpoints, so (like c-ao-ticket-item) we reuse those here.
-import loadSubtasks                 from '@salesforce/apex/ManageBacklogController.loadSubtasks';
-import createSubtask                from '@salesforce/apex/ManageBacklogController.createSubtask';
+import loadSubtasks                 from '@salesforce/apex/ManageTicketTrackingController.loadSubtasks';
+import createSubtask                from '@salesforce/apex/ManageTicketTrackingController.createSubtask';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -451,20 +449,23 @@ export default class ManageTicketTracking extends LightningElement {
             .catch(err => this._showError(this._errMsg(err, 'Error linking ticket')));
     }
 
+
+
     // subtasksexpand → set the dedicated wire input so loadSubtasks fires on
-    // expand (the wire handler patches the principal ticket's subtasks slice).
-    handleTicketViewSubtasksExpand(evt) {
+    // expand (the wire handler does the R0-compliant subtasks patch).
+    handleTicketSubtasksExpand(evt) {
         this._subtasksTargetTicketId = evt.detail.ticketId;
     }
 
     // subtaskcreate → imperative createSubtask, then append the returned subtask
-    // to the principal ticket's subtasks list from the response.
-    handleTicketViewSubtaskCreate(evt) {
+    // to the principal ticket's subtasks list from the response (R0).
+    handleTicketSubtaskCreate(evt) {
         const { ticketId, summary, description, assigneeId, currentStateId, startDate, storyPoint } = evt.detail;
         createSubtask({ summary, ticketId, description, assigneeId, currentStateId, storyPoint, startDate })
             .then(res => {
-                if (!res.success) throw new Error(res.message || 'Error creating subtask');
-                const created  = res.data;
+                if (!res.success) { this._showError(res.message); return; }
+                const created = res.data;
+                if (!created) return;
                 const ticket   = this._findTicketById(ticketId);
                 const existing = (ticket && Array.isArray(ticket.subtasks)) ? ticket.subtasks : [];
                 this._patchTicket(ticketId, { subtasks: [...existing, created] });
