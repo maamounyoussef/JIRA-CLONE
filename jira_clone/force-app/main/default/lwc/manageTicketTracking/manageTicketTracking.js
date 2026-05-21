@@ -1,8 +1,14 @@
 import { LightningElement, track, wire } from 'lwc';
 import { loadStyle }    from 'lightning/platformResourceLoader';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import loadManageTicketTrackingPage from '@salesforce/apex/ManageTicketTrackingController.loadManageTicketTrackingPage';
 import changeTicketState            from '@salesforce/apex/ManageTicketTrackingController.changeTicketState';
 import loadTicketLinkTypes          from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkTypes';
+import loadTicketLinkedTo           from '@salesforce/apex/ManageTicketTrackingController.loadTicketLinkedTo';
+import loadTicketBySearchTerm       from '@salesforce/apex/ManageTicketTrackingController.loadTicketBySearchTerm';
+import updateTicketSummary          from '@salesforce/apex/ManageTicketTrackingController.updateTicketSummary';
+import updateTicketDescription      from '@salesforce/apex/ManageTicketTrackingController.updateTicketDescription';
+import linkToTicket                 from '@salesforce/apex/ManageTicketTrackingController.linkToTicket';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -140,6 +146,18 @@ export default class ManageTicketTracking extends LightningElement {
     _sprint   = null;
     _statuses = [];
 
+    // ─── TICKET-VIEW STATE ────────────────────────────────────────────────────
+    // R4: the Id of the ticket whose detail panel is open lives OUTSIDE the
+    // de-normalized principal state, so we always know which child is shown.
+    @track _activeTicketViewId    = null;
+    // Separate wire input (R0/Step 8): the linked-to wire fires on expand, not
+    // on ticket selection — so it is decoupled from _activeTicketViewId.
+    @track _linkedToTargetTicketId = null;
+    // ticketsearch results are NOT part of the principal state — their own
+    // @wire-backed state, used only to feed the child's auto-complete options.
+    @track _searchTerm           = null;
+    @track _ticketSearchResults  = [];
+
     // Drag state
     _dragTicketId        = null;
     _dragFromStatusId    = null;
@@ -157,6 +175,26 @@ export default class ManageTicketTracking extends LightningElement {
         }
     }
 
+    // ticketlinkedtoexpand: wire fires when _linkedToTargetTicketId is set on
+    // expand. R0 wired-FUNCTION form — read the response and patch the linkedTo
+    // slice of the principal ticket manually (never bind to a property).
+    @wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
+    wiredTicketLinkedTo(result) {
+        if (result.data && result.data.success && this._linkedToTargetTicketId) {
+            const linkedTo = (result.data.data && result.data.data.ticketLinkTo) || [];
+            this._patchTicket(this._linkedToTargetTicketId, { linkedTo });
+        }
+    }
+
+    // ticketsearch: results are non-principal state. Plain @wire with its own
+    // state (no refreshApex), gated on the search term coming from the child.
+    @wire(loadTicketBySearchTerm, { projectId: '$_projectId', searchTerm: '$_searchTerm' })
+    wiredTicketSearch(result) {
+        if (result.data && result.data.success) {
+            this._ticketSearchResults = result.data.data || [];
+        }
+    }
+
     // ─── GETTERS ──────────────────────────────────────────────────────────────
     get sprint()              { return this._sprint; }
     get projectId()           { return this._projectId; }
@@ -166,6 +204,24 @@ export default class ManageTicketTracking extends LightningElement {
     get linkedToListKey()     { return this._linkedToListKey; }
     get ticketLinkTypes()  { return this._ticketLinkTypes || []; }
     get tickets() { return (this._sprint && this._sprint.tickets) || []; }
+
+    // R3: presentation state — drives whether the ticket-view panel renders.
+    get isTicketViewOpen() { return this._activeTicketViewId !== null; }
+
+    // R2: derived child prop — computed on read from the principal state, never
+    // stored. The open ticket is looked up by its Id each render.
+    get activeTicketViewModel() {
+        if (!this._activeTicketViewId) return null;
+        return this._findTicketById(this._activeTicketViewId);
+    }
+
+    // R2: derived child prop — search results mapped to combobox options.
+    get ticketViewSearchOptions() {
+        return this._ticketSearchResults.map(t => ({
+            label: t.Summary__c ? `${t.Name} — ${t.Summary__c}` : t.Name,
+            value: t.Id
+        }));
+    }
 
     // Columns are derived, never stored: statuses give the lanes, the sprint's
     // tickets fill them, and the active drag decides which lanes are valid drops.
@@ -306,6 +362,114 @@ export default class ManageTicketTracking extends LightningElement {
         this._dragTicketType      = null;
         this._dragToStatusId      = null;
         this._validTargetStatusIds = [];
+    }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                       TICKET-VIEW SECTION                                 ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── EVENT HANDLERS (R1: one handler per child event) ─────────────────────
+
+    // Opens the detail panel by recording which ticket is active (R4).
+    handleOpenTicketView(evt) {
+        this._activeTicketViewId = evt.detail.ticketId;
+    }
+
+    // ticketsummaryupdate → imperative updateTicketSummary, then patch the
+    // principal ticket from the Apex response, never the optimistic draft (R0).
+    handleTicketViewSummaryUpdate(evt) {
+        const { ticketId, summary } = evt.detail;
+        updateTicketSummary({ ticketId, summary })
+            .then(res => {
+                if (!res.success) { this._showError(res.message); return; }
+                const updated = res.data || {};
+                this._patchTicket(ticketId, { Summary__c: updated.Summary__c });
+            })
+            .catch(err => this._showError(this._errMsg(err, 'Error updating ticket summary')));
+    }
+
+    // ticketstatuschange → reuse the existing workflow-aware state change call,
+    // which already updates the principal state from the Apex response (R0).
+    handleTicketViewStatusChange(evt) {
+        const { ticketId, fromStatusId, toStatusId } = evt.detail;
+        this._callChangeTicketState(ticketId, fromStatusId, toStatusId);
+    }
+
+    // ticketdescriptionupdate → imperative updateTicketDescription, patch from
+    // the response (R0).
+    handleTicketViewDescriptionUpdate(evt) {
+        const { ticketId, description } = evt.detail;
+        updateTicketDescription({ ticketId, description })
+            .then(res => {
+                if (!res.success) { this._showError(res.message); return; }
+                const updated = res.data || {};
+                this._patchTicket(ticketId, { Description__c: updated.Description__c });
+            })
+            .catch(err => this._showError(this._errMsg(err, 'Error updating ticket description')));
+    }
+
+    // ticketlinkedtoexpand → set the dedicated wire input so loadTicketLinkedTo
+    // fires on expand (the wire handler does the R0-compliant state update).
+    handleTicketLinkedToExpand(evt) {
+        this._linkedToTargetTicketId = evt.detail.ticketId;
+    }
+
+    // ticketsearch → set the search term so the loadTicketBySearchTerm wire
+    // refreshes its own (non-principal) results state.
+    handleTicketSearch(evt) {
+        this._searchTerm = evt.detail.searchTerm;
+    }
+
+    // ticketlinkcreate → imperative linkToTicket, then append the returned link
+    // to the principal ticket's linkedTo list from the response (R0).
+    handleTicketLinkCreate(evt) {
+        const { fromTicketId, toTicketId, linkType } = evt.detail;
+        linkToTicket({ fromTicketId, toTicketId, linkType })
+            .then(res => {
+                if (!res.success) { this._showError(res.message); return; }
+                const link = res.data && res.data.ticketLink;
+                if (!link) return;
+                const ticket   = this._findTicketById(fromTicketId);
+                const existing = (ticket && Array.isArray(ticket.linkedTo)) ? ticket.linkedTo : [];
+                this._patchTicket(fromTicketId, { linkedTo: [...existing, link] });
+            })
+            .catch(err => this._showError(this._errMsg(err, 'Error linking ticket')));
+    }
+
+    // closeticketview → presentation-only reset, no Apex. Clearing the active
+    // Id collapses the derived getters and unmounts the panel (R3/R4).
+    handleCloseTicketView() {
+        this._activeTicketViewId     = null;
+        this._linkedToTargetTicketId = null;
+        this._searchTerm             = null;
+        this._ticketSearchResults    = [];
+    }
+
+    // ─── MUTATORS (R5: find / update over the principal state) ────────────────
+    _findTicketById(ticketId) {
+        return this.tickets.find(t => t.Id === ticketId) || null;
+    }
+
+    _patchTicket(ticketId, patch) {
+        if (!this._sprint) return;
+        this._sprint = {
+            ...this._sprint,
+            tickets: this.tickets.map(t => t.Id === ticketId ? { ...t, ...patch } : t)
+        };
+    }
+
+    // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────
+    // R6: surface failures through a toast.
+    _showError(message) {
+        this.dispatchEvent(new ShowToastEvent({
+            title  : 'Error',
+            message: message || 'Something went wrong',
+            variant: 'error'
+        }));
+    }
+
+    _errMsg(err, fallback) {
+        return (err && err.body && err.body.message) || fallback;
     }
 
 }

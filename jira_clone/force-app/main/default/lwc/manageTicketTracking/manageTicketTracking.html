@@ -75,6 +75,22 @@
             ></c-ticket-linked-to>
         </template>
 
+        <template if:true={isTicketViewOpen}>
+            <c-ticket-view
+                ticket={activeTicketViewModel}
+                status-options={statusOptions}
+                ticket-linked-to-type-options={ticketLinkTypes}
+                ticket-options={ticketViewSearchOptions}
+                onticketsummaryupdate={handleTicketViewSummaryUpdate}
+                onticketstatuschange={handleTicketViewStatusChange}
+                onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
+                onticketsearch={handleTicketSearch}
+                onticketlinkcreate={handleTicketLinkCreate}
+                onticketlinkedtoexpand={handleTicketLinkedToExpand}
+                oncloseticketview={handleCloseTicketView}
+            ></c-ticket-view>
+        </template>
+
     </template>
 
 </template>

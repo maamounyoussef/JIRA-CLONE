@@ -412,3 +412,5 @@ Rule 5: Provide methods to find, update, delete, and create (names can be domain
 
 
 Final output must include: (a) the chosen Apex call style with justification, (b) the event handler stub (R1), (c) the wire or imperative call with R0-compliant state update, (d) the derived getter(s) for child props (R2), (e) the find/update/delete/create mutators (R5), (f) presentation state declarations (R3).
+I do not need code just stop when the user question end.
+Do not give me the output code in the chat just at  the end do full analyse on the rule + user answer  and create the full code.

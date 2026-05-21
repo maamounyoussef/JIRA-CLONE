@@ -46,6 +46,7 @@ export default class TicketView extends LightningElement {
     @api
     get ticket() { return this._ticket; }
     set ticket(value) {
+        console.log("ticket view : " + JSON.stringify(value));
         this._ticket = value || {};
         this._draftSummary     = this._ticket.Summary__c     || '';
         this._draftDescription = this._ticket.Description__c || '';
