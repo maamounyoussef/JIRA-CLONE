@@ -50,6 +50,7 @@ public with sharing class SprintService {
         try {
             sprint.RecordStatus__c = 'delete';
             updateSprint(sprint);
+            TicketService.clearSprintFromTickets(sprint.Id);
         } catch (Exception ex) {
             throw new ServiceException('Error deleting sprint: ' + ex.getMessage());
         }

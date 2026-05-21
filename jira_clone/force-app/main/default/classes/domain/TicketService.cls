@@ -264,6 +264,24 @@ public with sharing class TicketService {
         }
     }
 
+    public static void clearSprintFromTickets(String sprintId) {
+        try {
+            if (String.isBlank(sprintId)) return;
+            List<Ticket__c> tickets = [
+                SELECT Id, Sprint__c
+                FROM Ticket__c
+                WHERE Sprint__c = :sprintId
+            ];
+            if (tickets.isEmpty()) return;
+            for (Ticket__c t : tickets) t.Sprint__c = null;
+            update tickets;
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error clearing sprint from tickets: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error clearing sprint from tickets: ' + ex.getMessage());
+        }
+    }
+
     public static Sprint__c moveTicketToSprint(Ticket__c ticket, Sprint__c sprint) {
         try {
             DomainCompleteValidator.requireTicketNotInDifferentSprint(ticket, sprint.Id);

@@ -811,8 +811,9 @@ export default class ManageBacklog extends LightningElement {
             deleteSprint({ sprintId })
                 .then(res => {
                     if (!res.success) throw new Error(res.message || 'Error deleting sprint');
+                    const deletedSprint = this.sprints.find(s => s.Id === sprintId);
+                    this._moveSprintTicketsToBacklog(deletedSprint);
                     this.sprints = this.sprints.filter(s => s.Id !== sprintId);
-                    this._loadData();
                     this._showSuccess('Sprint deleted');
                 })
                 .catch(err => this._showError(err.body?.message || err.message || 'Error deleting sprint'));
@@ -1103,6 +1104,17 @@ export default class ManageBacklog extends LightningElement {
 
     _enrichBacklogWithTicket(ticket) {
         this.backlogTickets = [...this.backlogTickets, { ...ticket, isSelected: false }];
+    }
+
+    // When a sprint is deleted its tickets lose their Sprint__c server-side, so
+    // move the loaded ones into the backlog list (de-selected, no sprint link).
+    _moveSprintTicketsToBacklog(sprint) {
+        const tickets = sprint?.tickets || [];
+        if (tickets.length === 0) return;
+        const movedTickets = tickets.map(t => ({ ...t, Sprint__c: null, isSelected: false }));
+        const existingIds = new Set(this.backlogTickets.map(ticket => ticket.Id));
+        const toAdd = movedTickets.filter(ticket => !existingIds.has(ticket.Id));
+        this.backlogTickets = [...this.backlogTickets, ...toAdd];
     }
 
     // -- Sprint mutators (single sprint) --
