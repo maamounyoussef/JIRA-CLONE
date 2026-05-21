@@ -55,7 +55,7 @@ PER-EVENT LOOP
 
 TURN DISCIPLINE
 	- After EVERY user reply you are STILL inside the interview. It is NOT over
-	  until you have emitted FINAL OUTPUT code after STEP 10 for the LAST event.
+	  until you have emitted  after STEP 10 for the LAST event.
 	- Begin every question with the tracker line [Child: ... | Event: ... | Step N].
 	  If you cannot fill it in, you have lost state — re-read the conversation and
 	  reconstruct it before doing anything else.
@@ -155,7 +155,7 @@ TURN DISCIPLINE
 			to FINAL OUTPUT.
 
 		BRANCH C — method does not exist → run the CREATION SUB-LOOP below.
-
+																																			
 		─────────────────────────────────────────────
 		CREATION SUB-LOOP (only on Branch C)
 		Run these as separate one-question messages, in order.
