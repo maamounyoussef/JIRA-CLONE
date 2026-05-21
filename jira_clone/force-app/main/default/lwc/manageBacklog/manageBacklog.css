@@ -124,9 +124,34 @@
 
 .modal--sm { width: min(420px, calc(100vw - 32px)); }
 
-.modal--ticket-view {
-    width: min(880px, calc(100vw - 32px));
-    overflow-y: auto;
+/* ── Ticket-view peek panel (docked right, up to half the page) ──────────── */
+.peek-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.30);
+    z-index: 9000;
+}
+
+.peek-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 50%;
+    min-width: 380px;
+    max-width: 50vw;
+    z-index: 9001;
+    background-color: #FFFFFF;
+    box-shadow: -8px 0 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: peek-slide-in 0.18s ease-out;
+}
+
+@keyframes peek-slide-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
 }
 
 .modal__header { padding: 20px 24px 8px; }

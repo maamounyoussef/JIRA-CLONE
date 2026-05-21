@@ -76,6 +76,8 @@
         </template>
 
         <template if:true={isTicketViewOpen}>
+            <div class="modal-backdrop" onclick={handleCloseTicketView}></div>
+            <section role="dialog" aria-modal="true" class="modal modal--ticket-view">
             <c-ticket-view
                 ticket={activeTicketViewModel}
                 status-options={statusOptions}
@@ -91,6 +93,7 @@
                 onsubtaskcreate={handleTicketSubtaskCreate}
                 oncloseticketview={handleCloseTicketView}
             ></c-ticket-view>
+            </section>
         </template>
 
     </template>

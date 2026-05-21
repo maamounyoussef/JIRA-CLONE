@@ -273,10 +273,10 @@
 
     </div>
 
-    <!-- Ticket View Modal -->
+    <!-- Ticket View — right-side peek panel -->
     <template if:true={isTicketViewOpen}>
-        <div class="modal-backdrop" onclick={handleCloseTicketView}></div>
-        <section role="dialog" aria-modal="true" class="modal modal--ticket-view">
+        <div class="peek-backdrop" onclick={handleCloseTicketView}></div>
+        <aside role="dialog" aria-modal="true" class="peek-panel">
             <c-ticket-view
                 ticket={activeTicketViewModel}
                 status-options={statusOptions}
@@ -292,6 +292,6 @@
                 onsubtaskcreate={handleTicketViewSubtaskCreate}
                 oncloseticketview={handleCloseTicketView}>
             </c-ticket-view>
-        </section>
+        </aside>
     </template>
 </template>
