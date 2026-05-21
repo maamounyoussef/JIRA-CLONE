@@ -220,5 +220,126 @@
             </template>
 
         </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                          SUBTASKS                            ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-subtasks">
+
+            <header class="tv-subtasks__header">
+                <button class="tv-subtasks__toggle"
+                        type="button"
+                        onclick={handleTicketSubtasksToggle}>
+                    <lightning-icon icon-name={subtasksChevronIcon} size="xx-small"></lightning-icon>
+                    <span class="tv-subtasks__title">Subtasks</span>
+                </button>
+
+                <template if:true={isSubtasksExpanded}>
+                    <c-ao-btn
+                        icon-name="utility:add"
+                        variant="bare"
+                        size="sm"
+                        title="Add subtask"
+                        onclick={handleTicketSubtaskAdd}>
+                    </c-ao-btn>
+                </template>
+            </header>
+
+            <template if:true={isSubtasksExpanded}>
+                <div class="tv-subtasks__body">
+
+                    <template if:true={hasSubtasks}>
+                        <div class="tv-subtasks__table">
+                            <div class="tv-subtasks__row tv-subtasks__row--head">
+                                <span class="tv-subtasks__col">Sub Task Name</span>
+                                <span class="tv-subtasks__col">Sub Task Summary</span>
+                                <span class="tv-subtasks__col">Sub Task assignee</span>
+                            </div>
+                            <template for:each={subtasks} for:item="subtask">
+                                <div key={subtask.Id} class="tv-subtasks__row">
+                                    <span class="tv-subtasks__col tv-subtasks__name">{subtask.Name}</span>
+                                    <span class="tv-subtasks__col tv-subtasks__summary">{subtask.Summary__c}</span>
+                                    <span class="tv-subtasks__col tv-subtasks__assignee">{subtask.assigneeName}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:false={hasSubtasks}>
+                        <p class="tv-subtasks__empty">No subtasks.</p>
+                    </template>
+
+                    <template if:true={showSubtaskAddForm}>
+                        <div class="tv-subtasks__form">
+                            <c-ao-input
+                                class="tv-subtasks__form-field"
+                                label="Summary"
+                                value={newSubtask.summary}
+                                required
+                                onchange={handleTicketSubtaskSummaryChange}>
+                            </c-ao-input>
+
+                            <c-ao-combobox
+                                class="tv-subtasks__form-field"
+                                label="Assignee"
+                                placeholder="Select assignee"
+                                value={newSubtask.assigneeId}
+                                options={assigneeOptions}
+                                onchange={handleTicketSubtaskAssigneeChange}>
+                            </c-ao-combobox>
+
+                            <c-ao-combobox
+                                class="tv-subtasks__form-field"
+                                label="Current State"
+                                placeholder="Select state"
+                                value={newSubtask.currentStateId}
+                                options={statusOptions}
+                                onchange={handleTicketSubtaskStateChange}>
+                            </c-ao-combobox>
+
+                            <lightning-input
+                                class="tv-subtasks__form-field"
+                                type="date"
+                                label="Start Date"
+                                value={newSubtask.startDate}
+                                onchange={handleTicketSubtaskStartDateChange}>
+                            </lightning-input>
+
+                            <lightning-input
+                                class="tv-subtasks__form-field"
+                                type="number"
+                                label="Story Point"
+                                value={newSubtask.storyPoint}
+                                onchange={handleTicketSubtaskStoryPointChange}>
+                            </lightning-input>
+
+                            <lightning-input-rich-text
+                                class="tv-subtasks__form-field"
+                                value={newSubtask.description}
+                                placeholder="Description..."
+                                onchange={handleTicketSubtaskDescriptionChange}>
+                            </lightning-input-rich-text>
+
+                            <div class="tv-subtasks__form-actions">
+                                <c-ao-btn
+                                    label="Cancel"
+                                    variant="ghost"
+                                    size="sm"
+                                    onclick={handleTicketSubtaskCancel}>
+                                </c-ao-btn>
+                                <c-ao-btn
+                                    label="Create"
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={isSubtaskCreateDisabled}
+                                    onclick={handleTicketSubtaskCreate}>
+                                </c-ao-btn>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+        </section>
     </article>
 </template>

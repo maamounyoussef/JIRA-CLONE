@@ -538,7 +538,7 @@
                 <lightning-spinner alternative-text="Loading subtasks..." size="small"></lightning-spinner>
             </template>
             <template for:each={subtasks} for:item="sub">
-                <div key={sub.Id}>
+                <div key={sub._key}>
                     <div class="subtask-row">
 
                         <c-ao-checkbox

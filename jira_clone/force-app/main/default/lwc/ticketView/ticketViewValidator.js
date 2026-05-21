@@ -5,10 +5,11 @@
  */
 
 const REQUIRED_MSG = {
-    summary:      'Summary is required.',
-    currentState: 'Current State is required.',
-    linkType:     'Link type is required.',
-    linkedTicket: 'Linked ticket is required.'
+    summary:        'Summary is required.',
+    currentState:   'Current State is required.',
+    linkType:       'Link type is required.',
+    linkedTicket:   'Linked ticket is required.',
+    subtaskSummary: 'Subtask summary is required.'
 };
 
 export function validateTicketSummary(value) {
@@ -26,5 +27,12 @@ export function validateTicketCurrentState(statusId) {
 export function validateTicketLink({ linkType, toTicketId }) {
     if (!linkType)    return REQUIRED_MSG.linkType;
     if (!toTicketId)  return REQUIRED_MSG.linkedTicket;
+    return null;
+}
+
+export function validateSubtaskSummary(value) {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return REQUIRED_MSG.subtaskSummary;
+    if (trimmed.length > 255) return 'Subtask summary must be 255 characters or fewer.';
     return null;
 }

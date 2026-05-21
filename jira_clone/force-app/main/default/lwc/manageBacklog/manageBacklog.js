@@ -29,6 +29,7 @@ import deleteSubtask         from '@salesforce/apex/ManageBacklogController.dele
 import deleteSubtasks        from '@salesforce/apex/ManageBacklogController.deleteSubtasks';
 import loadTicketLinkedToType from '@salesforce/apex/ManageBacklogController.loadTicketLinkedToType';
 import loadTicketLinkedTo     from '@salesforce/apex/ManageBacklogController.loadTicketLinkedTo';
+import loadSubtasks           from '@salesforce/apex/ManageBacklogController.loadSubtasks';
 import loadTicketBySearchTerm from '@salesforce/apex/ManageBacklogController.loadTicketBySearchTerm';
 import linkToTicket          from '@salesforce/apex/ManageBacklogController.linkToTicket';
 import aoThemeResource       from '@salesforce/resourceUrl/aoTheme';
@@ -188,6 +189,15 @@ export default class ManageBacklog extends LightningElement {
         }
     }
 
+    @track _subtasksTargetTicketId = null;
+    @wire(loadSubtasks, { ticketId: '$_subtasksTargetTicketId' })
+    wiredTicketViewSubtasks(result) {
+        if (result.data && result.data.success && this._subtasksTargetTicketId) {
+            const subtasks = result.data.data || [];
+            this._patchTicketEverywhere(this._subtasksTargetTicketId, { subtasks });
+        }
+    }
+
     get isTicketViewOpen()           { return this._activeTicketViewId !== null; }
     get activeTicketViewModel() {
         if (!this._activeTicketViewId) return null;
@@ -292,6 +302,25 @@ export default class ManageBacklog extends LightningElement {
             .catch(err => this._showError(err.body?.message || err.message || 'Error linking ticket'));
     }
 
+    handleTicketViewSubtasksExpand(event) {
+        const { ticketId } = event.detail;
+        this._subtasksTargetTicketId = ticketId;
+    }
+
+    handleTicketViewSubtaskCreate(event) {
+        const { ticketId, summary, description, assigneeId, currentStateId, startDate, storyPoint } = event.detail;
+        createSubtask({ summary, ticketId, description, assigneeId, currentStateId, storyPoint, startDate })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error creating subtask');
+                const created  = res.data;
+                const ticket   = this._findTicketById(ticketId);
+                const existing = ticket?.subtasks || [];
+                this._patchTicketEverywhere(ticketId, { subtasks: [...existing, created] });
+                this._showSuccess('Subtask created');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating subtask'));
+    }
+
     _findTicketById(ticketId) {
         const fromBacklog = this.backlogTickets.find(t => t.Id === ticketId);
         if (fromBacklog) return fromBacklog;
@@ -310,6 +339,28 @@ export default class ManageBacklog extends LightningElement {
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, ...patch } : t)
         }));
+    }
+
+    // Update one subtask in a ticket's subtasks list, giving it a fresh key so
+    // the child row re-renders (and resets any cached combobox state).
+    _patchSubtask(ticketId, subtaskId, patch) {
+        const ticket = this._findTicketById(ticketId);
+        if (!ticket) return;
+        const subtasks = (ticket.subtasks || []).map(s =>
+            s.Id === subtaskId ? { ...s, ...patch, _key: this._newKey() } : s
+        );
+        this._patchTicketEverywhere(ticketId, { subtasks });
+    }
+
+    _removeSubtasks(ticketId, subtaskIds) {
+        const ticket = this._findTicketById(ticketId);
+        if (!ticket) return;
+        const subtasks = (ticket.subtasks || []).filter(s => !subtaskIds.includes(s.Id));
+        this._patchTicketEverywhere(ticketId, { subtasks });
+    }
+
+    _newKey() {
+        return Math.random().toString(36).slice(2);
     }
 
 
@@ -523,11 +574,13 @@ export default class ManageBacklog extends LightningElement {
     // from c-ao-ticket-item
     handleSubtaskCreate(event) {
         const { ticketId, summary, description, assigneeId, currentStateId, storyPoint } = event.detail;
-        const ticketItem = event.target;
         createSubtask({ summary, ticketId, description, assigneeId, currentStateId, storyPoint, startDate: null })
             .then(res => {
                 if (!res.success) throw new Error(res.message || 'Error creating subtask');
-                ticketItem.refreshSubtasks();
+                const created  = res.data;
+                const ticket   = this._findTicketById(ticketId);
+                const existing = ticket?.subtasks || [];
+                this._patchTicketEverywhere(ticketId, { subtasks: [...existing, created] });
                 this._showSuccess('Subtask created');
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error creating subtask'));
@@ -535,10 +588,11 @@ export default class ManageBacklog extends LightningElement {
 
     // from c-ao-ticket-item
     handleSubtaskSummaryUpdate(event) {
-        const { subtaskId, summary } = event.detail;
+        const { ticketId, subtaskId, summary } = event.detail;
         updateSubtaskSummary({ subtaskId, summary })
             .then(res => {
                 if (res && !res.success) throw new Error(res.message || 'Error updating subtask summary');
+                this._patchSubtask(ticketId, subtaskId, { Summary__c: summary });
                 this._showSuccess('Subtask summary updated');
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error updating subtask summary'));
@@ -546,10 +600,13 @@ export default class ManageBacklog extends LightningElement {
 
     // from c-ao-ticket-item
     handleSubtaskAssigneeChange(event) {
-        const { subtaskId, memberId } = event.detail;
+        const { ticketId, subtaskId, memberId } = event.detail;
         assignSubtask({ subtaskId, memberId })
             .then(res => {
                 if (res && !res.success) throw new Error(res.message || 'Error assigning subtask');
+                const found        = this.memberOptions.find(m => m.value === memberId);
+                const assigneeName = found ? found.label : '';
+                this._patchSubtask(ticketId, subtaskId, { Assignee__c: memberId, assigneeName });
                 this._showSuccess('Subtask assignee updated');
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error assigning subtask'));
@@ -557,12 +614,11 @@ export default class ManageBacklog extends LightningElement {
 
     // from c-ao-ticket-item
     handleSubtaskDelete(event) {
-        const { subtaskId } = event.detail;
-        const ticketItem    = event.target;
+        const { ticketId, subtaskId } = event.detail;
         deleteSubtask({ subtaskId })
             .then(res => {
                 if (!res.success) throw new Error(res.message || 'Error deleting subtask');
-                ticketItem.refreshSubtasks();
+                this._removeSubtasks(ticketId, [subtaskId]);
                 this._showSuccess('Subtask deleted');
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error deleting subtask'));
@@ -570,12 +626,11 @@ export default class ManageBacklog extends LightningElement {
 
     // from c-ao-ticket-item
     handleSubtasksBulkDelete(event) {
-        const { subtaskIds } = event.detail;
-        const ticketItem     = event.target;
+        const { ticketId, subtaskIds } = event.detail;
         deleteSubtasks({ subtaskIds })
             .then(res => {
                 if (!res.success) throw new Error(res.message || 'Error deleting subtasks');
-                ticketItem.refreshSubtasks();
+                this._removeSubtasks(ticketId, subtaskIds);
                 this._showSuccess('Subtasks deleted');
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error deleting subtasks'));

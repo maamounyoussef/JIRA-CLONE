@@ -410,6 +410,72 @@ Rule 5: Provide methods to find, update, delete, and create (names can be domain
             variant: 'success'
         }));
 
+	rule 7 : 
+		## Immutability & Optimization Rules for LWC State
+
+		---
+
+		### Spreading Rule
+		Spread every object/array on the path from root down to — but NOT including — the leaf you're changing. The leaf (primitive) is just assigned.
+
+		Examples:
+		- count = 5 → 6                    primitive, just assign
+		- user.name changed                this.user = { ...this.user, name: newName }
+		- todos gets new item              this.todos = [...this.todos, t4]
+		- Nested object → spread every level on the path:
+
+		  this.company = {
+			...this.company,
+			team: {
+			  ...this.company.team,
+			  lead: { ...this.company.team.lead, name: "Alex" }
+			}
+		  };
+
+		---
+
+		### The _key Optimization
+
+		Problem: updating one item in an array forces .map() over the whole list → O(n).
+		Solution: give each item a generated _key that you regenerate on every edit.
+
+		  Field  │ Purpose              │ Behavior
+		  ───────┼──────────────────────┼───────────────────────────────
+		  Id     │ Locate the record    │ Stable, never regenerated
+		  _key   │ Signal data changed  │ Regenerated on every edit
+
+		Why NOT use Id as the change key?
+		Because Id never changes — the diff can't detect an update through it.
+
+		---
+
+		### O(1) Update Pattern
+
+		  this.ticketsById = {
+			...this.ticketsById,
+			[id]: {
+			  ...this.ticketsById[id],
+			  Priority__c: "High",
+			  _key: crypto.randomUUID()
+			}
+		  };
+
+		If order matters, separate concerns:
+
+		  ids            = ["t1", "t2", "t3"]       // controls order
+		  ticketsById    = { t1, t2, t3 }           // controls data
+		  orderedTickets = ids.map(id => ticketsById[id]);  // rebuild for template
+
+		---
+
+		### Golden Rule
+
+		Every time you update state, ask: "Am I touching more than I need to?"
+		- Use Id     → to FIND
+		- Use _key   → to FLAG the change
+		- Spread only the levels on the path to the leaf
+		- Reach for the cheapest correct update by default, not as an afterthought
+	
 
 Final output must include: (a) the chosen Apex call style with justification, (b) the event handler stub (R1), (c) the wire or imperative call with R0-compliant state update, (d) the derived getter(s) for child props (R2), (e) the find/update/delete/create mutators (R5), (f) presentation state declarations (R3).
 I do not need code just stop when the user question end.

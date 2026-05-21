@@ -9,6 +9,10 @@ import loadTicketBySearchTerm       from '@salesforce/apex/ManageTicketTrackingC
 import updateTicketSummary          from '@salesforce/apex/ManageTicketTrackingController.updateTicketSummary';
 import updateTicketDescription      from '@salesforce/apex/ManageTicketTrackingController.updateTicketDescription';
 import linkToTicket                 from '@salesforce/apex/ManageTicketTrackingController.linkToTicket';
+// Subtask Apex lives on the backlog controller; the tracking controller has no
+// subtask endpoints, so (like c-ao-ticket-item) we reuse those here.
+import loadSubtasks                 from '@salesforce/apex/ManageBacklogController.loadSubtasks';
+import createSubtask                from '@salesforce/apex/ManageBacklogController.createSubtask';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -192,6 +196,17 @@ export default class ManageTicketTracking extends LightningElement {
     wiredTicketSearch(result) {
         if (result.data && result.data.success) {
             this._ticketSearchResults = result.data.data || [];
+        }
+    }
+
+    // subtasksexpand: wire fires when _subtasksTargetTicketId is set on expand.
+    // Read the response and patch the subtasks slice of the principal ticket.
+    @track _subtasksTargetTicketId = null;
+    @wire(loadSubtasks, { ticketId: '$_subtasksTargetTicketId' })
+    wiredSubtasks(result) {
+        if (result.data && result.data.success && this._subtasksTargetTicketId) {
+            const subtasks = result.data.data || [];
+            this._patchTicket(this._subtasksTargetTicketId, { subtasks });
         }
     }
 
@@ -436,11 +451,33 @@ export default class ManageTicketTracking extends LightningElement {
             .catch(err => this._showError(this._errMsg(err, 'Error linking ticket')));
     }
 
+    // subtasksexpand → set the dedicated wire input so loadSubtasks fires on
+    // expand (the wire handler patches the principal ticket's subtasks slice).
+    handleTicketViewSubtasksExpand(evt) {
+        this._subtasksTargetTicketId = evt.detail.ticketId;
+    }
+
+    // subtaskcreate → imperative createSubtask, then append the returned subtask
+    // to the principal ticket's subtasks list from the response.
+    handleTicketViewSubtaskCreate(evt) {
+        const { ticketId, summary, description, assigneeId, currentStateId, startDate, storyPoint } = evt.detail;
+        createSubtask({ summary, ticketId, description, assigneeId, currentStateId, storyPoint, startDate })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error creating subtask');
+                const created  = res.data;
+                const ticket   = this._findTicketById(ticketId);
+                const existing = (ticket && Array.isArray(ticket.subtasks)) ? ticket.subtasks : [];
+                this._patchTicket(ticketId, { subtasks: [...existing, created] });
+            })
+            .catch(err => this._showError(this._errMsg(err, 'Error creating subtask')));
+    }
+
     // closeticketview → presentation-only reset, no Apex. Clearing the active
     // Id collapses the derived getters and unmounts the panel (R3/R4).
     handleCloseTicketView() {
         this._activeTicketViewId     = null;
         this._linkedToTargetTicketId = null;
+        this._subtasksTargetTicketId = null;
         this._searchTerm             = null;
         this._ticketSearchResults    = [];
     }

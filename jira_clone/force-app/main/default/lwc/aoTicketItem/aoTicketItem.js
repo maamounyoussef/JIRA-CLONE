@@ -1,9 +1,7 @@
-import { LightningElement, api, track, wire } from 'lwc';
-import { refreshApex } from '@salesforce/apex';
-import loadSubtasks    from '@salesforce/apex/ManageBacklogController.loadSubtasks';
+import { LightningElement, api, track } from 'lwc';
 import { validateSummary, validateSubtask, validateEpicSelection, validateNewEpic } from './ticketValidator';
-import { emptyEpic, formatEpicsAsOptions, toISODateOrNull, failed }                 from './ticketUtils';
-import { emptySubtask, enrichSubtask, buildSubtaskComboboxOptions }                 from './subtaskUtils';
+import { emptyEpic, formatEpicsAsOptions, toISODateOrNull }                         from './ticketUtils';
+import { emptySubtask, enrichSubtask }                                              from './subtaskUtils';
 
 export default class AoTicketItem extends LightningElement {
 
@@ -18,7 +16,13 @@ export default class AoTicketItem extends LightningElement {
     _ticket = {};
     @api
     get ticket()        { return this._ticket; }
-    set ticket(value)   { this._ticket = value || {}; this._currentStateId = value?.CurrentState__c ?? ''; }
+    set ticket(value)   {
+        this._ticket         = value || {};
+        this._currentStateId = value?.CurrentState__c ?? '';
+        // Subtasks are owned by the parent; once they arrive on the ticket the
+        // loading spinner can be dropped.
+        if (Array.isArray(this._ticket.subtasks)) this.isLoadingSubtasks = false;
+    }
 
     @api variant         = 'row';
     @api statusOptions   = [];
@@ -31,11 +35,9 @@ export default class AoTicketItem extends LightningElement {
     @api
     get memberOptions() { return this._memberOptions; }
     set memberOptions(value) {
+        // The `subtasks` getter re-derives combobox options from the current
+        // member list on every read, so nothing to recompute here.
         this._memberOptions = value || [];
-        this.subtasks = this.subtasks.map(s => ({
-            ...s,
-            subtaskComboboxOptions: buildSubtaskComboboxOptions(s.Assignee__c, s.assigneeName, this._memberOptions),
-        }));
     }
 
     @track isDraggable       = false;
@@ -58,60 +60,6 @@ export default class AoTicketItem extends LightningElement {
     @track selectedEpicId      = '';
 
     newEpic = emptyEpic();
-
-    // ─── WIRE ────────────────────────────────────────────────────────────────
-
-    @wire(loadSubtasks, { ticketId: '$ticket.Id' })
-    wiredSubtasks(result) {
-        this._wiredResult      = result;
-        this.isLoadingSubtasks = false;
-
-        if (result.error) {
-            this.errorMessage = result.error.body?.message || 'Error loading subtasks';
-            return;
-        }
-        if (result.data) {
-            if (failed(result.data, msg => { this.errorMessage = msg; })) return;
-            this.subtasks = (result.data.data || []).map(s => enrichSubtask(s, this.statusOptions, this._memberOptions));
-        }
-    }
-
-    // ─── PUBLIC API ──────────────────────────────────────────────────────────
-
-    _errors = null;
-
-    // null  → success: close whichever modal is open, clear inline error
-    // string → error: show inside the open modal, or inline on the ticket row if no modal is open
-    @api
-    get errors() { return this._errors; }
-    set errors(value) {
-        this._errors = value;
-        if (value === null) {
-            if (this.showCreateSubtaskModal) this.isExpanded = true;
-            this.showCreateSubtaskModal = false;
-            this.showEpicModal          = false;
-            this.showCreateEpicModal    = false;
-            this.modalError             = null;
-            this.errorMessage           = null;
-        } else {
-            const modalOpen = this.showCreateSubtaskModal || this.showEpicModal || this.showCreateEpicModal;
-            if (modalOpen) {
-                this.modalError = value;
-            } else {
-                this._currentStateId = this._ticket?.CurrentState__c ?? '';
-                this.errorMessage    = value;
-            }
-        }
-    }
-
-    // non-modal errors from parent Apex calls (shown on the ticket row, not the page banner)
-    @api
-    get ticketError() { return this.errorMessage; }
-    set ticketError(value) { this.errorMessage = value; }
-
-    @api refreshSubtasks() {
-        return refreshApex(this._wiredResult);
-    }
 
     // ─── EVENT DISPATCHERS ───────────────────────────────────────────────────
 
@@ -146,6 +94,8 @@ export default class AoTicketItem extends LightningElement {
         const error = validateEpicSelection(this.selectedEpicId);
         if (error) { this.modalError = error; return; }
         this._dispatch('ticketepicupdate', { ticketId: this.ticket.Id, epicId: this.selectedEpicId });
+        this.showEpicModal = false;
+        this.modalError    = null;
     }
 
     handleCreateEpicSubmit() {
@@ -160,11 +110,21 @@ export default class AoTicketItem extends LightningElement {
             startDate  : toISODateOrNull(startDate),
             endDate    : toISODateOrNull(endDate),
         });
+        this.showCreateEpicModal = false;
+        this.modalError          = null;
     }
 
     // ─── EVENT HANDLERS ──────────────────────────────────────────────────────
 
-    handleToggleSubtasks() { this.isExpanded = !this.isExpanded; }
+    handleToggleSubtasks() {
+        this.isExpanded = !this.isExpanded;
+        // The child no longer fetches subtasks itself — ask the parent to load
+        // them the first time this ticket is expanded.
+        if (this.isExpanded && !Array.isArray(this._ticket.subtasks)) {
+            this.isLoadingSubtasks = true;
+            this._dispatch('subtasksexpand', { ticketId: this.ticket.Id });
+        }
+    }
 
     handleSelect(event) {
         this._dispatch('ticketselect', { ticketId: this.ticket.Id, selected: event.detail.checked });
@@ -315,12 +275,34 @@ export default class AoTicketItem extends LightningElement {
 
     @track isExpanded             = false;
     @track isLoadingSubtasks      = false;
-    @track subtasks               = [];
     @track selectedSubtaskIds     = [];
     @track showCreateSubtaskModal = false;
 
-    _wiredResult = null;
-    newSubtask   = emptySubtask();
+    // Inline-edit is single-row at a time, so a few scalars are enough — every
+    // per-row flag is derived from these in the `subtasks` getter below.
+    @track _editingSubtaskId   = null;
+    @track _subtaskSummaryDraft = '';
+    @track _subtaskError        = null;
+
+    newSubtask = emptySubtask();
+
+    // Subtasks are derived from the parent-owned ticket state, never stored
+    // separately. Display fields are enriched and the transient edit/selection
+    // flags are derived per row on each read.
+    get subtasks() {
+        const raw = Array.isArray(this._ticket.subtasks) ? this._ticket.subtasks : [];
+        return raw.map(s => {
+            const isEditing = this._editingSubtaskId === s.Id;
+            return {
+                ...enrichSubtask(s, this.statusOptions, this._memberOptions),
+                _key            : s._key || s.Id,
+                isSelected      : this.selectedSubtaskIds.includes(s.Id),
+                isEditingSummary: isEditing,
+                summaryDraft    : isEditing ? this._subtaskSummaryDraft : '',
+                subtaskError    : isEditing ? this._subtaskError : null,
+            };
+        });
+    }
 
     // ─── EVENT DISPATCHERS ───────────────────────────────────────────────────
 
@@ -336,30 +318,29 @@ export default class AoTicketItem extends LightningElement {
             currentStateId: currentStateId || null,
             storyPoint    : storyPoint ? parseInt(storyPoint, 10) : null,
         });
+        this.showCreateSubtaskModal = false;
+        this.modalError             = null;
     }
 
     handleSubtaskSaveSummary(event) {
         const id      = event.currentTarget.dataset.id;
-        const sub     = this.subtasks.find(s => s.Id === id);
-        const summary = (sub.summaryDraft || '').trim();
+        const summary = (this._subtaskSummaryDraft || '').trim();
         const error   = validateSummary(summary);
-        if (error) { this._patchSubtask(id, { subtaskError: error }); return; }
-        this._patchSubtask(id, { isEditingSummary: false, Summary__c: summary, subtaskError: null });
-        this._dispatch('subtasksummaryupdate', { subtaskId: id, summary });
+        if (error) { this._subtaskError = error; return; }
+        this._clearSubtaskEdit();
+        this._dispatch('subtasksummaryupdate', { ticketId: this.ticket.Id, subtaskId: id, summary });
     }
 
     handleSubtaskAssigneeChange(event) {
         const id       = event.currentTarget.dataset.id;
         const memberId = event.detail.value;
-        const selected = this._memberOptions.find(m => m.value === memberId);
-        this._patchSubtask(id, { Assignee__c: memberId, assigneeName: selected ? selected.label : '' });
-        this._dispatch('subtaskassigneechange', { subtaskId: id, memberId });
+        this._dispatch('subtaskassigneechange', { ticketId: this.ticket.Id, subtaskId: id, memberId });
     }
 
     handleSubtaskDeleteClick(event) {
         const id = event.currentTarget.dataset.id;
         this._confirm('Delete this subtask?', () => {
-            this._dispatch('subtaskdelete', { subtaskId: id });
+            this._dispatch('subtaskdelete', { ticketId: this.ticket.Id, subtaskId: id });
         });
     }
 
@@ -368,7 +349,6 @@ export default class AoTicketItem extends LightningElement {
     handleSubtaskSelect(event) {
         const id      = event.currentTarget.dataset.id;
         const checked = event.detail.checked;
-        this._patchSubtask(id, { isSelected: checked });
         this.selectedSubtaskIds = checked
             ? [...this.selectedSubtaskIds, id]
             : this.selectedSubtaskIds.filter(sid => sid !== id);
@@ -376,30 +356,31 @@ export default class AoTicketItem extends LightningElement {
 
     handleBulkCancelSelect() {
         this.selectedSubtaskIds = [];
-        this.subtasks = this.subtasks.map(s => ({ ...s, isSelected: false }));
     }
 
     handleBulkDeleteSubtasks() {
         const ids = [...this.selectedSubtaskIds];
         this._confirm(`Delete ${ids.length} subtask${ids.length > 1 ? 's' : ''}?`, () => {
             this.selectedSubtaskIds = [];
-            this._dispatch('subtasksbulkdelete', { subtaskIds: ids });
+            this._dispatch('subtasksbulkdelete', { ticketId: this.ticket.Id, subtaskIds: ids });
         });
     }
 
     // -- Summary --
     handleSubtaskStartEditSummary(event) {
         const id  = event.currentTarget.dataset.id;
-        const sub = this.subtasks.find(s => s.Id === id);
-        this._patchSubtask(id, { isEditingSummary: true, summaryDraft: sub.Summary__c });
+        const sub = (this._ticket.subtasks || []).find(s => s.Id === id);
+        this._editingSubtaskId    = id;
+        this._subtaskSummaryDraft = sub ? sub.Summary__c : '';
+        this._subtaskError        = null;
     }
 
     handleSubtaskSummaryDraftChange(event) {
-        this._patchSubtask(event.currentTarget.dataset.id, { summaryDraft: event.detail.value });
+        this._subtaskSummaryDraft = event.detail.value;
     }
 
-    handleSubtaskCancelEditSummary(event) {
-        this._patchSubtask(event.currentTarget.dataset.id, { isEditingSummary: false, subtaskError: null });
+    handleSubtaskCancelEditSummary() {
+        this._clearSubtaskEdit();
     }
 
     // -- Subtask modal --
@@ -435,8 +416,10 @@ export default class AoTicketItem extends LightningElement {
         this.showConfirmDialog = true;
     }
 
-    _patchSubtask(id, patch) {
-        this.subtasks = this.subtasks.map(s => s.Id === id ? { ...s, ...patch } : s);
+    _clearSubtaskEdit() {
+        this._editingSubtaskId    = null;
+        this._subtaskSummaryDraft = '';
+        this._subtaskError        = null;
     }
 
     _dispatch(name, detail) {

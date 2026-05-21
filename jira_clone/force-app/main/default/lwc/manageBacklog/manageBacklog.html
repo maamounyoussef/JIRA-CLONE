@@ -147,6 +147,7 @@
                                 onsubtaskassigneechange={handleSubtaskAssigneeChange}
                                 onsubtaskdelete={handleSubtaskDelete}
                                 onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                                onsubtasksexpand={handleTicketViewSubtasksExpand}
                                 onticketviewopen={handleOpenTicketView}>
                             </c-ao-ticket-item>
                         </template>
@@ -238,6 +239,7 @@
                     onsubtaskassigneechange={handleSubtaskAssigneeChange}
                     onsubtaskdelete={handleSubtaskDelete}
                     onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                    onsubtasksexpand={handleTicketViewSubtasksExpand}
                     onticketviewopen={handleOpenTicketView}>
                 </c-ao-ticket-item>
             </template>
@@ -286,6 +288,8 @@
                 onticketsearch={handleTicketSearch}
                 onticketlinkcreate={handleTicketLinkCreate}
                 onticketlinkedtoexpand={handleTicketLinkedToExpand}
+                onsubtasksexpand={handleTicketViewSubtasksExpand}
+                onsubtaskcreate={handleTicketViewSubtaskCreate}
                 oncloseticketview={handleCloseTicketView}>
             </c-ticket-view>
         </section>
