@@ -629,27 +629,59 @@ public with sharing class ManageBacklogController {
         }
     }
 
+    // @AuraEnabled
+    // public static APIResponse deleteTickets(List<String> ticketIds) {
+    //     try {
+    //         if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
+    //         InputSecurityValidator.validateTicketDeletionLimit(ticketIds);
+
+    //         // List<Ticket__c> tickets = new List<Ticket__c>();
+    //         // for (String ticketId : ticketIds) {
+    //         //     tickets.add(DomainCorrectness.requireTicketExists(ticketId));
+    //         // }
+
+    //         List<Sprint__c> updatedSprints = TicketService.deleteTickets(tickets);
+
+    //         Map<String, Object> data = new Map<String, Object>{
+    //             'updatedSprints' => updatedSprints
+    //         };
+    //         return new APIResponse(true, 'Tickets deleted', data);
+    //     } catch (Exception ex) {
+    //         return new APIResponse(false, 'Error deleting tickets: ' + ex.getMessage());
+    //     }
+    // }
+
     @AuraEnabled
-    public static APIResponse deleteTickets(List<String> ticketIds) {
-        try {
-            if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
-            InputSecurityValidator.validateTicketDeletionLimit(ticketIds);
+public static APIResponse deleteTickets(List<String> ticketIds) {
+    try {
+        if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
+        InputSecurityValidator.validateTicketDeletionLimit(ticketIds);
 
-            List<Ticket__c> tickets = new List<Ticket__c>();
-            for (String ticketId : ticketIds) {
-                tickets.add(DomainCorrectness.requireTicketExists(ticketId));
+        Map<Id, Ticket__c> ticketMap = new Map<Id, Ticket__c>([
+            SELECT Id, Name, Summary__c, Description__c, Priority__c,
+                   CurrentState__c, AssignedTo__c, Creator__c, Ticket_Type__c,
+                   Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
+                   StartDate__c, EndDate__c
+            FROM Ticket__c
+            WHERE Id IN :ticketIds AND RecordStatus__c != 'delete'
+        ]);
+
+        for (String ticketId : ticketIds) {
+            if (!ticketMap.containsKey(ticketId)) {
+                throw new ServiceException('Ticket not found: ' + ticketId);
             }
-
-            List<Sprint__c> updatedSprints = TicketService.deleteTickets(tickets);
-
-            Map<String, Object> data = new Map<String, Object>{
-                'updatedSprints' => updatedSprints
-            };
-            return new APIResponse(true, 'Tickets deleted', data);
-        } catch (Exception ex) {
-            return new APIResponse(false, 'Error deleting tickets: ' + ex.getMessage());
         }
+
+        List<Sprint__c> updatedSprints = TicketService.deleteTickets(ticketMap.values());
+
+        Map<String, Object> data = new Map<String, Object>{
+            'updatedSprints' => updatedSprints
+        };
+        return new APIResponse(true, 'Tickets deleted', data);
+    } catch (Exception ex) {
+        return new APIResponse(false, 'Error deleting tickets: ' + ex.getMessage());
     }
+}
 
     @AuraEnabled(cacheable=true)
     public static APIResponse loadSubtasks(String ticketId) {

@@ -126,13 +126,24 @@ public class ManageBacklogControllerGovernorTest {
         }
 
         // ---- Act: measure governor usage strictly around the controller call.
+        //
+        // Test.startTest() opens a fresh governor context, so none of the
+        // setup DML/SOQL above is counted. The before/after snapshots then
+        // isolate exactly what deleteTickets consumes — nothing from the test
+        // harness or data setup leaks in.
+        //
+        // Snapshot ordering is deliberate: in the "before" group the cheap
+        // integer counters (SOQL/DML) are read first and CPU/heap last, so they
+        // sit immediately before the call; in the "after" group CPU/heap are
+        // read first, immediately after the call. This keeps the measured
+        // window as tight as possible around the call alone.
         Test.startTest();
 
-        Integer cpuBefore     = Limits.getCpuTime();
-        Integer heapBefore    = Limits.getHeapSize();
         Integer soqlBefore    = Limits.getQueries();
         Integer dmlRowBefore  = Limits.getDmlRows();
         Integer dmlStmtBefore = Limits.getDmlStatements();
+        Integer heapBefore    = Limits.getHeapSize();
+        Integer cpuBefore     = Limits.getCpuTime();
 
         APIResponse res = ManageBacklogController.deleteTickets(ticketIds);
 
