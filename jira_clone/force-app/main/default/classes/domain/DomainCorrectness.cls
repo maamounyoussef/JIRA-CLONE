@@ -97,23 +97,23 @@ public with sharing class DomainCorrectness {
 
     // Validate every requested ID was found
     public static Map<Id, Ticket__c> requireTicketsExist(Set<Id> ticketIds) {
-    Map<Id, Ticket__c> ticketMap = new Map<Id, Ticket__c>([
-        SELECT Id, Name, Summary__c, Description__c, Priority__c,
-               CurrentState__c, AssignedTo__c, Creator__c, Ticket_Type__c,
-               Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
-               StartDate__c, EndDate__c
-        FROM Ticket__c
-        WHERE Id IN :ticketIds AND RecordStatus__c != 'delete'
-    ]);
+        Map<Id, Ticket__c> ticketMap = new Map<Id, Ticket__c>([
+            SELECT Id, Name, Summary__c, Description__c, Priority__c,
+                CurrentState__c, AssignedTo__c, Creator__c, Ticket_Type__c,
+                Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
+                StartDate__c, EndDate__c
+            FROM Ticket__c
+            WHERE Id IN :ticketIds AND RecordStatus__c != 'delete'
+        ]);
 
-    for (Id ticketId : ticketIds) {
-        if (!ticketMap.containsKey(ticketId)) {
-            throw new ServiceException('Ticket not found: ' + ticketId);
+        for (Id ticketId : ticketIds) {
+            if (!ticketMap.containsKey(ticketId)) {
+                throw new ServiceException('Ticket not found: ' + ticketId);
+            }
         }
-    }
 
-    return ticketMap;
-}
+        return ticketMap;
+    }
 
     public static void requireOptionalEpicActive(String epicId) {
         if (String.isBlank(epicId)) return;
