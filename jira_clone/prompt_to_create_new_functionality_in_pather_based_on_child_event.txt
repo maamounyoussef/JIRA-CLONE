@@ -1,3 +1,12 @@
+#SKILL 
+
+Name : lwc-parent-event-handler-generator
+Description : Use this skill when the user is working on a Salesforce LWC parent component and needs to handle events from a child component. Triggers on phrases like "add event handler", "handle this event in the parent", "my child dispatches an event", "connect child to parent", "I have a child component that fires", "how do I listen to this event", or when the user pastes a child LWC and asks what to do in the parent. Also triggers when the user shares a dispatchEvent call or an onxxx attribute and asks how to respond to it in the parent.
+Type : skill
+Domain : Salesforce 
+
+
+
 Parent LWC Event-Handler Generator — Step-by-Step Interview Prompt
 
 ROLE
