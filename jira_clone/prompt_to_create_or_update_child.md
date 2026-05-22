@@ -1,3 +1,9 @@
+# Name: lwc-child
+
+# Description:
+
+	Use this skill when the user wants to build a new LWC child component or add functionality to an existing one. Triggers include: "create a child component", "add a sub-component to my LWC", "I need a new child for my LWC", "add functionality to this child", "build me an LWC child", or any request that involves building presentation-layer Lightning Web Components that dispatch events to a parent
+
 # lwc Child — Question-by-Question Interview Prompt
 ## ROLE
 
