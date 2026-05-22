@@ -1,421 +1,534 @@
-import { LightningElement, track, wire } from 'lwc';
-import getWorkflow from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
-import addValidationRule from '@salesforce/apex/ManageWorkflowPageController.addValidationRule';
-import deleteValidationRule from '@salesforce/apex/ManageWorkflowPageController.deleteValidationRule';
-import addWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.addWorkflowTransition';
-import activateValidationRule from '@salesforce/apex/ManageWorkflowPageController.activateValidationRule';
+import { LightningElement, track } from 'lwc';
+import getTicketTypeById        from '@salesforce/apex/ManageWorkflowPageController.getTicketTypeById';
+import getWorkflow              from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
+import createStatus             from '@salesforce/apex/ManageWorkflowPageController.createStatus';
+import addWorkflowTransition    from '@salesforce/apex/ManageWorkflowPageController.addWorkflowTransition';
+import getWorkflowTransitionById from '@salesforce/apex/ManageWorkflowPageController.getWorkflowTransitionById';
 import activateWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.activateWorkflowTransition';
-import updateWorkflow from '@salesforce/apex/ManageWorkflowPageController.updateWorkflow';
+import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.deleteWorkflowTransition';
+
+import { validateStatusName, validateTransition, validateTransitionName } from './workflowValidator';
+import {
+    VISUALIZATION_CONFIG,
+    getResponsiveConfig,
+    normalizeWorkflowData,
+    gatherSortedStatuses,
+    transitionFromApex,
+    calculatePositions,
+    calculateTransitionLines,
+    getSvgViewBox,
+    getStatusesWithSVGData,
+    getMarkerArrow,
+    toggleClick,
+    clearClicks
+} from './workflowUtils';
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                           PAGE SECTION                                    ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export default class ManageWorkflow extends LightningElement {
-    @track workflowId = '';
+
+    // ─── PROPERTIES & STATE ────────────────────────────────────────────────
+    _projectId    = null;
+    _ticketTypeId = null;
+    _workflowId   = null;
+    isLoading     = false;
+    errorMessage  = '';
+
+    /*
+     * Principal de-normalized state. Shape (from getWorkflow / WorkflowConfigDTO):
+     * {
+     *   id,
+     *   projectStatus: [ { id, name } ],
+     *   workflow: { id, name, transitions: [ { id, name, fromStatus, toStatus, recordStatus } ] }
+     * }
+     */
     @track workflowData = null;
-    @track selectedTransition = null;
-    @track isLoading = false;
-    @track errorMessage = '';
-    @track successMessage = '';
-    @track showAddValidationRuleModal = false;
-    @track showAddTransitionModal = false;
-    @track showEditValidationRuleModal = false;
-    @track editingRuleId = '';
-    
-    @track newValidationRule = {
-        ticketField: '',
-        type: 'not equals'
-    };
 
-    @track newTransition = {
-        name: '',
-        fromStatus: '',
-        toStatus: ''
-    };
+    // Computed presentation geometry (recomputed by processWorkflowData()).
+    @track sortedStatuses         = [];
+    @track statusPositions        = {};
+    @track activeTransitionLines  = [];
+    @track pendingTransitionLines = [];
 
+    // Responsive SVG config.
+    config = VISUALIZATION_CONFIG;
+    _resizeObserver    = null;
+    _lastMeasuredWidth = 0;
+
+    // ─── LIFECYCLE ─────────────────────────────────────────────────────────
     connectedCallback() {
-        // Get workflow ID from URL parameters or props
-        const params = new URLSearchParams(window.location.search);
-        this.workflowId = params.get('workflowId');
-        
-        if (this.workflowId) {
-            this.loadWorkflow();
+        // Entry mirrors manageBacklog: identifiers come from localStorage, set
+        // by whichever page navigated here (project + ticket type selection).
+        this._projectId    = localStorage.getItem('projectId');
+        this._ticketTypeId = localStorage.getItem('ticketTypeId');
+
+        if (!this._projectId || !this._ticketTypeId) {
+            this.errorMessage = 'No project / ticket type selected. Please select one first.';
+            return;
+        }
+        this._loadWorkflow();
+    }
+
+    renderedCallback() {
+        if (!this._resizeObserver) {
+            const container = this.template.querySelector('.workflow-visualizer-container');
+            if (container) {
+                this._resizeObserver = new ResizeObserver(entries => {
+                    for (const entry of entries) {
+                        const width = entry.contentRect.width;
+                        // Only recalculate if width changed meaningfully (> 20px).
+                        if (Math.abs(width - this._lastMeasuredWidth) > 20) {
+                            this._lastMeasuredWidth = width;
+                            this.config = getResponsiveConfig(width);
+                            this.processWorkflowData();
+                        }
+                    }
+                });
+                this._resizeObserver.observe(container);
+            }
         }
     }
 
-    /**
-     * Load workflow configuration from controller
-     */
-    loadWorkflow() {
+    disconnectedCallback() {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+    }
+
+    // ─── APEX CALLS ────────────────────────────────────────────────────────
+    // Resolves the workflow the same way the old form + container did:
+    // ticketType → Workflow__c → getWorkflow.
+    _loadWorkflow() {
         this.isLoading = true;
         this.errorMessage = '';
-        
-        getWorkflow({ workflowId: this.workflowId })
-            .then(response => {
-                if (response.success) {
-                    this.workflowData = response.data;
-                    this.successMessage = 'Workflow loaded successfully';
-                    this.clearMessages();
-                } else {
-                    this.errorMessage = response.message || 'Error loading workflow';
+        getTicketTypeById({ ticketTypeId: this._ticketTypeId })
+            .then(res => {
+                if (!res.success || !res.data) {
+                    throw new Error(res.message || 'Failed to load ticket type');
                 }
+                const workflowId = res.data.Workflow__c;
+                if (!workflowId) {
+                    throw new Error('Ticket type does not have a workflow assigned');
+                }
+                this._workflowId = workflowId;
+                return getWorkflow({ workflowId });
             })
-            .catch(error => {
-                this.errorMessage = 'Error loading workflow: ' + error.message;
+            .then(res => {
+                if (!res || !res.success || !res.data) {
+                    throw new Error(res?.message || 'Failed to load workflow');
+                }
+                this.workflowData = res.data;
+                this.processWorkflowData();
             })
-            .finally(() => {
-                this.isLoading = false;
-            });
+            .catch(err => {
+                this.errorMessage = 'Error loading workflow: ' + (err?.body?.message || err?.message || err);
+            })
+            .finally(() => { this.isLoading = false; });
     }
 
+    // ─── DERIVED GEOMETRY ──────────────────────────────────────────────────
     /**
-     * Handle transition selection from diagram
+     * Recompute the SVG-renderable geometry from the principal state + config.
+     * Called on load, after every workflowData mutation, and on resize.
      */
-    selectTransition(event) {
-        const transitionId = event.currentTarget.dataset.transitionId;
-        if (this.workflowData && this.workflowData.workflow) {
-            this.selectedTransition = this.workflowData.workflow.transitions.find(
-                t => t.id === transitionId
-            );
+    processWorkflowData() {
+        if (!this.workflowData || (!this.workflowData.projectStatus && !this.workflowData.workflow)) {
+            this.sortedStatuses = [];
+            this.statusPositions = {};
+            this.activeTransitionLines = [];
+            this.pendingTransitionLines = [];
+            return;
+        }
+
+        const normalized = normalizeWorkflowData(this.workflowData);
+        const allTransitions = normalized.workflow.transitions;
+
+        this.sortedStatuses  = gatherSortedStatuses(normalized);
+        this.statusPositions = calculatePositions(this.sortedStatuses, this.config);
+
+        const active  = allTransitions.filter(t => t.recordStatus === 'active');
+        const pending = allTransitions.filter(t => t.recordStatus === 'pending');
+
+        this.activeTransitionLines  = calculateTransitionLines({ workflow: { transitions: active } }, this.statusPositions, this.config);
+        this.pendingTransitionLines = calculateTransitionLines({ workflow: { transitions: pending } }, this.statusPositions, this.config);
+    }
+
+    // ─── GETTERS ───────────────────────────────────────────────────────────
+    get hasStatuses()      { return this.sortedStatuses && this.sortedStatuses.length > 0; }
+    get startPointRadius() { return this.config.startPointRadius || 5; }
+    get endPointRadius()   { return this.config.endPointRadius || 5; }
+    get rectRadius()       { return this.config.rectRadius || 10; }
+    get svgViewBox()       { return getSvgViewBox(this.sortedStatuses, this.config); }
+    get markerArrow()      { return getMarkerArrow(); }
+    get statusesWithSVGData() {
+        return getStatusesWithSVGData(this.sortedStatuses, this.statusPositions, this.config, this.clickedStatusIds);
+    }
+
+    // ─── PRINCIPAL-STATE MUTATORS ──────────────────────────────────────────
+    _addStatusToWorkflow(status) {
+        if (!this.workflowData) return;
+        this.workflowData = {
+            ...this.workflowData,
+            projectStatus: this.workflowData.projectStatus
+                ? [...this.workflowData.projectStatus, status]
+                : [status]
+        };
+        this.processWorkflowData();
+    }
+
+    _addTransitionToWorkflow(transition) {
+        const existing = this.workflowData?.workflow?.transitions || [];
+        this.workflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: [...existing, transition]
+            }
+        };
+        this.processWorkflowData();
+    }
+
+    _updateTransitionRecordStatus(transitionId, recordStatus) {
+        const transitions = this.workflowData?.workflow?.transitions;
+        if (!Array.isArray(transitions)) return;
+        this.workflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: transitions.map(t =>
+                    this._matchesId(t, transitionId) ? { ...t, recordStatus } : t
+                )
+            }
+        };
+        this.processWorkflowData();
+    }
+
+    _removeTransitionFromWorkflow(transitionId) {
+        const transitions = this.workflowData?.workflow?.transitions;
+        if (!Array.isArray(transitions)) return;
+        this.workflowData = {
+            ...this.workflowData,
+            workflow: {
+                ...this.workflowData.workflow,
+                transitions: transitions.filter(t => !this._matchesId(t, transitionId))
+            }
+        };
+        this.processWorkflowData();
+    }
+
+    _matchesId(t, id) {
+        return !!(t && ((t.id && t.id === id) || (t.Id && t.Id === id)));
+    }
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                          STATUS SECTION                                   ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── PRESENTATION STATE ────────────────────────────────────────────────
+    @track clickedStatusIds   = [];
+    @track selectedFromStatus = null;
+    @track selectedToStatus   = null;
+
+    @track showCreateModal          = false;
+    @track newStatusName            = '';
+    @track isCreatingStatus         = false;
+    @track createStatusErrorMessage = '';
+
+    get createStatusButtonLabel() {
+        return this.isCreatingStatus ? 'Creating...' : 'Create Status';
+    }
+
+    // ─── EVENT HANDLERS ────────────────────────────────────────────────────
+    handleStatusClick(event) {
+        const statusId = event.currentTarget.dataset.statusId;
+        const status = this.sortedStatuses.find(s => s.id === statusId);
+
+        if (!this.selectedFromStatus) {
+            this.selectedFromStatus = status;
+        } else if (this.selectedFromStatus.id === statusId) {
+            this.selectedFromStatus = null;
+        } else {
+            this.selectedToStatus = status;
+            this.openCreateTransitionModal();
+        }
+
+        this.clickedStatusIds = toggleClick(this.clickedStatusIds, statusId);
+    }
+
+    openCreateStatusModal() {
+        this.showCreateModal = true;
+        this.newStatusName = '';
+        this.createStatusErrorMessage = '';
+    }
+
+    closeCreateModal() {
+        this.showCreateModal = false;
+        this.selectedFromStatus = null;
+        this.selectedToStatus = null;
+    }
+
+    handleStatusNameChange(event) {
+        this.newStatusName = event.target.value;
+        this.createStatusErrorMessage = '';
+    }
+
+    handleModalKeyPress(event) {
+        if (event.key === 'Enter') {
+            this.handleCreateSubmit();
+        } else if (event.key === 'Escape') {
+            this.closeCreateModal();
         }
     }
 
-    /**
-     * Get transitions with computed CSS classes
-     */
-    get transitionsWithClasses() {
-        if (!this.workflowData || !this.workflowData.workflow) {
-            return [];
+    handleCreateSubmit() {
+        const error = validateStatusName(this.newStatusName);
+        if (error) { this.createStatusErrorMessage = error; return; }
+
+        if (!this._projectId) {
+            this.createStatusErrorMessage = 'Project ID not found. Please select a project first.';
+            return;
         }
-        return this.workflowData.workflow.transitions.map(transition => ({
-            ...transition,
-            cssClass: this.getTransitionCssClass(transition)
-        }));
+
+        this.isCreatingStatus = true;
+        this.createStatusErrorMessage = '';
+
+        createStatus({ name: this.newStatusName, projectId: this._projectId })
+            .then(res => {
+                if (!res.success || !res.data) {
+                    throw new Error(res.message || 'Failed to create status');
+                }
+                this._addStatusToWorkflow({ id: res.data.Id, name: res.data.Name });
+                this.clickedStatusIds = clearClicks();
+                this.showCreateModal = false;
+            })
+            .catch(err => {
+                this.createStatusErrorMessage = err?.body?.message || err?.message || 'An error occurred while creating the status';
+            })
+            .finally(() => { this.isCreatingStatus = false; });
     }
 
-    /**
-     * Get CSS class for transition box based on status
-     */
-    getTransitionCssClass(transition) {
-        let cssClass = 'slds-m-bottom_medium transition-box';
-        if (transition.recordStatus === 'active') {
-            cssClass += ' transition-box--active';
-        } else if (transition.recordStatus === 'pending') {
-            cssClass += ' transition-box--pending';
-        }
-        return cssClass;
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                       TRANSITION SECTION                                  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── PRESENTATION STATE ────────────────────────────────────────────────
+    @track showCreateTransitionModal    = false;
+    @track newTransitionName             = '';
+    @track isCreatingTransition          = false;
+    @track createTransitionErrorMessage  = '';
+
+    // ─── EVENT HANDLERS ────────────────────────────────────────────────────
+    openCreateTransitionModal() {
+        this.showCreateTransitionModal = true;
+        this.newTransitionName = '';
+        this.createTransitionErrorMessage = '';
     }
 
-    /**
-     * Handle Ticket Field change in validation rule form
-     */
-    handleTicketFieldChange(event) {
-        this.newValidationRule.ticketField = event.detail.value;
-    }
-
-    /**
-     * Handle Validation Type change in validation rule form
-     */
-    handleValidationTypeChange(event) {
-        this.newValidationRule.type = event.detail.value;
-    }
-
-    /**
-     * Handle Transition Name change in transition form
-     */
     handleTransitionNameChange(event) {
-        this.newTransition.name = event.detail.value;
+        this.newTransitionName = event.target.value;
+        this.createTransitionErrorMessage = '';
     }
 
-    /**
-     * Handle From Status change in transition form
-     */
-    handleFromStatusChange(event) {
-        this.newTransition.fromStatus = event.detail.value;
-    }
+    handleCreateTransitionSubmit() {
+        const transitionError = validateTransition({
+            fromStatus: this.selectedFromStatus?.id,
+            toStatus: this.selectedToStatus?.id
+        });
+        if (transitionError) { this.createTransitionErrorMessage = transitionError; return; }
 
-    /**
-     * Handle To Status change in transition form
-     */
-    handleToStatusChange(event) {
-        this.newTransition.toStatus = event.detail.value;
-    }
+        const nameError = validateTransitionName(this.newTransitionName);
+        if (nameError) { this.createTransitionErrorMessage = nameError; return; }
 
-    /**
-     * Handle add validation rule
-     */
-    handleAddValidationRule() {
-        if (!this.newValidationRule.ticketField || !this.newValidationRule.type) {
-            this.errorMessage = 'Please fill all required fields';
+        if (!this._workflowId) {
+            this.createTransitionErrorMessage = 'Workflow ID not found';
             return;
         }
 
-        this.isLoading = true;
-        addValidationRule({
-            workflowTransitionId: this.selectedTransition.id,
-            ticketField: this.newValidationRule.ticketField,
-            validationType: this.newValidationRule.type
-        })
-            .then(response => {
-                if (response.success) {
-                    this.successMessage = response.message;
-                    this.closeAddValidationRuleModal();
-                    this.loadWorkflow();
-                } else {
-                    this.errorMessage = response.message;
-                }
-            })
-            .catch(error => {
-                this.errorMessage = 'Error adding validation rule: ' + error.message;
-            })
-            .finally(() => {
-                this.isLoading = false;
-            });
-    }
+        this.isCreatingTransition = true;
+        this.createTransitionErrorMessage = '';
 
-    /**
-     * Handle delete validation rule
-     */
-    handleDeleteValidationRule(event) {
-        const ruleId = event.currentTarget.dataset.ruleId;
-        
-        if (!confirm('Are you sure you want to delete this validation rule?')) {
-            return;
-        }
-
-        this.isLoading = true;
-        deleteValidationRule({ validationRuleId: ruleId })
-            .then(response => {
-                if (response.success) {
-                    this.successMessage = response.message;
-                    this.loadWorkflow();
-                } else {
-                    this.errorMessage = response.message;
-                }
-            })
-            .catch(error => {
-                this.errorMessage = 'Error deleting validation rule: ' + error.message;
-            })
-            .finally(() => {
-                this.isLoading = false;
-            });
-    }
-
-    /**
-     * Handle activate validation rule
-     */
-    handleActivateValidationRule(event) {
-        const ruleId = event.currentTarget.dataset.ruleId;
-        
-        if (!confirm('Are you sure you want to activate this validation rule?')) {
-            return;
-        }
-
-        this.isLoading = true;
-        activateValidationRule({ validationRuleId: ruleId })
-            .then(response => {
-                if (response.success) {
-                    this.successMessage = response.message;
-                    this.loadWorkflow();
-                } else {
-                    this.errorMessage = response.message;
-                }
-            })
-            .catch(error => {
-                this.errorMessage = 'Error activating validation rule: ' + error.message;
-            })
-            .finally(() => {
-                this.isLoading = false;
-            });
-    }
-
-    /**
-     * Open add workflow transition modal
-     */
-    openAddTransitionModal() {
-        this.showAddTransitionModal = true;
-        this.newTransition = { name: '', fromStatus: '', toStatus: '' };
-    }
-
-    /**
-     * Close add workflow transition modal
-     */
-    closeAddTransitionModal() {
-        this.showAddTransitionModal = false;
-        this.newTransition = { name: '', fromStatus: '', toStatus: '' };
-    }
-
-    /**
-     * Handle add workflow transition
-     */
-    handleAddWorkflowTransition() {
-        if (!this.newTransition.name || !this.newTransition.fromStatus || !this.newTransition.toStatus) {
-            this.errorMessage = 'Please fill all required fields';
-            return;
-        }
-
-        this.isLoading = true;
         addWorkflowTransition({
-            workflowId: this.workflowId,
-            name: this.newTransition.name,
-            fromStatusId: this.newTransition.fromStatus,
-            toStatusId: this.newTransition.toStatus
+            workflowId: this._workflowId,
+            name: this.newTransitionName,
+            fromStatusId: this.selectedFromStatus.id,
+            toStatusId: this.selectedToStatus.id
         })
-            .then(response => {
-                if (response.success) {
-                    this.successMessage = response.message;
-                    this.closeAddTransitionModal();
-                    this.loadWorkflow();
-                } else {
-                    this.errorMessage = response.message;
+            .then(res => {
+                if (!res.success || !res.data) {
+                    throw new Error(res.message || 'Failed to create transition');
                 }
+                this._addTransitionToWorkflow({
+                    id: res.data.Id,
+                    name: this.newTransitionName,
+                    fromStatus: this.selectedFromStatus.id,
+                    toStatus: this.selectedToStatus.id,
+                    recordStatus: 'pending'
+                });
+                this.clickedStatusIds = clearClicks();
+                this.closeCreateTransitionModal();
             })
-            .catch(error => {
-                this.errorMessage = 'Error adding workflow transition: ' + error.message;
+            .catch(err => {
+                this.createTransitionErrorMessage = err?.body?.message || err?.message || 'An error occurred';
             })
-            .finally(() => {
-                this.isLoading = false;
-            });
+            .finally(() => { this.isCreatingTransition = false; });
     }
 
-    /**
-     * Handle activate workflow transition
-     */
-    handleActivateTransition(event) {
-        const transitionId = event.currentTarget.dataset.transitionId;
-        
-        if (!confirm('Are you sure you want to activate this transition?')) {
+    closeCreateTransitionModal() {
+        this.showCreateTransitionModal = false;
+        this.selectedFromStatus = null;
+        this.newTransitionName = '';
+        this.createTransitionErrorMessage = '';
+        this.isCreatingTransition = false;
+        this.clickedStatusIds = clearClicks();
+    }
+
+    stopPropagation(event) {
+        event.stopPropagation();
+    }
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                    TRANSITION DETAIL SECTION                              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── PRESENTATION STATE ────────────────────────────────────────────────
+    @track showTransitionDetail     = false;
+    @track selectedTransitionId     = null;
+    @track transitionData           = null;
+    @track transitionIsLoading      = false;
+    @track transitionErrorMessage   = '';
+    @track transitionSuccessMessage = '';
+    @track transitionIsActivating   = false;
+    @track transitionIsDeleting     = false;
+
+    // ─── GETTERS ───────────────────────────────────────────────────────────
+    get transitionCanActivate() {
+        return this.transitionData && this.transitionData.recordStatus === 'pending';
+    }
+
+    get formattedTransitionCreatedDate() {
+        if (!this.transitionData || !this.transitionData.createdDate) return '';
+        const date = new Date(this.transitionData.createdDate);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    get fromTransitionStatusName() {
+        if (!this.transitionData) return '';
+        return this.transitionData.fromStatusName || this.transitionData.fromStatus || '';
+    }
+
+    get toTransitionStatusName() {
+        if (!this.transitionData) return '';
+        return this.transitionData.toStatusName || this.transitionData.toStatus || '';
+    }
+
+    get transitionRecordStatus() {
+        if (!this.transitionData) return '';
+        return this.transitionData.recordStatus || '';
+    }
+
+    // ─── EVENT HANDLERS ────────────────────────────────────────────────────
+    handleTransitionClick(event) {
+        const lineId = event.currentTarget.dataset.lineId;
+        this.selectedTransitionId = lineId;
+        this.showTransitionDetail = true;
+        this.loadTransitionDetail();
+    }
+
+    loadTransitionDetail() {
+        if (!this.selectedTransitionId) return;
+        this.transitionIsLoading = true;
+        this.transitionErrorMessage = '';
+
+        getWorkflowTransitionById({ transitionId: this.selectedTransitionId })
+            .then(res => {
+                if (res && res.success && res.data) {
+                    this.transitionData = transitionFromApex(res.data);
+                    // Prefer the locally-known recordStatus (e.g. just activated).
+                    const local = this.workflowData?.workflow?.transitions?.find(t => this._matchesId(t, this.selectedTransitionId));
+                    const localRecordStatus = local && (local.recordStatus || local.RecordStatus__c || local.RecordStatus);
+                    if (localRecordStatus && localRecordStatus !== this.transitionData.recordStatus) {
+                        this.transitionData = { ...this.transitionData, recordStatus: localRecordStatus };
+                    }
+                } else {
+                    this.transitionErrorMessage = res?.message || 'Failed to load transition';
+                }
+            })
+            .catch(err => {
+                this.transitionErrorMessage = 'Error loading transition: ' + (err?.body?.message || err?.message);
+            })
+            .finally(() => { this.transitionIsLoading = false; });
+    }
+
+    handleActivateTransition() {
+        if (!this.transitionData || !this.transitionData.id) {
+            this.transitionErrorMessage = 'Cannot activate: Transition data not loaded';
             return;
         }
 
-        this.isLoading = true;
-        activateWorkflowTransition({ workflowTransitionId: transitionId })
-            .then(response => {
-                if (response.success) {
-                    this.successMessage = response.message;
-                    this.loadWorkflow();
-                } else {
-                    this.errorMessage = response.message;
+        this.transitionIsActivating = true;
+        this.transitionErrorMessage = '';
+        this.transitionSuccessMessage = '';
+
+        activateWorkflowTransition({ workflowTransitionId: this.transitionData.id })
+            .then(res => {
+                if (!res || !res.success) {
+                    throw new Error(res?.message || 'Failed to activate transition');
                 }
+                this.transitionSuccessMessage = 'Transition activated successfully!';
+                this.transitionData = { ...this.transitionData, recordStatus: 'active' };
+                this._updateTransitionRecordStatus(this.transitionData.id, 'active');
+                this.handleCloseTransitionDetail();
             })
-            .catch(error => {
-                this.errorMessage = 'Error activating transition: ' + error.message;
+            .catch(err => {
+                this.transitionErrorMessage = 'Error activating transition: ' + (err?.body?.message || err?.message);
             })
-            .finally(() => {
-                this.isLoading = false;
-            });
+            .finally(() => { this.transitionIsActivating = false; });
     }
 
-    /**
-     * Handle final workflow update
-     */
-    handleUpdateWorkflow() {
-        if (!confirm('This will activate all pending transitions and validation rules. Continue?')) {
+    handleDeleteTransition() {
+        if (!this.transitionData || !this.transitionData.id) {
+            this.transitionErrorMessage = 'Cannot delete: Transition data not loaded';
             return;
         }
 
-        this.isLoading = true;
-        updateWorkflow({ workflowId: this.workflowId })
-            .then(response => {
-                if (response.success) {
-                    this.successMessage = response.message;
-                    this.loadWorkflow();
-                } else {
-                    this.errorMessage = response.message;
+        // eslint-disable-next-line no-alert
+        if (!confirm(`Are you sure you want to delete the transition "${this.transitionData.name || ''}"?`)) {
+            return;
+        }
+
+        this.transitionIsDeleting = true;
+        this.transitionErrorMessage = '';
+        this.transitionSuccessMessage = '';
+
+        deleteWorkflowTransition({ workflowTransitionId: this.transitionData.id })
+            .then(res => {
+                if (!res || !res.success) {
+                    throw new Error(res?.message || 'Failed to delete transition');
                 }
+                this.transitionSuccessMessage = 'Transition deleted successfully!';
+                this._removeTransitionFromWorkflow(this.transitionData.id);
+                this.handleCloseTransitionDetail();
             })
-            .catch(error => {
-                this.errorMessage = 'Error updating workflow: ' + error.message;
+            .catch(err => {
+                this.transitionErrorMessage = 'Error deleting transition: ' + (err?.body?.message || err?.message);
             })
-            .finally(() => {
-                this.isLoading = false;
-            });
+            .finally(() => { this.transitionIsDeleting = false; });
     }
 
-    /**
-     * Clear success message after 5 seconds
-     */
-    clearMessages() {
-        setTimeout(() => {
-            this.successMessage = '';
-        }, 5000);
-    }
-
-    /**
-     * Get status options for combobox
-     */
-    get statusOptions() {
-        if (!this.workflowData || !this.workflowData.projectStatus) {
-            return [];
-        }
-        return this.workflowData.projectStatus.map(status => ({
-            label: status.name,
-            value: status.id
-        }));
-    }
-
-    /**
-     * Get ticket field options for combobox
-     */
-    get ticketFieldOptions() {
-        return [
-            { label: 'Assigned To', value: 'AssignedTo__c' },
-            { label: 'Creator', value: 'Creator__c' },
-            { label: 'Current State', value: 'CurrentState__c' },
-            { label: 'Description', value: 'Description__c' },
-            { label: 'End Date', value: 'EndDate__c' },
-            { label: 'Epic', value: 'Epic__c' },
-            { label: 'Priority', value: 'Priority__c' },
-            { label: 'Start Date', value: 'StartDate__c' },
-            { label: 'Story Point', value: 'StoryPoint__c' },
-            { label: 'Summary', value: 'Summary__c' },
-            { label: 'Type', value: 'Ticket_Type__c' }
-        ];
-    }
-
-    /**
-     * Get validation type options
-     */
-    get validationTypeOptions() {
-        return [
-            { label: 'Not Equals', value: 'not equals' }
-        ];
-    }
-
-    /**
-     * Get pending transitions
-     */
-    get pendingTransitions() {
-        if (!this.workflowData || !this.workflowData.workflow) {
-            return [];
-        }
-        return this.workflowData.workflow.transitions.filter(t => t.recordStatus === 'pending');
-    }
-
-    /**
-     * Get active transitions
-     */
-    get activeTransitions() {
-        if (!this.workflowData || !this.workflowData.workflow) {
-            return [];
-        }
-        return this.workflowData.workflow.transitions.filter(t => t.recordStatus === 'active');
-    }
-
-    /**
-     * Get pending validation rules for selected transition
-     */
-    get pendingValidationRules() {
-        if (!this.selectedTransition || !this.selectedTransition.validationRules) {
-            return [];
-        }
-        return this.selectedTransition.validationRules.filter(r => r.recordStatus === 'pending');
-    }
-
-    /**
-     * Get active validation rules for selected transition
-     */
-    get activeValidationRules() {
-        if (!this.selectedTransition || !this.selectedTransition.validationRules) {
-            return [];
-        }
-        return this.selectedTransition.validationRules.filter(r => r.recordStatus === 'active');
+    handleCloseTransitionDetail() {
+        this.showTransitionDetail = false;
+        this.selectedTransitionId = null;
+        this.transitionData = null;
+        this.transitionIsLoading = false;
+        this.transitionErrorMessage = '';
+        this.transitionSuccessMessage = '';
+        this.transitionIsActivating = false;
+        this.transitionIsDeleting = false;
     }
 }
