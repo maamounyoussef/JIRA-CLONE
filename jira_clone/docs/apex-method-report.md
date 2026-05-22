@@ -7,3 +7,4 @@ Governor‑limit metrics captured from real test runs via the
 |------|--------------|----------:|---------:|-------------:|-----:|---------:|----------:|-------------|
 | 2026-05-22 | ManageBacklogController.deleteTickets (before bulkification) | 24 | 272 | 1079 | 49 | 25 | 2 | measureDeleteTicketsGovernorUsage |
 | 2026-05-22 | ManageBacklogController.deleteTickets (after bulkification) | 24 | 131 | 1015 | 26 | 25 | 2 | measureDeleteTicketsGovernorUsage |
+| 2026-05-22 | TicketService.archiveSprintTickets (random test) | 50 | 18 | 742 | 12 | 50 | 1 | measureArchiveSprintGovernorUsage |

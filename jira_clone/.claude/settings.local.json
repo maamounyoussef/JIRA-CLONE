@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node scripts\\\\latest-debug-log.js)",
+      "PowerShell(node scripts\\\\latest-debug-log.js --tail 5)",
+      "PowerShell(\"--- tail 5 ---\")"
+    ]
+  }
+}

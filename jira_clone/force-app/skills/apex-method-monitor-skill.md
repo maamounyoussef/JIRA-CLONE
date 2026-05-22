@@ -24,24 +24,20 @@
 ## ROLE
 
 	You are a performance‑measurement assistant for the Apex controller layer. You do
-	not guess numbers. When a controller SOQL/SOSL method is finished you ask the user
-	**exactly one** question: does this method need a report? That is the ONLY question
-	you are allowed to ask in this whole flow. If the answer is yes, you then run the
-	entire pipeline **autonomously, with no further questions or confirmations**:
-	(1) generate the governor test class/method, (2) run it directly, (3) parse the
-	real `System.debug` metrics from the log, and (4) store them in the report file.
-	The numbers in the report ALWAYS come from a real execution.
+	not guess numbers. When a controller SOQL/SOSL method is finished you ask once
+	whether to monitor it; if yes, you (1) generate a governor test method, (2) run
+	it, (3) parse the real metrics from the log, and (4) record them in the report
+	file. The numbers in the report ALWAYS come from a real execution.
 
 ---
 
 ## EXECUTION CONTRACT (run in order)
 
-	### Step 1 — ASK ONCE (the only question in this flow)
+	### Step 1 — ASK (one question, after the method exists)
 
 	Once the controller method is written/edited, ask the user with the interactive
 	**`AskUserQuestion`** tool (the MCP "ask user" question UI) — NOT a plain‑text
-	question in your reply. This is the **single, only** question permitted in the
-	entire monitoring flow.
+	question in your reply. This presents selectable options and records the answer.
 
 	- `header`: "Monitor method" (≤ 12 chars target; keep it short)
 	- `question`: "Create a monitoring report for `<Class>.<method>`? I'll generate a
@@ -54,10 +50,8 @@
 	  2. **No, skip** — "Don't profile this method."
 
 	Read the selected option from the tool result. If **No, skip** → stop, do nothing
-	else. If **Yes** → run Steps 2→4 **straight through, autonomously**: generate the
-	test, run it, extract the `System.debug` metrics, and store them — do NOT pause to
-	ask anything else (not about deploy, test data, file location, or confirmation).
-	(The user may also type a custom "Other" answer — honor it.)
+	else. If **Yes** → continue to Step 2. (The user may also type a custom "Other"
+	answer — honor it.)
 
 	### Step 2 — GENERATE the test method
 
@@ -76,12 +70,12 @@
 	Integer soqlBefore    = Limits.getQueries();
 	Integer dmlRowBefore  = Limits.getDmlRows();
 	Integer dmlStmtBefore = Limits.getDmlStatements();
-	Integer heapBefore    = Limits.getHeapSize();   // capture CPU/heap last (closest to call)
+	Integer heapBefore    = Limits.getHeapSize();
 	Integer cpuBefore     = Limits.getCpuTime();
 
 	APIResponse res = <Class>.<method>(/* args */);
 
-	Integer cpuUsed     = Limits.getCpuTime()       - cpuBefore;   // CPU/heap first after call
+	Integer cpuUsed     = Limits.getCpuTime()       - cpuBefore;
 	Integer heapUsed    = Limits.getHeapSize()      - heapBefore;
 	Integer soqlUsed    = Limits.getQueries()       - soqlBefore;
 	Integer dmlRowUsed  = Limits.getDmlRows()       - dmlRowBefore;
@@ -95,10 +89,11 @@
 	Assert.isTrue(res.success, 'Method should succeed; got: ' + res.message);
 	```
 
-	The single `APEX_METRIC|...` debug line is the machine‑readable payload you parse
-	in Step 4 — keep that exact pipe‑delimited format.
+	The single `APEX_METRIC|...` debug line is the machine‑readable payload parsed
+	in Step 3 — keep that exact pipe‑delimited format. Do NOT use the human-readable
+	label format (`CPU time (ms) : 131 / limit 10000`); that format cannot be parsed.
 
-	### Step 3 — RUN the test and read the real result
+	### Step 3 — RUN the test and parse the real result
 
 	Deploy and run only this test, capturing the debug log:
 
@@ -108,40 +103,104 @@
 	    --result-format human --code-coverage --wait 10
 	```
 
-	Then read the `APEX_METRIC|...` line from the test's debug log (e.g. via
-	`sf apex get log` or the run output). If the test fails, fix the cause (often a
-	missing required field or an uninitialized rollup) and re‑run — do not record
-	numbers from a failed run.
+	Then locate the most recent debug log with the helper script (it returns the
+	newest `*.log` path, the equivalent of `ls -t | tail -1`):
 
-	### Step 4 — WRITE / APPEND the report
+	```
+	node scripts/latest-debug-log.js
+	```
 
-	Target file: `docs/apex-method-report.md`.
+	Read that log and find the **one line** that starts with `APEX_METRIC|`. You can
+	have the script print the log directly and scan its output:
 
-	- If it does NOT exist, create it with the header block below.
-	- If it exists, APPEND one new row (never rewrite prior rows — the file is a
-	  running history).
+	```
+	node scripts/latest-debug-log.js --show
+	```
 
-	Header (only when creating the file):
+	The line looks exactly like this (values will differ):
+
+	```
+	USER_DEBUG|[N]|DEBUG|APEX_METRIC|ManageBacklogController.deleteTickets|N=24|CPU=131|HEAP=1015|SOQL=26|DMLROWS=25|DMLSTMT=2
+	```
+
+	**Parse it by splitting on `|` and reading each segment by position/prefix:**
+
+	| Pipe segment | Content | Extract as |
+	|---|---|---|
+	| `[4]` | `ManageBacklogController.deleteTickets` | `Class.Method` |
+	| `[5]` | `N=24` | strip `N=` → `24` = **N (input)** |
+	| `[6]` | `CPU=131` | strip `CPU=` → `131` = **CPU ms** |
+	| `[7]` | `HEAP=1015` | strip `HEAP=` → `1015` = **Heap bytes** |
+	| `[8]` | `SOQL=26` | strip `SOQL=` → `26` = **SOQL count** |
+	| `[9]` | `DMLROWS=25` | strip `DMLROWS=` → `25` = **DML rows** |
+	| `[10]` | `DMLSTMT=2` | strip `DMLSTMT=` → `2` = **DML stmts** |
+
+	If the log contains the human-readable label format instead
+	(`CPU time (ms) : 131 / limit 10000`) it means the test class is using the wrong
+	debug format — **stop, fix the `System.debug` line in the test to emit
+	`APEX_METRIC|...`**, redeploy, and re-run. Never parse the label format; it is
+	not the source of truth.
+
+	If the test fails, fix the cause (often a missing required field or an
+	uninitialized rollup) and re-run — do not record numbers from a failed run.
+
+	### Step 4 — APPEND the report row via the script
+
+	Target file: `docs/apex-method-report.md`. Do **not** hand‑edit the table — use the
+	helper script, which finds the table by its header and appends exactly one row
+	(the Date column is generated automatically, today, local time):
+
+	```
+	node scripts/append_apex_report_row.js \
+	    --report ./docs/apex-method-report.md \
+	    --row "<Class.Method>|<N>|<CPU>|<HEAP>|<SOQL>|<DMLROWS>|<DMLSTMT>|<testMethodName>"
+	```
+
+	**Build the `--row` string from the values parsed in Step 3**, in this exact
+	pipe order (no Date — the script adds it):
+
+	```
+	<Class.Method seg[4]>|<N seg[5]>|<CPU seg[6]>|<HEAP seg[7]>|<SOQL seg[8]>|<DMLROWS seg[9]>|<DMLSTMT seg[10]>|<testMethodName>
+	```
+
+	Concrete example (from the metric line above):
+
+	```
+	node scripts/append_apex_report_row.js \
+	    --report ./docs/apex-method-report.md \
+	    --row "ManageBacklogController.deleteTickets|24|131|1015|26|25|2|measureDeleteTicketsGovernorUsage"
+	```
+
+	which appends:
+
+	```markdown
+	| 2026-05-22 | ManageBacklogController.deleteTickets | 24 | 131 | 1015 | 26 | 25 | 2 | measureDeleteTicketsGovernorUsage |
+	```
+
+	If `docs/apex-method-report.md` does not yet exist, create it first with the
+	header block below (the script only appends rows; it does not create the file),
+	then run the script:
 
 	```markdown
 	# Apex Method Performance Report
 
-	Governor‑limit metrics captured from real test runs via the
+	Governor-limit metrics captured from real test runs via the
 	`apex-method-monitor` skill. Each row is one measured execution.
 
 	| Date | Class.Method | N (input) | CPU (ms) | Heap (bytes) | SOQL | DML rows | DML stmts | Test method |
 	|------|--------------|----------:|---------:|-------------:|-----:|---------:|----------:|-------------|
 	```
 
-	Row to append (values pulled from the `APEX_METRIC` line):
+	After appending, confirm the row that was written and flag any value approaching
+	its governor limit:
 
-	```markdown
-	| 2026-05-22 | ManageBacklogController.deleteTickets | 24 | 131 | 1015 | 26 | 25 | 2 | measureDeleteTicketsGovernorUsage |
-	```
-
-	Use today's date, the real parsed values, and the test method name. After writing,
-	tell the user the row added and flag anything near a limit (SOQL > 80, CPU > 8000,
-	DML rows > 8000, DML stmts > 120).
+	| Metric | Flag when |
+	|---|---|
+	| SOQL | > 80 (80 % of 100 limit) |
+	| CPU ms | > 8 000 (80 % of 10 000 limit) |
+	| Heap bytes | > 4 800 000 (80 % of 6 000 000 limit) |
+	| DML rows | > 8 000 (80 % of 10 000 limit) |
+	| DML stmts | > 120 (80 % of 150 limit) |
 
 ---
 
