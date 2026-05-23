@@ -1,268 +1,179 @@
-# lwc-parent-event-handler-generator
+---
+name: lwc-parent-event-handler-generator
+description: >
+  Generate the parent-component logic that handles `CustomEvent`s dispatched
+  from a child LWC: choose the right Apex call style (`@wire` vs imperative,
+  with or without `refreshApex`), wire it to the correct Apex method, and update
+  the de-normalised principal state from the response — never from optimistic
+  local values. This is an interview-driven skill: it walks the user one
+  question at a time through state identification, concurrency, visibility
+  urgency, expand-timing, and Apex resolution before emitting any code.
 
-**Name:** `lwc-parent-event-handler-generator`
-**Description:** Use this skill when the user is working on a Salesforce LWC parent component and needs to handle events from a child component. Triggers on phrases like "add event handler", "handle this event in the parent", "my child dispatches an event", "connect child to parent", "I have a child component that fires", "how do I listen to this event", or when the user pastes a child LWC and asks what to do in the parent. Also triggers when the user shares a `dispatchEvent` call or an `onxxx` attribute and asks how to respond to it in the parent.
-**Type:** skill
-**Domain:** Salesforce
+  TRIGGER (apply silently) when the user is working on a Salesforce LWC parent
+  component and ANY of these is true: a request to "add an event handler",
+  "handle this event in the parent", "connect child to parent", "listen to this
+  event"; the user pastes a child LWC `dispatchEvent` call or an `onxxx`
+  attribute and asks how to respond to it in the parent; the user mentions a
+  child that "fires" or "dispatches" something the parent must react to; the
+  user is wiring an `@wire` / imperative Apex call in direct response to a child
+  event.
+
+  SKIP when the work is purely inside the child (use `lwc-child` instead), when
+  the parent change is cosmetic (CSS / template-only) and does not touch Apex
+  or principal state, or when the parent already handles the event and the user
+  only wants a one-line tweak that does not change Apex resolution or state
+  update.
+---
+
+# LWC Parent Event Handler Generator
+
+Turns a free-form "the child dispatches X, what do I do in the parent?" request
+into a disciplined question-by-question interview that produces correct,
+state-coherent parent code in one pass — independent of how many events the
+child emits. Parents are the orchestration layer: they listen for child events,
+choose between `@wire` (with or without `refreshApex`) and imperative Apex, and
+update the de-normalised principal state from the response. Skipping the
+interview produces parents that optimistically mutate state before the Apex
+result lands, store duplicate copies of child data, miss `refreshApex` on
+concurrent writes, or wire the load on the wrong gating field (e.g.
+`activeObjectId` instead of an expand flag) — all of which surface as silent
+data drift the day a second user edits the same record.
 
 ---
 
-## Role
+## Instructions
 
-You generate parent-component logic that handles events dispatched from a child LWC, following the RULES section. The RULES tell you HOW to write the final code — they are NOT a result and must never be echoed back as the answer. You produce code only after the interview is complete.
+### Step 1 — Detect the interview entry point
 
----
+Before writing any handler, identify which child + event pair the work targets.
+If **any** signal matches, run the per-event loop in Step 2:
 
-## Input Mechanism *(read first — overrides everything below)*
+| # | Signal | Example |
+|---|--------|---------|
+| 1 | User names a child and says "handle its events in the parent" | "wire `c-ticket-view` events into `manageBacklog`" |
+| 2 | User pastes a `dispatchEvent(new CustomEvent(...))` and asks how to receive it | "the child fires `ticketsummaryupdate` — what does the parent do?" |
+| 3 | User pastes an `onxxx={handler}` attribute and asks what `handler` should look like | "what goes inside `handleTicketLinkedToExpand`?" |
+| 4 | User mentions concurrent writes, refresh, or "show to other users ASAP" | "two people might edit this — how do I keep the parent in sync?" |
+| 5 | User asks whether to use `@wire` or imperative Apex for a given event | "should this be `@wire` or `callApex`?" |
 
-If an interactive user-input tool is available (e.g. an MCP elicitation / ask_user tool), you **MUST** ask every interview question **through that tool**, not as plain message text. This keeps the interview inside a single turn.
-Only if no such tool exists do you fall back to asking as plain text, one question per message.
-
----
-
-## Execution Contract
-
-This is an **interactive interview**, not a report. You walk the user through a decision tree one question at a time.
-
-1. **ONE question per step.** Then get the user's reply before continuing.
-   - Never present two steps' questions together.
-   - Never pre-answer a later step on the user's behalf.
-   - Never say "if you pick X then I'll ask Y" — just ask the current question and get the answer.
-2. **Do not skip steps.** Move only along the branch arrows defined in the FLOW. The only legal jumps are the ones written in the flow (e.g., "If separate → STEP 10").
-3. **Track your position.** At the top of every question, print:
-   `[Child: <name> | Event: <eventName> | Step <N>]`
-   This is mandatory.
-4. **No code until the interview for the current event is finished.** You emit code ONLY at the FINAL OUTPUT stage, after STEP 10 for that event.
-5. **"I don't know" is a valid answer.** When the user says they don't know (or "do your own check"), YOU analyze the available info (dispatched event name, RULES, state shape) and make the best decision — state the decision and one-line reasoning, then proceed. Do not stall.
-6. **After finishing one event,** return to the top of the per-event loop for the next dispatched event, until all events are handled.
-
-> If you ever find yourself about to ask more than one question at once, or to output code mid-interview: **STOP**, discard it, and ask only the single current-step question.
-
----
-
-## Start of Conversation
+If none match (the change is template-only, or strictly inside the child),
+skip — this is not a parent-handler task.
 
 Before any step, ask only:
+
 > *"What is the child component's name or path?"*
 
-After you have the child, identify every event it dispatches (`onxxx` handlers / `dispatchEvent` calls). List them back for confirmation, then begin the per-event loop with the first event.
+After you have the child, identify every event it dispatches (`onxxx` handlers
+/ `dispatchEvent` calls). List them back for confirmation, then begin the
+per-event loop with the first event.
 
 ---
 
-## Per-Event Loop
+### Step 2 — Run the per-event interview
 
-For each dispatched event, run **STEP 0 → STEP 10**. Ask one question, get the answer, branch, repeat.
+Apply the **eleven steps (0 → 10)** in order, one question per message, for
+every dispatched event. Every event must walk the full flow before code is
+emitted.
 
-> After studying the current dispatch event's questions, check if you hit the **50% session limit** — if so, compact and start a new session and continue from where you are.
-> Once you finish all questions, go and do the implementation in the code directly.
+Interview discipline (non-negotiable):
 
----
+```
+[Child: <name> | Event: <eventName> | Step <N>]
+```
 
-## Turn Discipline
+- Print the tracker line above at the top of **every** question. If you cannot
+  fill it in, you have lost state — reconstruct it before doing anything else.
+- ONE question per message. Never present two steps together. Never pre-answer
+  a later step. Never say "if you pick X then I'll ask Y."
+- Do not skip steps. Move only along the branch arrows defined in the flow.
+- No code until the interview for the current event is finished (after Step
+  10).
+- "I don't know" is a valid answer — the AI analyses the available info
+  (dispatched event name, RULES, state shape) and makes the best decision, then
+  proceeds. Do not stall.
+- After finishing one event, return to the top of the loop for the next event.
 
-- After **every** user reply you are still inside the interview. It is NOT over until you have emitted code after STEP 10 for the **last** event.
-- Begin every question with the tracker line `[Child: ... | Event: ... | Step N]`. If you cannot fill it in, you have lost state — re-read the conversation and reconstruct it before doing anything else.
-- The **only** thing a message may end with is a single STEP question, UNLESS you are at FINAL OUTPUT. No summaries, no "let me know if you'd like to continue", no sign-offs, no closing pleasantries — these signal completion and are forbidden mid-interview.
-- Treat each user reply as the answer to the current step. Immediately advance to the next step and ask its question in the same style. Do not wait to be re-invoked.
-- Asking a question and pausing for the answer is NORMAL and expected — it does not mean the task is done. Resume automatically on the next reply.
+**Step 0 — State identification.** Ask which state the parent is working on
+(UPDATE / LOAD / SEARCH). Check whether it is stored in an **array** or as a
+**single (separate)** value.
+- *Separate* → imperative Apex call, update state with the response. **→ Step 10.**
+- *No specific state* → `@wire` with its own state to remember values if
+  needed. **→ Step 1.**
+- *Otherwise* → continue to Step 1.
 
----
+**Step 1 — Concurrent writes.** *"Can other users or other browser sessions
+modify this data while this component is open?"* Yes → Step 2. No → Step 6.
 
-## Interview Flow
+**Step 2 — Visibility urgency.** *"Do you want this value to be visible to
+other users as soon as possible?"*
+- *Very important* → Step 3.
+- *Important* → Step 4.
+- *Not important* → Step 5.
 
-### Step 0 — State Identification
+**Step 3.** `@wire` with `refreshApex` on **every** applicable request from the
+child. **→ Step 6.**
 
-AI asks which state we are working on (UPDATE / LOAD / SEARCH) in the parent.
+**Step 4.** `@wire` with `refreshApex` only on actions **related to this data**.
+**→ Step 6.**
 
-- User provides the state name in the code (user can say "I don't know" — AI will analyse based on the dispatched event name).
-- AI checks whether this state is stored in an **array** or as a **single (separate)** value.
-  - **If separate** → make an imperative Apex call and update the state with the data returned. **→ GO TO STEP 10 DIRECTLY.**
-  - **If no specific state** → no principal state; proceed with `@wire` and its own state to remember values if needed. **→ GO TO STEP 1.**
-  - **Otherwise** → continue to Step 1.
+**Step 5.** `@wire` **without** `refreshApex`. **→ Step 6.**
 
----
+**Step 6 — Expand action check.** *"Was this dispatch caused by an expand
+action?"* (Yes / No / Do your own check from the event name.) Yes → Step 7. No
+→ Step 9.
 
-### Step 1 — Concurrent Writes
+**Step 7 — Load timing.** *"Load on child *creation* or on *expand*?"* Expanded
+→ Step 8. Created → Step 9.
 
-AI asks:
-> *"Do we have multiple writes on this functionality at the same time (can other users or other browser sessions modify this data while this component is open)?"*
+**Step 8 — Expand-gated wire.** New state field separate from `activeObjectId`
+gates the `@wire`. **→ Step 10.**
 
-Options: **Yes / No**
+**Step 9 — Active-object wire.** `@wire` on `activeObjectId`. **→ Step 10.**
 
-- Yes → Step 2
-- No → Step 6
+**Step 10 — Apex method resolution.** *"Which Apex method should handle this?
+(A) class + method + line, (B) point to a folder/class and AI finds it, (C)
+method doesn't exist — create it."*
+- *Branch A:* user supplied the line — record `<ApexClass>.<method>` and skip
+  verification entirely. **→ Final Output.**
+- *Branch B:* search the named location, identify the method, confirm. **→
+  Final Output.**
+- *Branch C:* run the **Creation Sub-Loop** below.
 
----
+> *Creation Sub-Loop (Branch C).* Ask **Step 10.01** (*"What should the
+> controller do?"*) — then parse the answer for any other class/method it
+> references. For each referenced symbol that doesn't exist, recurse: *"You
+> mentioned `<Class>.<method>`, which doesn't exist. What should it do?"*
+> Continue until no description references an unresolved class/method. Track
+> depth in the tracker line (`[... | Step 10.01 | depth 2: FooSvc.bar]`). Then
+> ask **Step 10.02** (*"Where should the controller live?"*) for every method
+> created during the recursion.
 
-### Step 2 — Visibility Urgency
-
-AI asks:
-> *"Do you want this value to be visible to other users as soon as possible?"*
-
-Options:
-- **Very important** to show to other users as soon as possible → Step 3
-- **Important** to show to other users as soon as possible → Step 4
-- **Not important** to show to other users as soon as possible → Step 5
-
----
-
-### Step 3
-
-Use `@wire` with `refreshApex` on **every** applicable request that comes from the child. **→ GO TO STEP 6.**
-
----
-
-### Step 4
-
-Use `@wire` with `refreshApex` only on actions **related to this data**. **→ GO TO STEP 6.**
-
----
-
-### Step 5
-
-Use `@wire` **without** `refreshApex`. **→ GO TO STEP 6.**
-
----
-
-### Step 6 — Expand Action Check
-
-AI asks:
-> *"Was this dispatch caused by an expand action?"*
-
-Options: **Yes / No / Do your own check**
-
-> If "Do your own check" → AI analyses the dispatch event name to determine whether it indicates an expand action.
-
-- Yes → Step 7
-- No → Step 9
-
----
-
-### Step 7 — Load Timing
-
-AI asks:
-> *"Do you want to load the objects the first time when the child is created, or when it is expanded?"*
-
-Options: **Expanded / Created**
-
-- Expanded → Step 8
-- Created → Step 9
-
----
-
-### Step 8 — Expand-Gated Wire
-
-Create a new state field (separate from `activeObjectId`) and use it as the `@wire` input instead of `activeObjectId` — so the wire fires on expand, not on object selection. **→ GO TO STEP 10.**
+Anti-pattern to detect:
 
 ```javascript
-// Example
-handleTicketLinkedToExpand(event) {
-    const { ticketId } = event.detail;
-    this._linkedToTargetTicketId = ticketId;
-}
+// ❌ Optimistic mutation; wired-property form; duplicates child data into
+//     parent state; loads on activeObjectId when the user wanted expand-gated.
+@wire(loadTicketLinkedTo, { ticketId: '$activeTicketViewId' }) ticketLinkedTo;
 
+handleTicketSummaryUpdate(event) {
+    const { ticketId, summary } = event.detail;
+    // mutate principal state BEFORE Apex returns
+    this._patchTicketEverywhere(ticketId, { Summary__c: summary });
+    saveTicketSummary({ ticketId, summary }); // fire-and-forget
+}
+```
+
+Correct form (per the rules, after the interview):
+
+```javascript
+// ✅ Wired-function form, expand-gated where requested, state updated FROM
+//    the Apex response (Rule 0), one handler per event (Rule 1).
 @track _linkedToTargetTicketId = null;
 
-@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
-wiredTicketLinkedTo(result) {
-    if (result.data && result.data.success && this._linkedToTargetTicketId) {
-        const linkedTo = result.data.data?.ticketLinkTo || [];
-        this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
-    }
-}
-```
-
----
-
-### Step 9 — Active-Object Wire
-
-Place the `@wire` on `activeObjectId`.
-
-```javascript
-// Example
 handleTicketLinkedToExpand(event) {
-    // No action needed — unless refreshApex is required (e.g. user chose "Important")
+    this._linkedToTargetTicketId = event.detail.ticketId;
 }
 
-@wire(loadTicketLinkedTo, { ticketId: '$activeTicketViewId' })
-wiredTicketLinkedTo(result) {
-    if (result.data && result.data.success) {
-        const linkedTo = result.data.data?.ticketLinkTo || [];
-        this._patchTicketEverywhere(this.activeTicketViewId, { linkedTo });
-    }
-}
-```
-
----
-
-### Step 10 — Apex Method Resolution
-
-Ask (one question):
-> *"Which Apex method should handle this? Choose one:*
-> *(A) Enter Apex class + method name + the line where this method exists.*
-> *(B) I don't know the name — I'll tell you WHERE to look and you find it.*
-> *(C) The method doesn't exist yet — create it."*
-
-**Branch A — Line provided by user**
-If the user specifies the line number, the AI skips verification entirely — it will not check whether the method exists, whether the class exists, or whether the signature matches. It records `<ApexClass>.<method>` at the given line and proceeds directly to FINAL OUTPUT.
-
-> Verification (method existence + signature check) is only triggered when: no line is provided AND the method signature is not already clear from what the user gave.
-
-**Branch B — User points to a location, not a name**
-Ask where to search (folder / path / class). Search there, identify the matching method, confirm it back to the user, record it, then proceed to FINAL OUTPUT.
-
-**Branch C — Method does not exist → run the CREATION SUB-LOOP below.**
-
----
-
-#### Creation Sub-Loop *(Branch C only)*
-
-Run these as separate one-question messages, in order.
-
-**Step 10.01 — What should the controller do?**
-
-Ask the user to describe, specifically, what this Apex method must do.
-
-**Dependency Recursion (mandatory):**
-Parse the user's description for any OTHER class or method it references. For each referenced class/method:
-- If it exists → note it and continue.
-- If it does NOT exist → you must resolve it before finishing the parent method. Ask: *"You mentioned `<Class>.<method>`, which doesn't exist. What should it do?"* Then recurse: parse THAT description for further unknown classes/methods and repeat.
-
-Continue this recursion until the most recent description references **no unresolved class/method**. Only then leave Step 10.01.
-
-Track depth in the tracker line, e.g. `[... | Step 10.01 | depth 2: FooSvc.bar]`.
-
----
-
-**Step 10.02 — Where should the controller live?**
-
-Ask where to create it:
-- User knows → record the target class/path.
-- User doesn't know → propose the location (existing class vs new class, naming, folder) with one-line reasoning, and confirm.
-
-Apply the same 10.02 location question to every method created during the recursion in 10.01.
-
----
-
-After every referenced method is resolved (existing, located, or created) and every location is set, proceed to **FINAL OUTPUT** for this event.
-
----
-
-## Rules
-
----
-
-### Rule 0 — Universal State-Update Rule
-
-After any Apex response returns, update the principal state **from the response data** — never from optimistic local values.
-
-This applies to both call styles:
-
-- **Imperative Apex:** update state inside `.then()` / `await` result.
-- **`@wire`:** use the wired-**function** form, not the wired-property form. Inside the wire handler, read the result and update state manually the same way you would in an imperative call.
-
-```javascript
-// ✅ Correct — wired function form
 @wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
 wiredTicketLinkedTo(result) {
     if (result.data && result.data.success && this._linkedToTargetTicketId) {
@@ -271,240 +182,149 @@ wiredTicketLinkedTo(result) {
     }
 }
 
-// ❌ Wrong — wired property form (bypasses R0; principal state never updated)
-@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' }) ticketLinkedTo;
-```
-
-Pattern notes:
-- The wire input gates the call — when set, the wire fires.
-- Inside the handler, validate success and confirm the input is still set.
-- Extract the relevant slice from the response (`result.data.data?.ticketLinkTo`).
-- Update principal state via a dedicated mutator (`_patchTicketEverywhere`), which keeps de-normalised state consistent across the component.
-
----
-
-### Rule 1 — Create a Handler Function for Each Event
-
-```javascript
-// HTML
-<c-ticket-view
-    ticket={activeTicketViewModel}
-    status-options={statusOptions}
-    ticket-linked-to-type-options={ticketLinkedToTypeOptions}
-    ticket-options={ticketViewSearchOptions}
-    onticketsummaryupdate={handleTicketViewSummaryUpdate}
-    onticketstatuschange={handleTicketViewStatusChange}
-    onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
-    onticketsearch={handleTicketSearch}
-    onticketlinkcreate={handleTicketLinkCreate}
-    onticketlinkedtoexpand={handleTicketLinkedToExpand}
-    oncloseticketview={handleCloseTicketView}>
-</c-ticket-view>
-```
-
----
-
-### Rule 2 — Derive Child Props from Principal State (No New Data State)
-
-Do not create a new data state for the child. Declare derived functions that compute values from the de-normalised principal state. Derived values must be computed on read (getters), not stored.
-
-```javascript
-get activeTicketViewModel() {
-    if (!this._activeTicketViewId) return null;
-    const ticket = this._findTicketById(this._activeTicketViewId);
-    return ticket ? this._toTicketViewModel(ticket) : null;
-}
-
-_findTicketById(ticketId) {
-    const fromBacklog = this.backlogTickets.find(t => t.Id === ticketId);
-    if (fromBacklog) return fromBacklog;
-    for (const sprint of this.sprints) {
-        const found = sprint.tickets.find(t => t.Id === ticketId);
-        if (found) return found;
-    }
-    return null;
-}
-```
-
-<details>
-<summary>Principal state shape reference</summary>
-
-```javascript
-// sprints: [
-//   {
-//     Id, Name, Duration__c, StartDate__c, Goal__c,
-//     endDate, totalStoryPoints, endedStoryPoints, storyPointsPercent,
-//     isExpanded, chevronIcon, isLoadingTickets, offset, hasMore,
-//     isFirstPage, isLastPage, currentPage, offsetLabel,
-//     dropTargetClass, hasTickets,
-//     tickets: [
-//       {
-//         Id, Name, Summary__c, Description__c, Priority__c,
-//         CurrentState__c, AssignedTo__c, Epic__c, Ticket_Type__c,
-//         StoryPoint__c, assigneeName, epicName, ticketTypeName,
-//         isSelected, _key,
-//         linkedTo: [ { id, linkType, label } ]
-//       }
-//     ]
-//   }
-// ],
-// backlogTickets: [ { ...same ticket shape... } ]
-```
-
-</details>
-
----
-
-### Rule 3 — Getter for Every Presentation State
-
-```javascript
-get isTicketViewOpen() { return this._activeTicketViewId !== null; }
-```
-
----
-
-### Rule 4 — Store Active Object ID Separately
-
-Store the object's ID in a separate data state (outside the de-normalised principal state) so you know which child is currently shown.
-
-```javascript
-@track _activeTicketViewId = null;
-```
-
----
-
-### Rule 5 — Provide Find / Update / Delete / Create Mutators
-
-Names can be domain-specific (e.g. `enrich`).
-
-```javascript
-_patchTicketEverywhere(ticketId, patch) {
-    this.backlogTickets = this.backlogTickets.map(t =>
-        t.Id === ticketId ? { ...t, ...patch } : t
-    );
-    this.sprints = this.sprints.map(s => ({
-        ...s,
-        tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, ...patch } : t)
-    }));
-}
-
-_deleteTicketsFromSprints(ticketIds, updatedSprints) {
-    const updatedSprintMap = {};
-    updatedSprints.forEach(sprint => { updatedSprintMap[sprint.Id] = sprint; });
-
-    this.sprints = this.sprints.map(s => {
-        const tickets = s.tickets.filter(t => !ticketIds.includes(t.Id));
-        const updatedSprint = updatedSprintMap[s.Id];
-        if (updatedSprint) {
-            return {
-                ...s, tickets,
-                hasTickets: tickets.length > 0,
-                totalStoryPoints: updatedSprint.totalStoryPoints,
-                endedStoryPoints: updatedSprint.endedStoryPoints,
-                storyPointsPercent: updatedSprint.storyPointsPercent
-            };
-        }
-        return { ...s, tickets, hasTickets: tickets.length > 0 };
-    });
-}
-
-_updateSprintsTicketSummary(ticketId, summary) {
-    this.sprints = this.sprints.map(s => ({
-        ...s,
-        tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, Summary__c: summary } : t)
-    }));
+handleTicketSummaryUpdate(event) {
+    const { ticketId, summary } = event.detail;
+    updateTicketSummary({ ticketId, summary })
+        .then(res => {
+            if (res?.success) {
+                this._patchTicketEverywhere(ticketId, { Summary__c: summary });
+            } else {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Update failed', message: res?.message, variant: 'error'
+                }));
+            }
+        });
 }
 ```
 
 ---
 
-### Rule 6 — On Failure, Dispatch a Toast Event
+### Step 3 — Place the handlers in the right layer
 
-```javascript
-this.dispatchEvent(new ShowToastEvent({
-    title  : 'Final Status Reached',
-    message: 'This ticket has no further transitions available.',
-    variant: 'success'
-}));
-```
+Layering still applies (see `lwc-architecture` and `lwc-child`):
 
----
-
-### Rule 7 — Immutability & Optimisation
-
-#### Spreading Rule
-
-Spread every object/array on the path from root down to — but **not including** — the leaf you're changing. The leaf (primitive) is just assigned.
-
-| Change | Pattern |
-|--------|---------|
-| `count = 5 → 6` | Primitive — just assign |
-| `user.name` changed | `this.user = { ...this.user, name: newName }` |
-| `todos` gets new item | `this.todos = [...this.todos, t4]` |
-| Deeply nested object | Spread every level on the path (see example below) |
-
-```javascript
-// Deeply nested example
-this.company = {
-    ...this.company,
-    team: {
-        ...this.company.team,
-        lead: { ...this.company.team.lead, name: "Alex" }
-    }
-};
-```
-
-#### The `_key` Optimisation
-
-| Field | Purpose | Behaviour |
-|-------|---------|-----------|
-| `Id` | Locate the record | Stable — never regenerated |
-| `_key` | Signal data changed | Regenerated on every edit |
-
-> **Why NOT use `Id` as the change key?** Because `Id` never changes — the diff can't detect an update through it.
-
-#### O(1) Update Pattern
-
-```javascript
-this.ticketsById = {
-    ...this.ticketsById,
-    [id]: {
-        ...this.ticketsById[id],
-        Priority__c: "High",
-        _key: crypto.randomUUID()
-    }
-};
-```
-
-If order matters, separate concerns:
-
-```javascript
-ids            = ["t1", "t2", "t3"]              // controls order
-ticketsById    = { t1, t2, t3 }                  // controls data
-orderedTickets = ids.map(id => ticketsById[id]);  // rebuild for template
-```
-
-#### Golden Rule
-
-> Every time you update state, ask: *"Am I touching more than I need to?"*
-> - Use `Id` → to **FIND**
-> - Use `_key` → to **FLAG** the change
-> - Spread only the levels on the path to the leaf
-> - Reach for the cheapest correct update by default, not as an afterthought
+- The **child** dispatches `CustomEvent`s only. It never calls Apex and never
+  mutates `@api` state.
+- The **parent** orchestrator owns: event handlers (one per event), the
+  `@wire`/imperative Apex calls, the `_activeXxxId` data state, the
+  find/update/delete/create mutators, and the de-normalised principal state.
+- **Derived child props** are getters that read principal state — never a new
+  data state duplicated alongside it.
+- The `@AuraEnabled` controller and its `Service` belong in the Apex layer; the
+  parent never inlines business logic that should live there.
 
 ---
 
-## Final Output Checklist
+### Step 4 — Verify with the execution checklist
 
-The final output must include:
+Before presenting the generated code, walk the checklist. If any row fails, fix
+it before emitting code:
+
+| # | Check | Fix if it fails |
+|---|-------|-----------------|
+| 1 | Is principal state updated from the Apex **response data**, not from optimistic local values? (Rule 0) | Move the `_patchXxx` call inside `.then()` / the wired-function body. |
+| 2 | Is `@wire` used in **wired-function form** when it must update principal state? (Rule 0) | Replace `@wire(...) prop;` with `@wire(...) wiredXxx(result) { ... }`. |
+| 3 | Is there one handler function per dispatched event, named `handle<Child><Event>`? (Rule 1) | Split combined handlers; rename per pattern. |
+| 4 | Are child props derived from principal state via getters, not stored in a new data state? (Rule 2) | Replace the `@track` field with `get childProp() { return ... }`. |
+| 5 | Is every presentation state exposed through a getter? (Rule 3) | Wrap in `get isXxxOpen() { return this._xxxId !== null; }`. |
+| 6 | Is the active-object ID stored separately from the principal state? (Rule 4) | Add `@track _activeXxxId = null`. |
+| 7 | Are there find / update / delete / create mutators (e.g. `_patchTicketEverywhere`)? (Rule 5) | Add them; never mutate state inline inside a handler. |
+| 8 | On Apex failure, is a `ShowToastEvent` dispatched? (Rule 6) | Add the toast in the `.then()` failure branch. |
+| 9 | When updating, are all levels on the path to the leaf spread, and is `_key` regenerated to flag the change? (Rule 7) | Apply the spread pattern; use `Id` to find, `_key` to flag. |
+| 10 | Does every dispatched event from the child have a handler wired via `onxxx={handler}` in the template? | Add the missing `on<event>={handle<Child><Event>}` attribute. |
+
+---
+
+## Resources
+
+### Reference rewrite
+
+`force-app/main/default/lwc/manageBacklog/` — worked example of this skill
+applied to the Manage Backlog screen handling every event dispatched by
+`c-ticket-view` (`ticketsummaryupdate`, `ticketstatuschange`,
+`ticketdescriptionupdate`, `ticketsearch`, `ticketlinkcreate`,
+`ticketlinkedtoexpand`, `closeticketview`). Demonstrates the wired-function
+form of Rule 0, the `_linkedToTargetTicketId` expand-gated wire from Step 8,
+and the `_patchTicketEverywhere` / `_deleteTicketsFromSprints` mutators from
+Rule 5.
+
+### Reference state-update mutators
+
+`force-app/main/default/lwc/manageBacklog/manageBacklog.js` — template for
+find/update/delete/create against the de-normalised principal state
+(`backlogTickets` + `sprints[].tickets`). Use as the template when adding any
+new mutator: spread every level on the path to the leaf (Rule 7) and use
+`Id` to find, `_key` to flag the change.
+
+### Apex call-style decision table (the contract this skill protects)
+
+| Concurrent writes? | Visibility urgency | Call style |
+|---|---|---|
+| No | — | `@wire` (no `refreshApex`) |
+| Yes | Very important | `@wire` + `refreshApex` on **every** child request |
+| Yes | Important | `@wire` + `refreshApex` only on related actions |
+| Yes | Not important | `@wire` (no `refreshApex`) |
+| State is "separate" (single value) | — | Imperative Apex, update state in `.then()` |
+
+| Expand-driven load? | Load timing | Wire input |
+|---|---|---|
+| No | — | `activeObjectId` |
+| Yes | On expand | `_expandTargetId` (new state field, set by the expand handler) |
+| Yes | On create | `activeObjectId` |
+
+Salesforce LWC reactivity rules these tables encode:
+- `@wire(fn, { x: '$_field' })` re-fires whenever `_field` changes — so
+  choosing the right gating field is what makes the load fire at the right
+  moment.
+- `refreshApex(this.wiredResult)` is the **only** correct way to re-pull a
+  previously wired result; calling the imperative version pollutes the cache.
+- The wired-property form (`@wire(...) prop;`) does not let you update other
+  principal state from the response — always use the wired-function form when
+  Rule 0 applies.
+
+---
+
+## Optional Logic
+
+### Compact and final output
+
+When all events have walked Step 0 → Step 10, emit the code in one pass. The
+final output must include:
 
 | # | Item |
 |---|------|
-| a | Chosen Apex call style with justification |
-| b | Event handler stub (Rule 1) |
+| a | Chosen Apex call style with one-line justification |
+| b | Event handler stub per dispatched event (Rule 1) |
 | c | Wire or imperative call with Rule 0-compliant state update |
 | d | Derived getter(s) for child props (Rule 2) |
 | e | Find / update / delete / create mutators (Rule 5) |
-| f | Presentation state declarations (Rule 3) |
+| f | Presentation state declarations + their getters (Rules 3, 4) |
+| g | `ShowToastEvent` on the failure branch (Rule 6) |
+| h | Spread/`_key` pattern wherever principal state is updated (Rule 7) |
 
-> Do not give the output code in the chat during the interview — only at the end, after full analysis of the rules + user answers.
+Do not emit code in chat during the interview — only at the end, after the full
+analysis of the rules + the user's answers.
+
+### Integration with `lwc-child` and `lwc-architecture` skills
+
+Before generating the parent, confirm the child dispatches its events under the
+`lwc-child` contract (lowercase names, correct payload shape per operation).
+After generating the parent, run the `lwc-architecture` skill on the chosen
+`@AuraEnabled` controller method so the response envelope (`APIResponse`)
+matches what Rule 0 reads (`result.data.success`, `result.data.data?.xxx`).
+
+### When to skip
+
+Skip the interview (Step 2) only when:
+
+- The change is **template-only** (CSS, layout, label text) and does not touch
+  Apex calls or principal state.
+- The parent **already handles** the event correctly and the user only wants a
+  cosmetic tweak (rename a getter, adjust a toast message) that does not
+  change Apex resolution or the state-update path.
+- The work belongs in the **child** (validation, draft state, edit-mode toggle,
+  dispatched payload shape) — use the `lwc-child` skill instead.
+
+Do **not** skip on the basis that "we'll just update state optimistically and
+trust the Apex call" — that pattern produces silent drift between principal
+state and the database, and is the failure mode this skill exists to prevent.
