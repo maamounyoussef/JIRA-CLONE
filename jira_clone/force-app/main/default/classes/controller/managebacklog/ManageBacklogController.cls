@@ -617,7 +617,6 @@ public with sharing class ManageBacklogController {
             return new APIResponse(false, 'Error moving ticket position: ' + ex.getMessage());
         }
     }
-
     @AuraEnabled
     public static APIResponse moveTicketToBacklog(String ticketId) {
         try {

@@ -7,6 +7,7 @@ import loadBacklogData       from '@salesforce/apex/ManageBacklogController.load
 import loadBacklogTickets    from '@salesforce/apex/ManageBacklogController.loadBacklogTickets';
 import moveTicketToSprint    from '@salesforce/apex/ManageBacklogController.moveTicketToSprint';
 import moveTicketToBacklog   from '@salesforce/apex/ManageBacklogController.moveTicketToBacklog';
+import moveTicketPosition    from '@salesforce/apex/ManageBacklogController.moveTicketPosition';
 import deleteTickets         from '@salesforce/apex/ManageBacklogController.deleteTickets';
 import createSprint          from '@salesforce/apex/ManageBacklogController.createSprint';
 import updateSprint          from '@salesforce/apex/ManageBacklogController.updateSprint';
@@ -54,6 +55,11 @@ export default class ManageBacklog extends LightningElement {
     _draggingFromSprint = false;
     _dragSourceSprintId = null;
     _dragTargetSprintId = null;
+    _dragSourceTicketId  = null;
+    _dragSourceContainer = null;  // 'backlog' or sprintId
+    _activeDropTicketId  = null;
+    _activeDropTopZone   = null;  // 'backlog' or sprintId
+    @track _showBacklogTopDropZone = false;
 
     @track _isSmallScreen = false;
     _mqList    = null;
@@ -910,13 +916,27 @@ export default class ManageBacklog extends LightningElement {
         return 'backlog-container' + (this._isBacklogDragOver ? ' drop-target-active' : '');
     }
 
+    get showBacklogTopDropZone() {
+        return this._showBacklogTopDropZone;
+    }
+
+    get backlogTopDropZoneClass() {
+        return this._activeDropTopZone === 'backlog'
+            ? 'top-drop-zone top-drop-zone--active'
+            : 'top-drop-zone';
+    }
+
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
     handlePageDragStart(event) {
         // getData returns empty string during dragstart — use DOM traversal instead
         const sprintEl           = event.target.closest('[data-sprint-id]');
+        const ticketEl           = event.target.closest('[data-ticket-id]');
         this._draggingFromSprint = !!sprintEl;
         this._dragSourceSprintId = sprintEl ? sprintEl.dataset.sprintId : null;
+        this._dragSourceTicketId = ticketEl ? ticketEl.dataset.ticketId : null;
+        this._dragSourceContainer = sprintEl ? sprintEl.dataset.sprintId : 'backlog';
         this._dragTargetSprintId = null;
+        this._showSourceTopDropZone(this._dragSourceContainer);
     }
 
     handlePageDragEnd() {
@@ -924,6 +944,10 @@ export default class ManageBacklog extends LightningElement {
         this._isBacklogDragOver  = false;
         this._dragSourceSprintId = null;
         this._dragTargetSprintId = null;
+        this._dragSourceTicketId = null;
+        this._dragSourceContainer = null;
+        this._clearDropFeedback();
+        this._hideAllTopDropZones();
         this.sprints = this.sprints.map(s => ({ ...s, dropTargetClass: 'sprint-container' }));
     }
 
@@ -985,7 +1009,88 @@ export default class ManageBacklog extends LightningElement {
         this._executeMoveTicketToBacklog(ticket);
     }
 
+    // -- Same-container reorder handlers (ticket wrappers + top zones) --
+    handleDropZoneDragOver(event) {
+        // Same-container only: allow drop, else fall through to outer handlers.
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = 'move';
+    }
+
+    handleTicketDragEnter(event) {
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        const targetTicketId = event.currentTarget.dataset.ticketId;
+        if (!targetTicketId || targetTicketId === this._dragSourceTicketId) return;
+        event.stopPropagation();
+        this._setActiveDropTicket(targetTicketId);
+    }
+
+    handleTicketDragLeave(event) {
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        const targetTicketId = event.currentTarget.dataset.ticketId;
+        if (this._activeDropTicketId === targetTicketId) {
+            this._setActiveDropTicket(null);
+        }
+    }
+
+    handleDropOnTicket(event) {
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        const beforeTicketId = event.currentTarget.dataset.ticketId;
+        const sourceTicketId = this._dragSourceTicketId;
+        if (!sourceTicketId || !beforeTicketId || sourceTicketId === beforeTicketId) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        this._clearDropFeedback();
+        this._executeMoveTicketPosition(sourceTicketId, beforeTicketId, targetContainer);
+    }
+
+    handleTopZoneDragEnter(event) {
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        event.stopPropagation();
+        this._setActiveTopZone(targetContainer);
+    }
+
+    handleTopZoneDragLeave(event) {
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        if (this._activeDropTopZone === targetContainer) {
+            this._setActiveTopZone(null);
+        }
+    }
+
+    handleDropOnTopZone(event) {
+        const targetContainer = event.currentTarget.dataset.container;
+        if (targetContainer !== this._dragSourceContainer) return;
+        const sourceTicketId = this._dragSourceTicketId;
+        if (!sourceTicketId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        this._clearDropFeedback();
+        this._executeMoveTicketPosition(sourceTicketId, null, targetContainer);
+    }
+
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
+    _executeMoveTicketPosition(movedTicketId, beforeTicketId, container) {
+        moveTicketPosition({ movedTicketId, beforeTicketId })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error reordering ticket');
+                const updated = res.data?.movedTicket || null;
+                this._reorderTicketInContainer(container, movedTicketId, beforeTicketId, updated);
+                this._showSuccess('Ticket reordered');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error reordering ticket'));
+    }
+
     _executeMoveTicketToSprint(ticketId, sprintId) {
         moveTicketToSprint({ ticketId, sprintId })
             .then(res => {
@@ -1270,6 +1375,106 @@ export default class ManageBacklog extends LightningElement {
             ...s,
             tickets: s.tickets.map(t => t.Id === ticketId ? { ...t, _key: key } : t),
         }));
+    }
+
+    // -- Drag-and-drop reorder helpers --
+    _setActiveDropTicket(ticketId) {
+        if (this._activeDropTicketId === ticketId) return;
+        this._activeDropTicketId = ticketId;
+        if (ticketId !== null) {
+            this._activeDropTopZone = null;
+        }
+        this._applyDropIndicatorClasses();
+        this._applyTopZoneClasses();
+    }
+
+    _setActiveTopZone(container) {
+        if (this._activeDropTopZone === container) return;
+        this._activeDropTopZone = container;
+        if (container !== null) {
+            this._activeDropTicketId = null;
+        }
+        this._applyDropIndicatorClasses();
+        this._applyTopZoneClasses();
+    }
+
+    _clearDropFeedback() {
+        if (this._activeDropTicketId === null && this._activeDropTopZone === null) return;
+        this._activeDropTicketId = null;
+        this._activeDropTopZone = null;
+        this._applyDropIndicatorClasses();
+        this._applyTopZoneClasses();
+    }
+
+    _applyDropIndicatorClasses() {
+        const activeId = this._activeDropTicketId;
+        const classFor = (id) => (id === activeId ? 'drop-indicator drop-indicator--active' : 'drop-indicator');
+        this.backlogTickets = this.backlogTickets.map(t => {
+            const cls = classFor(t.Id);
+            return t.dropIndicatorClass === cls ? t : { ...t, dropIndicatorClass: cls };
+        });
+        this.sprints = this.sprints.map(s => ({
+            ...s,
+            tickets: s.tickets.map(t => {
+                const cls = classFor(t.Id);
+                return t.dropIndicatorClass === cls ? t : { ...t, dropIndicatorClass: cls };
+            })
+        }));
+    }
+
+    _applyTopZoneClasses() {
+        this.sprints = this.sprints.map(s => {
+            const cls = this._activeDropTopZone === s.Id
+                ? 'top-drop-zone top-drop-zone--active'
+                : 'top-drop-zone';
+            return s.topDropZoneClass === cls ? s : { ...s, topDropZoneClass: cls };
+        });
+    }
+
+    _showSourceTopDropZone(container) {
+        if (container === 'backlog') {
+            this._showBacklogTopDropZone = true;
+            return;
+        }
+        this.sprints = this.sprints.map(s =>
+            s.Id === container && !s.showTopDropZone ? { ...s, showTopDropZone: true } : s
+        );
+    }
+
+    _hideAllTopDropZones() {
+        this._showBacklogTopDropZone = false;
+        this.sprints = this.sprints.map(s =>
+            s.showTopDropZone ? { ...s, showTopDropZone: false } : s
+        );
+    }
+
+    _reorderTicketInContainer(container, sourceTicketId, beforeTicketId, updatedTicket) {
+        const newScore = updatedTicket?.Score__c;
+        const reorder = (arr) => {
+            const sourceIdx = arr.findIndex(t => t.Id === sourceTicketId);
+            if (sourceIdx === -1) return arr;
+            const moved = newScore !== undefined && newScore !== null
+                ? { ...arr[sourceIdx], Score__c: newScore }
+                : arr[sourceIdx];
+            const without = arr.filter((_, i) => i !== sourceIdx);
+            let insertIdx;
+            if (!beforeTicketId) {
+                insertIdx = 0;
+            } else {
+                const targetIdx = without.findIndex(t => t.Id === beforeTicketId);
+                if (targetIdx === -1) return arr;
+                insertIdx = targetIdx + 1;
+            }
+            return [...without.slice(0, insertIdx), moved, ...without.slice(insertIdx)];
+        };
+
+        if (container === 'backlog') {
+            this.backlogTickets = reorder(this.backlogTickets);
+            return;
+        }
+        this.sprints = this.sprints.map(s =>
+            s.Id === container ? { ...s, tickets: reorder(s.tickets) } : s
+        );
     }
 
     _reKeyTicket(ticketId) {

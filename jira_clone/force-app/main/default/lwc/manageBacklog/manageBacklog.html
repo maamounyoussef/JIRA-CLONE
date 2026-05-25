@@ -123,33 +123,51 @@
                             <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
                         </template>
 
+                        <template if:true={sprint.showTopDropZone}>
+                            <div class={sprint.topDropZoneClass}
+                                 data-container={sprint.Id}
+                                 ondragenter={handleTopZoneDragEnter}
+                                 ondragleave={handleTopZoneDragLeave}
+                                 ondragover={handleDropZoneDragOver}
+                                 ondrop={handleDropOnTopZone}>
+                            </div>
+                        </template>
+
                         <template for:each={sprint.tickets} for:item="ticket">
-                            <c-ao-ticket-item
-                                key={ticket._key}
-                                data-ticket-id={ticket.Id}
-                                ticket={ticket}
-                                variant={ticketVariant}
-                                status-options={statusOptions}
-                                member-options={memberOptions}
-                                priority-options={priorityOptions}
-                                project-id={_projectId}
-                                epics={epics}
-                                onticketselect={handleTicketSelect}
-                                onticketdelete={handleTicketDelete}
-                                onticketsummaryupdate={handleTicketSummaryUpdate}
-                                onticketpriorityupdate={handleTicketPriorityUpdate}
-                                onticketstatechange={handleTicketStateChange}
-                                onticketassigneechange={handleTicketAssigneeChange}
-                                onticketepicupdate={handleTicketEpicUpdate}
-                                onepiccreateforticket={handleEpicCreateForTicket}
-                                onsubtaskcreate={handleSubtaskCreate}
-                                onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
-                                onsubtaskassigneechange={handleSubtaskAssigneeChange}
-                                onsubtaskdelete={handleSubtaskDelete}
-                                onsubtasksbulkdelete={handleSubtasksBulkDelete}
-                                onsubtasksexpand={handleTicketViewSubtasksExpand}
-                                onticketviewopen={handleOpenTicketView}>
-                            </c-ao-ticket-item>
+                            <div key={ticket._key} class="ticket-drop-wrapper"
+                                 data-ticket-id={ticket.Id}
+                                 data-container={sprint.Id}
+                                 ondragenter={handleTicketDragEnter}
+                                 ondragleave={handleTicketDragLeave}
+                                 ondragover={handleDropZoneDragOver}
+                                 ondrop={handleDropOnTicket}>
+                                <c-ao-ticket-item
+                                    data-ticket-id={ticket.Id}
+                                    ticket={ticket}
+                                    variant={ticketVariant}
+                                    status-options={statusOptions}
+                                    member-options={memberOptions}
+                                    priority-options={priorityOptions}
+                                    project-id={_projectId}
+                                    epics={epics}
+                                    onticketselect={handleTicketSelect}
+                                    onticketdelete={handleTicketDelete}
+                                    onticketsummaryupdate={handleTicketSummaryUpdate}
+                                    onticketpriorityupdate={handleTicketPriorityUpdate}
+                                    onticketstatechange={handleTicketStateChange}
+                                    onticketassigneechange={handleTicketAssigneeChange}
+                                    onticketepicupdate={handleTicketEpicUpdate}
+                                    onepiccreateforticket={handleEpicCreateForTicket}
+                                    onsubtaskcreate={handleSubtaskCreate}
+                                    onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
+                                    onsubtaskassigneechange={handleSubtaskAssigneeChange}
+                                    onsubtaskdelete={handleSubtaskDelete}
+                                    onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                                    onsubtasksexpand={handleTicketViewSubtasksExpand}
+                                    onticketviewopen={handleOpenTicketView}>
+                                </c-ao-ticket-item>
+                                <div class={ticket.dropIndicatorClass}></div>
+                            </div>
                         </template>
 
                         <template if:false={sprint.hasTickets}>
@@ -215,33 +233,51 @@
                 <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
             </template>
 
+            <template if:true={showBacklogTopDropZone}>
+                <div class={backlogTopDropZoneClass}
+                     data-container="backlog"
+                     ondragenter={handleTopZoneDragEnter}
+                     ondragleave={handleTopZoneDragLeave}
+                     ondragover={handleDropZoneDragOver}
+                     ondrop={handleDropOnTopZone}>
+                </div>
+            </template>
+
             <template for:each={backlogTickets} for:item="ticket">
-                <c-ao-ticket-item
-                    key={ticket.Id}
-                    data-ticket-id={ticket.Id}
-                    ticket={ticket}
-                    variant={ticketVariant}
-                    status-options={statusOptions}
-                    member-options={memberOptions}
-                    priority-options={priorityOptions}
-                    project-id={_projectId}
-                    epics={epics}
-                    onticketselect={handleTicketSelect}
-                    onticketdelete={handleTicketDelete}
-                    onticketsummaryupdate={handleTicketSummaryUpdate}
-                    onticketpriorityupdate={handleTicketPriorityUpdate}
-                    onticketstatechange={handleTicketStateChange}
-                    onticketassigneechange={handleTicketAssigneeChange}
-                    onticketepicupdate={handleTicketEpicUpdate}
-                    onepiccreateforticket={handleEpicCreateForTicket}
-                    onsubtaskcreate={handleSubtaskCreate}
-                    onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
-                    onsubtaskassigneechange={handleSubtaskAssigneeChange}
-                    onsubtaskdelete={handleSubtaskDelete}
-                    onsubtasksbulkdelete={handleSubtasksBulkDelete}
-                    onsubtasksexpand={handleTicketViewSubtasksExpand}
-                    onticketviewopen={handleOpenTicketView}>
-                </c-ao-ticket-item>
+                <div key={ticket.Id} class="ticket-drop-wrapper"
+                     data-ticket-id={ticket.Id}
+                     data-container="backlog"
+                     ondragenter={handleTicketDragEnter}
+                     ondragleave={handleTicketDragLeave}
+                     ondragover={handleDropZoneDragOver}
+                     ondrop={handleDropOnTicket}>
+                    <c-ao-ticket-item
+                        data-ticket-id={ticket.Id}
+                        ticket={ticket}
+                        variant={ticketVariant}
+                        status-options={statusOptions}
+                        member-options={memberOptions}
+                        priority-options={priorityOptions}
+                        project-id={_projectId}
+                        epics={epics}
+                        onticketselect={handleTicketSelect}
+                        onticketdelete={handleTicketDelete}
+                        onticketsummaryupdate={handleTicketSummaryUpdate}
+                        onticketpriorityupdate={handleTicketPriorityUpdate}
+                        onticketstatechange={handleTicketStateChange}
+                        onticketassigneechange={handleTicketAssigneeChange}
+                        onticketepicupdate={handleTicketEpicUpdate}
+                        onepiccreateforticket={handleEpicCreateForTicket}
+                        onsubtaskcreate={handleSubtaskCreate}
+                        onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
+                        onsubtaskassigneechange={handleSubtaskAssigneeChange}
+                        onsubtaskdelete={handleSubtaskDelete}
+                        onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                        onsubtasksexpand={handleTicketViewSubtasksExpand}
+                        onticketviewopen={handleOpenTicketView}>
+                    </c-ao-ticket-item>
+                    <div class={ticket.dropIndicatorClass}></div>
+                </div>
             </template>
 
             <template if:false={hasBacklogTickets}>

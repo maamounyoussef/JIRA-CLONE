@@ -317,3 +317,38 @@
     border-color: #4C9AFF;
     background-color: #DEEBFF;
 }
+
+/* ── Same-container reorder: ticket wrapper + drop indicator line ────────── */
+.ticket-drop-wrapper {
+    position: relative;
+}
+
+.drop-indicator {
+    height: 3px;
+    margin: 0 4px;
+    border-radius: 2px;
+    background-color: transparent;
+    transition: background-color 0.1s ease;
+    pointer-events: none;
+}
+
+.drop-indicator--active {
+    background-color: #4C9AFF;
+    box-shadow: 0 0 0 1px rgba(76, 154, 255, 0.35);
+}
+
+/* ── Same-container reorder: top drop zone (move to first) ──────────────── */
+.top-drop-zone {
+    height: 10px;
+    margin: 4px 4px 6px 4px;
+    border-radius: 3px;
+    border: 1px dashed transparent;
+    background-color: transparent;
+    transition: background-color 0.1s ease, border-color 0.1s ease, height 0.1s ease;
+}
+
+.top-drop-zone--active {
+    height: 28px;
+    background-color: #DEEBFF;
+    border-color: #4C9AFF;
+}

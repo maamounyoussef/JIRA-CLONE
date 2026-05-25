@@ -12,10 +12,11 @@ const _rk = () => Math.random().toString(36).slice(2);
 export function formatTicket(rawTicket, ticketTypeOptions, ticketTypeId) {
     return {
         ...rawTicket,
-        epicName      : '',
-        ticketTypeName: ticketTypeOptions.find(o => o.value === ticketTypeId)?.label || '',
-        isSelected    : false,
-        _key          : _rk(),
+        epicName          : '',
+        ticketTypeName    : ticketTypeOptions.find(o => o.value === ticketTypeId)?.label || '',
+        isSelected        : false,
+        dropIndicatorClass: 'drop-indicator',
+        _key              : _rk(),
     };
 }
 
@@ -25,10 +26,11 @@ export function enrichTickets(tickets, epics, ticketTypeOptions, memberOptions) 
     const memberMap     = Object.fromEntries((memberOptions     || []).map(m => [m.value, m.label]));
     return tickets.map(t => ({
         ...t,
-        epicName      : epicMap[t.Epic__c]              || '',
-        ticketTypeName: ticketTypeMap[t.Ticket_Type__c] || '',
-        assigneeName  : memberMap[t.AssignedTo__c]      || '',
-        isSelected    : false,
-        _key          : _rk(),
+        epicName          : epicMap[t.Epic__c]              || '',
+        ticketTypeName    : ticketTypeMap[t.Ticket_Type__c] || '',
+        assigneeName      : memberMap[t.AssignedTo__c]      || '',
+        isSelected        : false,
+        dropIndicatorClass: 'drop-indicator',
+        _key              : _rk(),
     }));
 }

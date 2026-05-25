@@ -39,6 +39,8 @@ export function formatSprint(raw) {
         currentPage         : 1,
         offsetLabel         : 'No tickets',
         dropTargetClass     : 'sprint-container',
+        topDropZoneClass    : 'top-drop-zone',
+        showTopDropZone     : false,
         storyPointsPercent,
     };
 }
