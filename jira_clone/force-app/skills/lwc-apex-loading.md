@@ -1,5 +1,5 @@
 ---
-name: lwc-apex-loading-spinner
+name: lwc-apex-loading
 description: >
   When a new (or newly edited) JavaScript handler in an LWC parent component
   makes an imperative Apex call (`apexMethod(...).then(...).catch(...)`),
@@ -128,19 +128,6 @@ toggle is **split across two methods**:
   when the response (or error) actually arrives.
 
 ```js
-@track _linkedToTargetTicketId = null;
-
-@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
-wiredTicketLinkedTo({ data, error }) {
-    if (!this._linkedToTargetTicketId) return; // ignore the initial null call
-    if (data && data.success) {
-        const linkedTo = data.data?.ticketLinkTo || [];
-        this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
-    } else if (error) {
-        this._showError(error.body?.message || error.message);
-    }
-    this.isLoading = false; // ← flip OFF here, both branches
-}
 
 handleTicketLinkedToExpand(event) {
     this.isLoading = true;                              // ← flip ON here
