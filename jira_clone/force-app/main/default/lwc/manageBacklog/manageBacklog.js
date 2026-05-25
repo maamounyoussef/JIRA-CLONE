@@ -663,6 +663,9 @@ export default class ManageBacklog extends LightningElement {
 
     handleSprintTicketCreate(event) {
         const data = event.detail;
+        if(this.isLoading)
+            return;
+        this.isLoading = true;
         createTicketFromSprint(data)
             .then(res => {
                 if (!res.success) throw new Error(res.message || 'Error creating ticket from sprint');
@@ -672,7 +675,8 @@ export default class ManageBacklog extends LightningElement {
                 this.showSprintTicketModal = false;
                 this._showSuccess('Ticket added to sprint');
             })
-            .catch(err => this._showError(err.body?.message || err.message || 'Error creating ticket from sprint'));
+            .catch(err => this._showError(err.body?.message || err.message || 'Error creating ticket from sprint'))
+            .finally(() => { this.isLoading = false; });
     }
 
     handleBacklogTicketCreate(event) {

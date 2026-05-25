@@ -76,7 +76,9 @@
             </template>
 
             <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+                <div class="loading-overlay">
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </div>
             </template>
 
             <template for:each={sprints} for:item="sprint">
