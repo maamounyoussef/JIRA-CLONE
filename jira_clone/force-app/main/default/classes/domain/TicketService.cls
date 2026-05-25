@@ -14,9 +14,9 @@ public with sharing class TicketService {
             List<Ticket__c> res = [
                 SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
-                       StartDate__c, EndDate__c
+                       StartDate__c, EndDate__c, Score__c
                 FROM Ticket__c
-                WHERE Id = :ticketId
+                WHERE Id = :ticketId AND RecordStatus__c != 'delete'
                 LIMIT 1
             ];
             return res.isEmpty() ? null : res[0];
@@ -77,6 +77,7 @@ public with sharing class TicketService {
         ticket.CurrentState__c = status.Id;
 
         ticket.RecordStatus__c = 'active';
+        ticket.Score__c = nextScoreForInsert(ticket, projectId);
         return status;
     }
 
@@ -174,10 +175,10 @@ public with sharing class TicketService {
             return [
                 SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
-                       StartDate__c, EndDate__c
+                       StartDate__c, EndDate__c, Score__c
                 FROM Ticket__c
                 WHERE Ticket_Type__c IN :typeIds AND RecordStatus__c = 'active' AND Sprint__c = null
-                ORDER BY Priority__c ASC, EndDate__c DESC
+                ORDER BY Score__c ASC NULLS LAST
                 LIMIT :currentPageSize OFFSET :currentOffset
             ];
         } catch (Exception ex) {
@@ -192,10 +193,10 @@ public with sharing class TicketService {
             return [
                 SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
-                       StartDate__c, EndDate__c
+                       StartDate__c, EndDate__c, Score__c
                 FROM Ticket__c
                 WHERE Sprint__c = :sprint.Id AND RecordStatus__c = 'active'
-                ORDER BY Priority__c ASC, EndDate__c DESC
+                ORDER BY Score__c ASC NULLS LAST
                 LIMIT :currentPageSize OFFSET :currentOffset
             ];
         } catch (Exception ex) {
@@ -207,10 +208,10 @@ public with sharing class TicketService {
         try {
             return [
                 SELECT Id, Name, Summary__c, CurrentState__c, Priority__c, StoryPoint__c,
-                       AssignedTo__c, Epic__c, Sprint__c, Ticket_Type__c, RecordStatus__c
+                       AssignedTo__c, Epic__c, Sprint__c, Ticket_Type__c, RecordStatus__c, Score__c
                 FROM Ticket__c
                 WHERE Sprint__c = :sprint.Id AND RecordStatus__c = 'active'
-                ORDER BY Priority__c ASC
+                ORDER BY Score__c ASC NULLS LAST
             ];
         } catch (Exception ex) {
             throw new ServiceException('Error loading active tickets by sprint: ' + ex.getMessage());
@@ -300,7 +301,181 @@ public with sharing class TicketService {
 
 
     // ═══════════════════════════════════════════════════════════════
-    // SUBTASK 
+    // TICKET SCORE (lexicographic ordering within sprint or backlog)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Reorder a ticket inside its current sprint (or backlog) by recomputing
+     * its Score__c so that, when ordered ASC, it sits immediately after
+     * `beforeTicket` (or at the top when `beforeTicket` is null).
+     *
+     * Inputs MUST both be already‑loaded Ticket__c records (with Id, Sprint__c,
+     * Ticket_Type__c, Score__c). The scope (Sprint__c) is read off the
+     * already‑validated `movedTicket` — it is indexed, so the bulk lookups
+     * below stay cheap.
+     */
+    public static Ticket__c moveTicketPosition(Ticket__c movedTicket, Ticket__c beforeTicket) {
+        try {
+            if (movedTicket == null) throw new ServiceException('movedTicket is required');
+
+            if (beforeTicket != null) {
+                if (movedTicket.Id == beforeTicket.Id) {
+                    throw new ServiceException('movedTicket and beforeTicket must be different');
+                }
+                if (movedTicket.Sprint__c != beforeTicket.Sprint__c) {
+                    throw new ServiceException('movedTicket and beforeTicket must share the same sprint (or both be in the backlog)');
+                }
+                if (String.isBlank(beforeTicket.Score__c)) {
+                    throw new ServiceException('beforeTicket has no Score__c — backfill required');
+                }
+            }
+
+            Set<Id> backlogTypeIds = null;
+            if (String.isBlank(movedTicket.Sprint__c)) {
+                TicketType__c tt = [
+                    SELECT Project__c FROM TicketType__c
+                    WHERE Id = :movedTicket.Ticket_Type__c AND RecordStatus__c != 'delete'
+                    LIMIT 1
+                ];
+                backlogTypeIds = projectTicketTypeIds(tt.Project__c);
+            }
+
+            String newScore;
+            if (beforeTicket != null) {
+                Ticket__c successor = findSuccessor(movedTicket, beforeTicket.Score__c, backlogTypeIds);
+                newScore = (successor == null)
+                    ? incrementLastChar(beforeTicket.Score__c)
+                    : beforeTicket.Score__c + successor.Score__c;
+            } else {
+                Ticket__c first = findFirst(movedTicket, backlogTypeIds);
+                newScore = (first == null) ? '0' : previousAsciiChar(first.Score__c);
+            }
+
+            movedTicket.Score__c = newScore;
+            update movedTicket;
+            return movedTicket;
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error moving ticket position: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error moving ticket position: ' + ex.getMessage());
+        }
+    }
+
+    /**
+     * Compute the score for a brand‑new ticket: append at the end of its
+     * sprint (or backlog) ordering.
+     */
+    private static String nextScoreForInsert(Ticket__c ticket, String projectId) {
+        String maxScore;
+        if (String.isNotBlank(ticket.Sprint__c)) {
+            List<Ticket__c> rows = [
+                SELECT Score__c
+                FROM Ticket__c
+                WHERE Sprint__c = :ticket.Sprint__c
+                  AND RecordStatus__c != 'delete'
+                ORDER BY Score__c DESC NULLS LAST
+                LIMIT 1
+            ];
+            maxScore = rows.isEmpty() ? null : rows[0].Score__c;
+        } else {
+            Set<Id> typeIds = projectTicketTypeIds(projectId);
+            if (typeIds.isEmpty()) return '0';
+            List<Ticket__c> rows = [
+                SELECT Score__c
+                FROM Ticket__c
+                WHERE Ticket_Type__c IN :typeIds
+                  AND Sprint__c = null
+                  AND RecordStatus__c != 'delete'
+                ORDER BY Score__c DESC NULLS LAST
+                LIMIT 1
+            ];
+            maxScore = rows.isEmpty() ? null : rows[0].Score__c;
+        }
+        return String.isBlank(maxScore) ? '0' : incrementLastChar(maxScore);
+    }
+
+    private static Ticket__c findSuccessor(Ticket__c movedTicket, String beforeScore, Set<Id> backlogTypeIds) {
+        Id excludeId = movedTicket.Id;
+        if (String.isNotBlank(movedTicket.Sprint__c)) {
+            List<Ticket__c> rows = [
+                SELECT Id, Score__c
+                FROM Ticket__c
+                WHERE Sprint__c = :movedTicket.Sprint__c
+                  AND RecordStatus__c != 'delete'
+                  AND Id != :excludeId
+                  AND Score__c > :beforeScore
+                ORDER BY Score__c ASC NULLS LAST
+                LIMIT 1
+            ];
+            return rows.isEmpty() ? null : rows[0];
+        }
+        List<Ticket__c> rows = [
+            SELECT Id, Score__c
+            FROM Ticket__c
+            WHERE Ticket_Type__c IN :backlogTypeIds
+              AND Sprint__c = null
+              AND RecordStatus__c != 'delete'
+              AND Id != :excludeId
+              AND Score__c > :beforeScore
+            ORDER BY Score__c ASC NULLS LAST
+            LIMIT 1
+        ];
+        return rows.isEmpty() ? null : rows[0];
+    }
+
+    private static Ticket__c findFirst(Ticket__c movedTicket, Set<Id> backlogTypeIds) {
+        Id excludeId = movedTicket.Id;
+        if (String.isNotBlank(movedTicket.Sprint__c)) {
+            List<Ticket__c> rows = [
+                SELECT Id, Score__c
+                FROM Ticket__c
+                WHERE Sprint__c = :movedTicket.Sprint__c
+                  AND RecordStatus__c != 'delete'
+                  AND Id != :excludeId
+                ORDER BY Score__c ASC NULLS LAST
+                LIMIT 1
+            ];
+            return rows.isEmpty() ? null : rows[0];
+        }
+        List<Ticket__c> rows = [
+            SELECT Id, Score__c
+            FROM Ticket__c
+            WHERE Ticket_Type__c IN :backlogTypeIds
+              AND Sprint__c = null
+              AND RecordStatus__c != 'delete'
+              AND Id != :excludeId
+            ORDER BY Score__c ASC NULLS LAST
+            LIMIT 1
+        ];
+        return rows.isEmpty() ? null : rows[0];
+    }
+
+    private static Set<Id> projectTicketTypeIds(String projectId) {
+        List<TicketType__c> types = [
+            SELECT Id FROM TicketType__c
+            WHERE Project__c = :projectId AND RecordStatus__c != 'delete'
+        ];
+        Set<Id> ids = new Set<Id>();
+        for (TicketType__c t : types) ids.add(t.Id);
+        return ids;
+    }
+
+    private static String incrementLastChar(String s) {
+        if (String.isBlank(s)) return '0';
+        Integer last = s.charAt(s.length() - 1);
+        String next = String.fromCharArray(new List<Integer>{ last + 1 });
+        return s.substring(0, s.length() - 1) + next;
+    }
+
+    private static String previousAsciiChar(String s) {
+        if (String.isBlank(s)) return '0';
+        Integer first = s.charAt(0);
+        return String.fromCharArray(new List<Integer>{ first - 1 });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════
+    // SUBTASK
     // ═══════════════════════════════════════════════════════════════
 
     public static Subtask__c findSubtaskById(String subtaskId) {

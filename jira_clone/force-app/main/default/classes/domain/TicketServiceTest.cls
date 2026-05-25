@@ -421,4 +421,83 @@ public class TicketServiceTest {
 
         Assert.areEqual(0, result.size(), 'Should return empty list when no links exist');
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // MOVE TICKET POSITION (Score__c reorder)
+    // ─────────────────────────────────────────────────────────────
+
+    @isTest
+    static void testMoveTicketPositionWithBeforeTicket() {
+        // Sprint with three tickets created in order → scores '0', '1', '2'.
+        // Move ticket3 right after ticket1 → new score should be '0' + '1' = '01'.
+        TicketType__c tt = getTicketType();
+        Sprint__c sprint = createSprint('Sprint-Move-WithBefore');
+
+        Ticket__c t1 = buildTicket('TCK-MV-1', 1, null, sprint.Id);
+        CreateTicketResponse response1 = TicketService.createTicketWithSprint(t1, tt);
+        Ticket__c t2 = buildTicket('TCK-MV-2', 1, null, sprint.Id);
+        TicketService.createTicketWithSprint(t2, tt);
+        Ticket__c t3 = buildTicket('TCK-MV-3', 1, null, sprint.Id);
+        TicketService.createTicketWithSprint(t3, tt);
+
+        Ticket__c saved1 = [SELECT Id, Sprint__c, Ticket_Type__c, Score__c FROM Ticket__c WHERE Id = :t1.Id];
+        Ticket__c saved2 = [SELECT Id, Sprint__c, Ticket_Type__c, Score__c FROM Ticket__c WHERE Id = :t2.Id];
+        Ticket__c saved3 = [SELECT Id, Sprint__c, Ticket_Type__c, Score__c FROM Ticket__c WHERE Id = :t3.Id];
+
+        Assert.areEqual('0', saved1.Score__c, 'First created ticket should get score 0');
+        Assert.areEqual('1', saved2.Score__c, 'Second created ticket should get score 1');
+        Assert.areEqual('2', saved3.Score__c, 'Third created ticket should get score 2');
+
+        Test.startTest();
+        TicketService.moveTicketPosition(saved3, saved1);
+        Test.stopTest();
+
+        Ticket__c after = [SELECT Score__c FROM Ticket__c WHERE Id = :saved3.Id];
+        Assert.areEqual('01', after.Score__c,
+            'Moved ticket should get beforeTicket.score + successor.score = "0" + "1"');
+
+        // Confirm ASC order is now: t1 (0) → t3 (01) → t2 (1)
+        List<Ticket__c> ordered = [
+            SELECT Id, Score__c FROM Ticket__c
+            WHERE Sprint__c = :sprint.Id AND RecordStatus__c = 'active'
+            ORDER BY Score__c ASC NULLS LAST
+        ];
+        Assert.areEqual(3, ordered.size(), 'Sprint should still have 3 active tickets');
+        Assert.areEqual(saved1.Id, ordered[0].Id, 'First in order should be t1');
+        Assert.areEqual(saved3.Id, ordered[1].Id, 'Second in order should be the moved t3');
+        Assert.areEqual(saved2.Id, ordered[2].Id, 'Third in order should be t2');
+    }
+
+    @isTest
+    static void testMoveTicketPositionWithNullBeforeTicket() {
+        // Sprint with three tickets → scores '0','1','2'.
+        // Move ticket3 to the top (beforeTicket=null) → new score is the
+        // previous ASCII char of the current first score ('0' → '/').
+        TicketType__c tt = getTicketType();
+        Sprint__c sprint = createSprint('Sprint-Move-NullBefore');
+
+        Ticket__c t1 = buildTicket('TCK-MV-N1', 1, null, sprint.Id);
+        TicketService.createTicketWithSprint(t1, tt);
+        Ticket__c t2 = buildTicket('TCK-MV-N2', 1, null, sprint.Id);
+        TicketService.createTicketWithSprint(t2, tt);
+        Ticket__c t3 = buildTicket('TCK-MV-N3', 1, null, sprint.Id);
+        TicketService.createTicketWithSprint(t3, tt);
+
+        Ticket__c saved3 = [SELECT Id, Sprint__c, Ticket_Type__c, Score__c FROM Ticket__c WHERE Id = :t3.Id];
+
+        Test.startTest();
+        TicketService.moveTicketPosition(saved3, null);
+        Test.stopTest();
+
+        Ticket__c after = [SELECT Score__c FROM Ticket__c WHERE Id = :saved3.Id];
+        Assert.areEqual('/', after.Score__c,
+            'Moved-to-top ticket should get previous ASCII char of first score "0" → "/"');
+
+        List<Ticket__c> ordered = [
+            SELECT Id, Score__c FROM Ticket__c
+            WHERE Sprint__c = :sprint.Id AND RecordStatus__c = 'active'
+            ORDER BY Score__c ASC NULLS LAST
+        ];
+        Assert.areEqual(saved3.Id, ordered[0].Id, 'Moved ticket should now be first in ASC order');
+    }
 }

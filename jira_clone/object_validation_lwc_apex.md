@@ -161,6 +161,7 @@ for lwc :
 | Epic__c | Epic | Lookup → Epic__c | no |
 | Priority__c | Priority | Picklist | no |
 | RecordStatus__c | Record Status | Text(100) | no |
+| Score__c | Score | Text(255) | no | // server-assigned ordering key, never set from LWC
 | Sprint__c | Sprint | Lookup → Sprint__c | no |
 | StartDate__c | Start Date | DateTime | no |
 | StoryPoint__c | Story Point | Number(2, 0) | no |
@@ -178,6 +179,7 @@ for apex and store
 | Epic__c | Epic | Lookup → Epic__c | no |
 | Priority__c | Priority | Picklist | yes |
 | RecordStatus__c | Record Status | Text(100) | yes |
+| Score__c | Score | Text(255) | YES | // lex-ordering key per (Sprint__c \| backlog-of-Project); set by TicketService.prepareTicketForInsert and updated by TicketService.moveTicketPosition
 | Sprint__c | Sprint | Lookup → Sprint__c | no |
 | StartDate__c | Start Date | DateTime | no |
 | StoryPoint__c | Story Point | Number(2, 0) | no |
@@ -250,7 +252,7 @@ for apex and store:
 | Subtask__c | Summary__c, Ticket__c |
 | TicketLink__c | LinkedFromTicket__c, LinkedToTicket__c, RecordStatus__c, Type__c |
 | TicketType__c | RecordStatus__c, Workflow__c |
-| Ticket__c | CurrentState__c, Summary__c |
+| Ticket__c | CurrentState__c, Summary__c, Score__c (apex/store) |
 | ValidationRule__c | WorkflowTransition__c, TicketField__c, Type__c |
 | WorkflowTransition__c | FromStatus__c, ToStatus__c, Workflow__c |
 | Workflow__c | Project__c |

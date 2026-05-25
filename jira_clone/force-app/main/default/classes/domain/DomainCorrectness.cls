@@ -86,7 +86,7 @@ public with sharing class DomainCorrectness {
             SELECT Id, Name, Summary__c, Description__c, Priority__c,
                    CurrentState__c, AssignedTo__c, Creator__c, Ticket_Type__c,
                    Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
-                   StartDate__c, EndDate__c
+                   StartDate__c, EndDate__c, Score__c
             FROM Ticket__c
             WHERE Id = :ticketId AND RecordStatus__c != 'delete'
             LIMIT 1
@@ -101,7 +101,7 @@ public with sharing class DomainCorrectness {
             SELECT Id, Name, Summary__c, Description__c, Priority__c,
                 CurrentState__c, AssignedTo__c, Creator__c, Ticket_Type__c,
                 Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
-                StartDate__c, EndDate__c
+                StartDate__c, EndDate__c, Score__c
             FROM Ticket__c
             WHERE Id IN :ticketIds AND RecordStatus__c != 'delete'
         ]);

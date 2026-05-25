@@ -598,6 +598,27 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
+    public static APIResponse moveTicketPosition(String movedTicketId, String beforeTicketId) {
+        try {
+            if (String.isBlank(movedTicketId)) return new APIResponse(false, 'movedTicketId is required');
+
+            Ticket__c movedTicket = DomainCorrectness.requireTicketExists(movedTicketId);
+            Ticket__c beforeTicket = null;
+            if (String.isNotBlank(beforeTicketId)) {
+                beforeTicket = DomainCorrectness.requireTicketExists(beforeTicketId);
+            }
+
+            Ticket__c updated = TicketService.moveTicketPosition(movedTicket, beforeTicket);
+            Map<String, Object> data = new Map<String, Object>{
+                'movedTicket' => updated
+            };
+            return new APIResponse(true, 'Ticket position updated', data);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error moving ticket position: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static APIResponse moveTicketToBacklog(String ticketId) {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
