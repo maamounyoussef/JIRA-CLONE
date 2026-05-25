@@ -156,13 +156,6 @@ Before emitting any code, walk the checklist. If any row fails, fix it first.
 
 ### Prompt template example
 
-Users will rarely answer the six interview questions one at a time — they
-will hand you a single free-form prompt that already contains most of the
-answers. Your job is to **parse the prompt into the right interview steps**,
-not to ask for re-statement of what is already there. The example below is a
-real prompt; each block is annotated with the interview step it satisfies.
-For any step that the prompt does NOT cover, the interview must still ask
-that question one at a time before any code is emitted.
 
 ```
 ─── [Step 1 — Entry point: existing parent LWC] ───────────────────────────
