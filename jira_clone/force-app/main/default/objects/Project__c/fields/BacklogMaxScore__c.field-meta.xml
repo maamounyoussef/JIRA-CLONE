@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>BacklogMaxScore__c</fullName>
+    <description>Current highest Ticket__c.Score__c assigned in this project's backlog (Sprint__c = null), padded to 6 digits. Seeded lazily and incremented by 200 on each backlog ticket added. Used instead of MAX(Score__c) SOQL because Score__c is unindexed.</description>
+    <externalId>false</externalId>
+    <label>Backlog Max Score</label>
+    <length>6</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

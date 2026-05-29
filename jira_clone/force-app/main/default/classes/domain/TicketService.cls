@@ -78,6 +78,7 @@ public with sharing class TicketService {
 
         ticket.RecordStatus__c = 'active';
         ticket.Score__c = nextScoreForInsert(ticket, projectId);
+        ticket.Name = NameSequenceService.nextTicketName(projectId);
         return status;
     }
 
@@ -165,6 +166,8 @@ public with sharing class TicketService {
 
     public static List<Ticket__c> loadBacklogTickets(Project__c project, Integer offset, Integer pageSize) {
         try {
+            System.debug('==== loadBacklogTickets hit8 ====');
+            
             List<TicketType__c> types = [SELECT Id FROM TicketType__c WHERE Project__c = :project.Id];
             if (types.isEmpty()) return new List<Ticket__c>();
             List<Id> typeIds = new List<Id>();
@@ -172,6 +175,8 @@ public with sharing class TicketService {
 
             Integer currentOffset   = DomainCompleteValidator.safeOffset(offset);
             Integer currentPageSize = DomainCompleteValidator.safePageSize(pageSize, DEFAULT_PAGE_SIZE);
+            System.debug('==== loadBacklogTickets hit9 ====');
+            
             return [
                 SELECT Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c,
                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
@@ -181,6 +186,7 @@ public with sharing class TicketService {
                 ORDER BY Score__c ASC NULLS LAST
                 LIMIT :currentPageSize OFFSET :currentOffset
             ];
+
         } catch (Exception ex) {
             throw new ServiceException('Error querying backlog tickets: ' + ex.getMessage());
         }
@@ -255,7 +261,15 @@ public with sharing class TicketService {
                 else
                     updated = SprintService.decreaseTotalAndEndedStoryPoints(ticket.Sprint__c, ticket.StoryPoint__c, 0);
 
+                List<TicketType__c> types = [
+                    SELECT Project__c FROM TicketType__c
+                    WHERE Id = :ticket.Ticket_Type__c AND RecordStatus__c != 'delete'
+                    LIMIT 1
+                ];
+                if (types.isEmpty()) throw new ServiceException('Cannot resolve project for ticket ' + ticket.Id);
+
                 ticket.Sprint__c = null;
+                ticket.Score__c = nextScoreForBacklogInsert(types[0].Project__c);
                 updateTicket(ticket);
                 return updated;
             }
@@ -287,32 +301,43 @@ public with sharing class TicketService {
         try {
             DomainCompleteValidator.requireTicketNotInDifferentSprint(ticket, sprint.Id);
             ticket.Sprint__c = sprint.Id;
+            ticket.Score__c = nextScoreForSprintInsert(sprint.Id);
             updateTicket(ticket);
             Status__c status = StatusService.findStatus(ticket.CurrentState__c);
-            System.debug('status '+status);
             if(DomainCompleteValidator.isEndStatus(status))
                 return SprintService.increaseTotalAndEndedStoryPoint(sprint.Id, ticket.StoryPoint__c,ticket.StoryPoint__c);
-            else 
+            else
                 return SprintService.increaseTotalAndEndedStoryPoint(sprint.Id, ticket.StoryPoint__c,0);
         } catch (Exception ex) {
             throw new ServiceException('Error moving ticket to sprint: ' + ex.getMessage());
         }
-    } 
+    }
 
 
     // ═══════════════════════════════════════════════════════════════
-    // TICKET SCORE (lexicographic ordering within sprint or backlog)
+    // TICKET SCORE — fixed-width integer keys, max stored on
+    // Sprint__c.MaxScore__c (sprint scope) or Project__c.BacklogMaxScore__c
+    // (backlog scope). Score__c is a zero-padded 6-digit decimal so
+    // string ASC sort matches integer ASC.
     // ═══════════════════════════════════════════════════════════════
+
+    private static final Integer SCORE_LENGTH = 6;
+    private static final Integer SCORE_GAP = 200;
+    private static final String INITIAL_SCORE = '000000';
 
     /**
-     * Reorder a ticket inside its current sprint (or backlog) by recomputing
-     * its Score__c so that, when ordered ASC, it sits immediately after
-     * `beforeTicket` (or at the top when `beforeTicket` is null).
+     * Reorder a ticket inside its current sprint (or backlog) so that, when
+     * ordered ASC by Score__c, it sits immediately after `beforeTicket`
+     * (or at the top when `beforeTicket` is null).
      *
-     * Inputs MUST both be already‑loaded Ticket__c records (with Id, Sprint__c,
-     * Ticket_Type__c, Score__c). The scope (Sprint__c) is read off the
-     * already‑validated `movedTicket` — it is indexed, so the bulk lookups
-     * below stay cheap.
+     * Rules:
+     *   - beforeTicket == null  → always rebalance the whole scope
+     *     and place movedTicket first.
+     *   - no successor exists   → append: newScore = beforeTicket + gap,
+     *     and bump the scope's MaxScore.
+     *   - successor exists      → newScore = (beforeInt + successorInt) / 2
+     *     when the sum is even; otherwise rebalance the whole scope and
+     *     place movedTicket between beforeTicket and successor.
      */
     public static Ticket__c moveTicketPosition(Ticket__c movedTicket, Ticket__c beforeTicket) {
         try {
@@ -330,30 +355,47 @@ public with sharing class TicketService {
                 }
             }
 
+            Boolean isBacklog = String.isBlank(movedTicket.Sprint__c);
+            String projectId = null;
             Set<Id> backlogTypeIds = null;
-            if (String.isBlank(movedTicket.Sprint__c)) {
+            if (isBacklog) {
                 TicketType__c tt = [
                     SELECT Project__c FROM TicketType__c
                     WHERE Id = :movedTicket.Ticket_Type__c AND RecordStatus__c != 'delete'
                     LIMIT 1
                 ];
-                backlogTypeIds = projectTicketTypeIds(tt.Project__c);
+                projectId = tt.Project__c;
+                backlogTypeIds = projectTicketTypeIds(projectId);
             }
 
-            String newScore;
-            if (beforeTicket != null) {
-                Ticket__c successor = findSuccessor(movedTicket, beforeTicket.Score__c, backlogTypeIds);
-                newScore = (successor == null)
-                    ? incrementLastChar(beforeTicket.Score__c)
-                    : beforeTicket.Score__c + successor.Score__c;
-            } else {
-                Ticket__c first = findFirst(movedTicket, backlogTypeIds);
-                newScore = (first == null) ? '0' : previousAsciiChar(first.Score__c);
+            if (beforeTicket == null) {
+                return rebalanceScope(movedTicket, null, isBacklog, projectId, backlogTypeIds);
             }
 
-            movedTicket.Score__c = newScore;
-            update movedTicket;
-            return movedTicket;
+            Ticket__c successor = findSuccessor(movedTicket, beforeTicket.Score__c, backlogTypeIds);
+            Integer beforeInt = parseScore(beforeTicket.Score__c);
+
+            if (successor == null) {
+                String newScore = padScore(beforeInt + SCORE_GAP);
+                movedTicket.Score__c = newScore;
+                update movedTicket;
+                if (isBacklog) setBacklogMaxScore(projectId, newScore);
+                else setSprintMaxScore(movedTicket.Sprint__c, newScore);
+                return movedTicket;
+            }
+
+            Integer successorInt = parseScore(successor.Score__c);
+            Integer sum = beforeInt + successorInt;
+            if (Math.mod(sum, 2) == 0) {
+                Integer mid = sum / 2;
+                if (mid != beforeInt && mid != successorInt) {
+                    movedTicket.Score__c = padScore(mid);
+                    update movedTicket;
+                    return movedTicket;
+                }
+            }
+
+            return rebalanceScope(movedTicket, beforeTicket, isBacklog, projectId, backlogTypeIds);
         } catch (DmlException dex) {
             throw new ServiceException('DML error moving ticket position: ' + dex.getMessage());
         } catch (Exception ex) {
@@ -363,35 +405,114 @@ public with sharing class TicketService {
 
     /**
      * Compute the score for a brand‑new ticket: append at the end of its
-     * sprint (or backlog) ordering.
+     * sprint (or backlog) ordering. The corresponding MaxScore on the scope
+     * row is bumped in the same call.
      */
     private static String nextScoreForInsert(Ticket__c ticket, String projectId) {
-        String maxScore;
         if (String.isNotBlank(ticket.Sprint__c)) {
-            List<Ticket__c> rows = [
-                SELECT Score__c
+            return nextScoreForSprintInsert(ticket.Sprint__c);
+        }
+        return nextScoreForBacklogInsert(projectId);
+    }
+
+    private static String nextScoreForSprintInsert(String sprintId) {
+        List<Sprint__c> rows = [
+            SELECT Id, MaxScore__c FROM Sprint__c
+            WHERE Id = :sprintId AND RecordStatus__c != 'delete'
+            LIMIT 1
+        ];
+        if (rows.isEmpty()) throw new ServiceException('Sprint not found: ' + sprintId);
+        Sprint__c sprint = rows[0];
+        Integer current = parseScore(sprint.MaxScore__c);
+        String newScore = padScore(current + SCORE_GAP);
+        sprint.MaxScore__c = newScore;
+        update sprint;
+        return newScore;
+    }
+
+    private static String nextScoreForBacklogInsert(String projectId) {
+        Project__c project = ProjectService.findProjectById(projectId);
+        if (project == null) throw new ServiceException('Project not found: ' + projectId);
+        Integer current = parseScore(project.BacklogMaxScore__c);
+        String newScore = padScore(current + SCORE_GAP);
+        project.BacklogMaxScore__c = newScore;
+        update project;
+        return newScore;
+    }
+
+    private static void setSprintMaxScore(String sprintId, String newMax) {
+        update new Sprint__c(Id = sprintId, MaxScore__c = newMax);
+    }
+
+    private static void setBacklogMaxScore(String projectId, String newMax) {
+        update new Project__c(Id = projectId, BacklogMaxScore__c = newMax);
+    }
+
+    /**
+     * Reload all tickets in the scope (excluding movedTicket), insert
+     * movedTicket either at the head or right after `beforeTicket`, then
+     * reassign Score__c = SCORE_GAP, 2*SCORE_GAP, … in a single update.
+     * Also bumps the scope's MaxScore to the last score.
+     */
+    private static Ticket__c rebalanceScope(
+        Ticket__c movedTicket,
+        Ticket__c beforeTicket,
+        Boolean isBacklog,
+        String projectId,
+        Set<Id> backlogTypeIds
+    ) {
+        List<Ticket__c> existing;
+        if (!isBacklog) {
+            existing = [
+                SELECT Id, Score__c, Sprint__c
                 FROM Ticket__c
-                WHERE Sprint__c = :ticket.Sprint__c
+                WHERE Sprint__c = :movedTicket.Sprint__c
                   AND RecordStatus__c != 'delete'
-                ORDER BY Score__c DESC NULLS LAST
-                LIMIT 1
+                  AND Id != :movedTicket.Id
+                ORDER BY Score__c ASC NULLS LAST
             ];
-            maxScore = rows.isEmpty() ? null : rows[0].Score__c;
         } else {
-            Set<Id> typeIds = projectTicketTypeIds(projectId);
-            if (typeIds.isEmpty()) return '0';
-            List<Ticket__c> rows = [
-                SELECT Score__c
+            existing = [
+                SELECT Id, Score__c, Sprint__c
                 FROM Ticket__c
-                WHERE Ticket_Type__c IN :typeIds
+                WHERE Ticket_Type__c IN :backlogTypeIds
                   AND Sprint__c = null
                   AND RecordStatus__c != 'delete'
-                ORDER BY Score__c DESC NULLS LAST
-                LIMIT 1
+                  AND Id != :movedTicket.Id
+                ORDER BY Score__c ASC NULLS LAST
             ];
-            maxScore = rows.isEmpty() ? null : rows[0].Score__c;
         }
-        return String.isBlank(maxScore) ? '0' : incrementLastChar(maxScore);
+
+        List<Ticket__c> ordered = new List<Ticket__c>();
+        if (beforeTicket == null) {
+            ordered.add(movedTicket);
+            ordered.addAll(existing);
+        } else {
+            Boolean inserted = false;
+            for (Ticket__c t : existing) {
+                ordered.add(t);
+                if (t.Id == beforeTicket.Id) {
+                    ordered.add(movedTicket);
+                    inserted = true;
+                }
+            }
+            if (!inserted) ordered.add(movedTicket);
+        }
+
+        List<Ticket__c> toUpdate = new List<Ticket__c>();
+        Integer running = 0;
+        for (Ticket__c t : ordered) {
+            running += SCORE_GAP;
+            t.Score__c = padScore(running);
+            toUpdate.add(t);
+        }
+        update toUpdate;
+
+        String newMax = padScore(running);
+        if (isBacklog) setBacklogMaxScore(projectId, newMax);
+        else setSprintMaxScore(movedTicket.Sprint__c, newMax);
+
+        return movedTicket;
     }
 
     private static Ticket__c findSuccessor(Ticket__c movedTicket, String beforeScore, Set<Id> backlogTypeIds) {
@@ -423,33 +544,6 @@ public with sharing class TicketService {
         return rows.isEmpty() ? null : rows[0];
     }
 
-    private static Ticket__c findFirst(Ticket__c movedTicket, Set<Id> backlogTypeIds) {
-        Id excludeId = movedTicket.Id;
-        if (String.isNotBlank(movedTicket.Sprint__c)) {
-            List<Ticket__c> rows = [
-                SELECT Id, Score__c
-                FROM Ticket__c
-                WHERE Sprint__c = :movedTicket.Sprint__c
-                  AND RecordStatus__c != 'delete'
-                  AND Id != :excludeId
-                ORDER BY Score__c ASC NULLS LAST
-                LIMIT 1
-            ];
-            return rows.isEmpty() ? null : rows[0];
-        }
-        List<Ticket__c> rows = [
-            SELECT Id, Score__c
-            FROM Ticket__c
-            WHERE Ticket_Type__c IN :backlogTypeIds
-              AND Sprint__c = null
-              AND RecordStatus__c != 'delete'
-              AND Id != :excludeId
-            ORDER BY Score__c ASC NULLS LAST
-            LIMIT 1
-        ];
-        return rows.isEmpty() ? null : rows[0];
-    }
-
     private static Set<Id> projectTicketTypeIds(String projectId) {
         List<TicketType__c> types = [
             SELECT Id FROM TicketType__c
@@ -460,17 +554,20 @@ public with sharing class TicketService {
         return ids;
     }
 
-    private static String incrementLastChar(String s) {
-        if (String.isBlank(s)) return '0';
-        Integer last = s.charAt(s.length() - 1);
-        String next = String.fromCharArray(new List<Integer>{ last + 1 });
-        return s.substring(0, s.length() - 1) + next;
+    private static String padScore(Integer n) {
+        if (n == null || n < 0) n = 0;
+        String s = String.valueOf(n);
+        while (s.length() < SCORE_LENGTH) s = '0' + s;
+        return s;
     }
 
-    private static String previousAsciiChar(String s) {
-        if (String.isBlank(s)) return '0';
-        Integer first = s.charAt(0);
-        return String.fromCharArray(new List<Integer>{ first - 1 });
+    private static Integer parseScore(String s) {
+        if (String.isBlank(s)) return 0;
+        try {
+            return Integer.valueOf(s);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
 
@@ -496,6 +593,8 @@ public with sharing class TicketService {
     public static Subtask__c createSubtask(Subtask__c s) {
         try {
             s.RecordStatus__c = 'active';
+            String projectId = resolveProjectIdForSubtask(s);
+            s.Name = NameSequenceService.nextSubtaskName(projectId);
             insert s;
             return s;
         } catch (DmlException dex) {
@@ -503,6 +602,22 @@ public with sharing class TicketService {
         } catch (Exception ex) {
             throw new ServiceException('Error creating subtask: ' + ex.getMessage());
         }
+    }
+
+    private static String resolveProjectIdForSubtask(Subtask__c s) {
+        if (String.isBlank(s.Ticket__c)) {
+            throw new ServiceException('Subtask.Ticket__c is required to derive default Name');
+        }
+        List<Ticket__c> rows = [
+            SELECT Id, Ticket_Type__r.Project__c
+            FROM Ticket__c
+            WHERE Id = :s.Ticket__c AND RecordStatus__c != 'delete'
+            LIMIT 1
+        ];
+        if (rows.isEmpty() || rows[0].Ticket_Type__r == null) {
+            throw new ServiceException('Cannot resolve project for subtask Ticket ' + s.Ticket__c);
+        }
+        return rows[0].Ticket_Type__r.Project__c;
     }
 
     public static Subtask__c updateSubtask(Subtask__c s) {

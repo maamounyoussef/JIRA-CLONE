@@ -40,7 +40,6 @@
                 <h2 class="modal__title">{sprintModalTitle}</h2>
             </header>
             <div class="modal__content">
-                <c-ao-input label="Name"            required value={sprintForm.name}      data-field="name"      onchange={handleSprintFormChange}></c-ao-input>
                 <c-ao-input label="Duration (days)" required type="number" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></c-ao-input>
                 <c-ao-input label="Start Date"      required type="date"   value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></c-ao-input>
                 <c-ao-input label="Goal"            required value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></c-ao-input>

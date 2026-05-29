@@ -8,10 +8,13 @@ public with sharing class ProjectService {
     // ═══════════════════════════════════════════════════════════════
 
     // After insert, ProjectTrigger automatically creates default 'Todo' (isStart) and 'Done' (isEnd) statuses if they don't exist.
+    // Also seeds the per-project NameSequence__c row with all counters at 0 so subsequent
+    // Sprint/Ticket/Subtask creates can derive default Names (SPR-N, TKT-N, SUB-N).
     public static Project__c createProject(String name) {
         try {
             Project__c project = new Project__c(Name = name);
             insert project;
+            NameSequenceService.createForProject(project.Id);
             return project;
         } catch (DmlException ex) {
             throw new ServiceException('Error creating project: ' + ex.getMessage());
@@ -23,6 +26,20 @@ public with sharing class ProjectService {
             return [SELECT Id, Name, CreatedDate FROM Project__c ORDER BY Name ASC];
         } catch (Exception ex) {
             throw new ServiceException('Error loading projects: ' + ex.getMessage());
+        }
+    }
+
+    public static Project__c findProjectById(String projectId) {
+        try {
+            List<Project__c> rows = [
+                SELECT Id, Name, BacklogMaxScore__c
+                FROM Project__c
+                WHERE Id = :projectId
+                LIMIT 1
+            ];
+            return rows.isEmpty() ? null : rows[0];
+        } catch (Exception ex) {
+            throw new ServiceException('Error finding project: ' + ex.getMessage());
         }
     }
 

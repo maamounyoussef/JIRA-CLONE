@@ -8,16 +8,25 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadBacklogData(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-
+            System.debug('==== hit1 ====');
+            
             Project__c project = DomainCorrectness.requireProjectExists(projectId);
 
             List<Sprint__c> sprints = SprintService.loadUncompleteSprintsByProject(project);
+            System.debug('==== hit2 ====');
+
 
             List<Status__c> statuses = StatusService.loadStatuses(project);
+            System.debug('==== hit3 ====');
             List<TicketType__c> ticketTypes = TicketService.loadTicketTypes(project);
+            System.debug('==== hit4 ====');
             List<ProjectMember__c> members = ProjectService.loadProjectMembers(project);
+            System.debug('==== hit5 ====');
             List<Epic__c> epics = EpicService.getEpicsByProject(project);
+            System.debug('==== hit6 ====');
             List<Ticket__c> backlogTickets = TicketService.loadBacklogTickets(project, 0, null);
+            System.debug('==== hit7 ====');
+
 
             List<Map<String, String>> priorityOptions = new List<Map<String, String>>();
             priorityOptions.add(new Map<String, String>{ 'label' => '—', 'value' => '' });
@@ -26,6 +35,8 @@ public with sharing class ManageBacklogController {
                     priorityOptions.add(new Map<String, String>{ 'label' => e.getLabel(), 'value' => e.getValue() });
                 }
             }
+            System.debug('==== hit10 ====');
+
 
             Map<String, Object> data = new Map<String, Object>{
                 'sprints'         => sprints,
@@ -236,9 +247,8 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
-    public static APIResponse createSprint(String name, Integer duration, Date startDate, String goal, String projectId) {
+    public static APIResponse createSprint(Integer duration, Date startDate, String goal, String projectId) {
         try {
-            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             if (duration == null) return new APIResponse(false, 'duration is required');
             if (String.isBlank(goal)) return new APIResponse(false, 'goal is required');
@@ -246,7 +256,6 @@ public with sharing class ManageBacklogController {
             DomainCorrectness.requireProjectExists(projectId);
 
             Sprint__c sprint = new Sprint__c();
-            sprint.Name = name;
             sprint.Project__c = projectId;
             sprint.Duration__c = duration;
             sprint.StartDate__c = startDate;
@@ -261,13 +270,12 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
-    public static APIResponse updateSprint(String sprintId, String name, Integer duration, Date startDate, String goal) {
+    public static APIResponse updateSprint(String sprintId, Integer duration, Date startDate, String goal) {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
 
             Sprint__c existing = DomainCorrectness.requireSprintExists(sprintId);
 
-            if (String.isNotBlank(name)) existing.Name = name;
             if (duration != null) existing.Duration__c = duration;
             if (startDate != null) existing.StartDate__c = startDate;
             if (String.isNotBlank(goal)) existing.Goal__c = goal;
@@ -382,9 +390,8 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
-    public static APIResponse createTicketFromBacklog(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String priority) {
+    public static APIResponse createTicketFromBacklog(String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String priority) {
         try {
-            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
 
@@ -393,7 +400,6 @@ public with sharing class ManageBacklogController {
             DomainCorrectness.requireOptionalEpicActive(epicId);
 
             Ticket__c ticket = new Ticket__c();
-            ticket.Name = name;
             ticket.Summary__c = summary;
             ticket.Ticket_Type__c = ticketTypeId;
             if (description != null) ticket.Description__c = description;
@@ -414,9 +420,8 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
-    public static APIResponse createTicketFromSprint(String name, String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String sprintId, String priority) {
+    public static APIResponse createTicketFromSprint(String summary, String ticketTypeId, String currentStateId, String description, Integer storyPoint, String assignedToId, String epicId, String sprintId, String priority) {
         try {
-            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
             if (String.isBlank(summary)) return new APIResponse(false, 'summary is required');
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
@@ -427,7 +432,6 @@ public with sharing class ManageBacklogController {
             DomainCorrectness.requireOptionalSprintExists(sprintId);
 
             Ticket__c ticket = new Ticket__c();
-            ticket.Name = name;
             ticket.Summary__c = summary;
             ticket.Ticket_Type__c = ticketTypeId;
             ticket.Sprint__c = sprintId;

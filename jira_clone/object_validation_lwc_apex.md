@@ -39,6 +39,19 @@ for apex and store
 | UpdatedAt__c | Updated At | DateTime | yes |
 ---
 
+## NameSequence__c
+
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Project__c | Project | Lookup → Project__c | YES |
+| SprintLastSequence__c | Sprint Last Sequence | Number(18, 0) | YES |
+| TicketLastSequence__c | Ticket Last Sequence | Number(18, 0) | YES |
+| SubtaskLastSequence__c | Subtask Last Sequence | Number(18, 0) | YES |
+
+> Server‑managed: one row per project, seeded by `ProjectService.createProject` with all counters at `0` and bumped by `NameSequenceService` on Sprint/Ticket/Subtask create. Never set from LWC.
+
+---
+
 ## ProjectMember__c
 
 | Field API Name | Label | Type | Required |
@@ -54,8 +67,9 @@ for apex and store
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Name | Name (standard) | Text | YES (standard) |
+| BacklogMaxScore__c | Backlog Max Score | Text(6) | no | // server-managed; tracks highest Score__c assigned to a backlog ticket in this project (Sprint__c = null)
 
-> No custom required fields. Standard `Name` field only.
+> No custom required fields. Standard `Name` field only. `BacklogMaxScore__c` is set by Apex (TicketService) only.
 
 ---
 
@@ -77,6 +91,7 @@ for apex and store :
 | Goal__c | Goal | TextArea | yes |
 | RecordStatus__c | Record Status | Text(100) | yes |
 | StartDate__c | Start Date | Date | no |
+| MaxScore__c | Max Score | Text(6) | no | // server-managed; seeded to 000000 by SprintService.createSprint and bumped by 200 on each ticket added/moved into this sprint
 ---
 
 ## Status__c
@@ -245,6 +260,7 @@ for apex and store:
 |---|---|
 | EpicLink__c | Epic__c, Ticket__c |
 | Epic__c | Project__c, Summary__c |
+| NameSequence__c | Project__c, SprintLastSequence__c, TicketLastSequence__c, SubtaskLastSequence__c |
 | ProjectMember__c | Project__c |
 | Project__c | Name (standard) |
 | Sprint__c | Project__c |

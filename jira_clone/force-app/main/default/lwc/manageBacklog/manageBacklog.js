@@ -754,10 +754,9 @@ export default class ManageBacklog extends LightningElement {
     // -- Update Sprint --
     _executeUpdateSprint() {
         this.isLoading = true;
-        const { name, duration, startDate, goal } = this.sprintForm;
+        const { duration, startDate, goal } = this.sprintForm;
         updateSprint({
             sprintId : this._editingSprintId,
-            name,
             duration : parseInt(duration, 10),
             startDate,
             goal,
@@ -767,7 +766,7 @@ export default class ManageBacklog extends LightningElement {
                 const sid = this._editingSprintId;
                 this.sprints = this.sprints.map(s =>
                     s.Id === sid
-                        ? { ...s, Name: name, Duration__c: duration, StartDate__c: startDate, Goal__c: goal, endDate: calcEndDate(startDate, duration) }
+                        ? { ...s, Duration__c: duration, StartDate__c: startDate, Goal__c: goal, endDate: calcEndDate(startDate, duration) }
                         : s
                 );
                 this.showSprintModal = false;
@@ -780,9 +779,8 @@ export default class ManageBacklog extends LightningElement {
     // -- Create Sprint --
     _executeCreateSprint() {
         this.isLoading = true;
-        const { name, duration, startDate, goal } = this.sprintForm;
+        const { duration, startDate, goal } = this.sprintForm;
         createSprint({
-            name,
             duration: parseInt(duration, 10),
             startDate,
             goal,
@@ -841,7 +839,6 @@ export default class ManageBacklog extends LightningElement {
         this.sprintModalTitle       = 'Edit Sprint';
         this.sprintModalSubmitLabel = 'Update';
         this.sprintForm = {
-            name     : sprint.Name,
             duration : sprint.Duration__c,
             startDate: sprint.StartDate__c,
             goal     : sprint.Goal__c || '',

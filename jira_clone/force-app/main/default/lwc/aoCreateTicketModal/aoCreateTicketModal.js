@@ -3,7 +3,7 @@ import { LightningElement, api, track } from 'lwc';
 import { validateTicketCreate } from './ticketValidator';
 
 function _empty() {
-    return { name: '', summary: '', description: '', storyPoint: null, ticketTypeId: '', currentStateId: '', priority: '' };
+    return { summary: '', description: '', storyPoint: null, ticketTypeId: '', currentStateId: '', priority: '' };
 }
 
 export default class AoCreateTicketModal extends LightningElement {
@@ -33,10 +33,9 @@ export default class AoCreateTicketModal extends LightningElement {
         const error = validateTicketCreate(this.ticket);
         if (error) { this.error = error; return; }
 
-        const { name, summary, description, storyPoint, ticketTypeId, currentStateId, priority } = this.ticket;
+        const { summary, description, storyPoint, ticketTypeId, currentStateId, priority } = this.ticket;
         this.dispatchEvent(new CustomEvent('ticketcreate', {
             detail: {
-                name,
                 summary      : summary      || null,
                 description  : description  || null,
                 storyPoint   : storyPoint   ? parseInt(storyPoint, 10) : null,

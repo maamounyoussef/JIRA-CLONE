@@ -13,7 +13,7 @@ export function calcEndDate(startDate, duration) {
 }
 
 export function emptySprintForm() {
-    return { name: '', duration: null, startDate: '', goal: '' };
+    return { duration: null, startDate: '', goal: '' };
 }
 
 export function formatSprint(raw) {
