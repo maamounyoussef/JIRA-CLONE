@@ -137,6 +137,7 @@ export default class ManageTicketTracking extends LightningElement {
 
     // ─── PROPERTIES & STATE ───────────────────────────────────────────────────
     _projectId      = null;
+    @track _showChooseProject = false;
     isLoading       = false;
     errorMessage    = null;
 
@@ -257,12 +258,22 @@ export default class ManageTicketTracking extends LightningElement {
         loadStyle(this, aoThemeResource);
         const projectId = localStorage.getItem('projectId');
         if (!projectId) {
-            this.errorMessage = 'No project selected. Please select a project first.';
+            this._showChooseProject = true;
             return;
         }
         this._projectId = projectId;
         this._loadData();
     }
+
+    handleProjectChosen(event) {
+        const { projectId } = event.detail || {};
+        if (!projectId) return;
+        this._projectId         = projectId;
+        this._showChooseProject = false;
+        this._loadData();
+    }
+
+    get showChooseProject() { return this._showChooseProject; }
 
     _loadData() {
         this.isLoading = true;

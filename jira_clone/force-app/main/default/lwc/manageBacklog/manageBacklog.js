@@ -49,6 +49,7 @@ export default class ManageBacklog extends LightningElement {
 
     // ─── PROPERTIES & STATE ───────────────────────────────────────────────────
     _projectId          = null;
+    @track _showChooseProject = false;
     isLoading           = false;
     errorMessage        = null;
     _isBacklogDragOver  = false;
@@ -219,19 +220,30 @@ export default class ManageBacklog extends LightningElement {
     // ─── APEX CALLS ───────────────────────────────────────────────────────────
     connectedCallback() {
         loadStyle(this, aoThemeResource);
-        const projectId = localStorage.getItem('projectId');
-        if (!projectId) {
-            this.errorMessage = 'No project selected. Please select a project first.';
-            return;
-        }
-        this._projectId = projectId;
-        this._loadData();
 
         this._mqList        = window.matchMedia('(max-width: 767px)');
         this._isSmallScreen = this._mqList.matches;
         this._mqHandler     = (e) => { this._isSmallScreen = e.matches; };
         this._mqList.addEventListener('change', this._mqHandler);
+
+        const projectId = localStorage.getItem('projectId');
+        if (!projectId) {
+            this._showChooseProject = true;
+            return;
+        }
+        this._projectId = projectId;
+        this._loadData();
     }
+
+    handleProjectChosen(event) {
+        const { projectId } = event.detail || {};
+        if (!projectId) return;
+        this._projectId         = projectId;
+        this._showChooseProject = false;
+        this._loadData();
+    }
+
+    get showChooseProject() { return this._showChooseProject; }
 
     disconnectedCallback() {
         if (this._mqList) {

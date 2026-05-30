@@ -1,5 +1,12 @@
 <template>
 
+    <!-- Choose Project Splash -->
+    <template if:true={showChooseProject}>
+        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
+    </template>
+
+    <template if:false={showChooseProject}>
+
     <!-- Error Message -->
     <template if:true={errorMessage}>
         <div class="error-box">
@@ -95,6 +102,8 @@
             ></c-ticket-view>
             </section>
         </template>
+
+    </template>
 
     </template>
 

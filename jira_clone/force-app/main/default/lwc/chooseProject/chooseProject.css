@@ -1,0 +1,100 @@
+:host {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+}
+
+.splash {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 48px 24px;
+    background-color: #F4F5F7;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.splash__card {
+    width: 100%;
+    max-width: 520px;
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    padding: 32px;
+    box-shadow: 0 4px 16px rgba(9, 30, 66, 0.08);
+}
+
+.splash__header {
+    margin-bottom: 24px;
+}
+
+.splash__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0 0 6px 0;
+}
+
+.splash__subtitle {
+    font-size: 0.875rem;
+    color: #6B778C;
+    margin: 0;
+}
+
+.splash__section {
+    margin-top: 24px;
+}
+
+.splash__section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6B778C;
+    letter-spacing: 0.04em;
+    margin: 0 0 12px 0;
+}
+
+.splash__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.splash__item-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background-color: #FAFBFC;
+    border: 1px solid #DFE1E6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    text-align: left;
+}
+
+.splash__item-btn:hover {
+    background-color: #EBECF0;
+    border-color: #C1C7D0;
+}
+
+.splash__item-name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #172B4D;
+}
+
+.splash__empty {
+    padding: 14px;
+    text-align: center;
+    color: #6B778C;
+    font-size: 0.875rem;
+    background-color: #FAFBFC;
+    border-radius: 3px;
+    margin: 0;
+}

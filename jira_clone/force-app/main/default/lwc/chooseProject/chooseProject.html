@@ -1,0 +1,37 @@
+<template>
+    <div class="splash">
+        <div class="splash__card">
+            <header class="splash__header">
+                <h1 class="splash__title">Choose a Project</h1>
+                <p class="splash__subtitle">Pick a project to continue.</p>
+            </header>
+
+            <section class="splash__section">
+                <h2 class="splash__section-title">Existing projects</h2>
+
+                <template if:true={hasProjects}>
+                    <ul class="splash__list">
+                        <template for:each={projects} for:item="project">
+                            <li key={project.Id} class="splash__item">
+                                <button
+                                    type="button"
+                                    class="splash__item-btn"
+                                    data-project-id={project.Id}
+                                    data-project-name={project.Name}
+                                    onclick={handleSelectProject}
+                                >
+                                    <span class="splash__item-name">{project.Name}</span>
+                                    <lightning-icon icon-name="utility:forward" size="x-small"></lightning-icon>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+
+                <template if:false={hasProjects}>
+                    <p class="splash__empty">No projects available.</p>
+                </template>
+            </section>
+        </div>
+    </div>
+</template>
