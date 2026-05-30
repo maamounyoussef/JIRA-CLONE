@@ -89,6 +89,7 @@ public with sharing class ProjectService {
             User__c,
             User__r.Name,
             User__r.Email,
+            Role__c,
             RecordStatus__c
         FROM ProjectMember__c
         WHERE Project__c = :project.Id
@@ -97,6 +98,103 @@ public with sharing class ProjectService {
         ];
         } catch (Exception ex) {
             throw new ServiceException('Error loading project members: ' + ex.getMessage());
+        }
+    }
+
+    public static List<User> searchUsersByTerm(String projectId, String searchTerm) {
+        try {
+            Set<Id> alreadyMemberUserIds = new Set<Id>();
+            for (ProjectMember__c pm : [
+                SELECT User__c
+                FROM ProjectMember__c
+                WHERE Project__c = :projectId
+                  AND RecordStatus__c != 'delete'
+            ]) {
+                if (pm.User__c != null) {
+                    alreadyMemberUserIds.add(pm.User__c);
+                }
+            }
+
+            // Escape special SOSL characters
+            String sanitized = searchTerm
+                .replace('\\', '\\\\')
+                .replace('"', '\\"')
+                .replace('?', '\\?')
+                .replace('&', '\\&')
+                .replace('|', '\\|')
+                .replace('!', '\\!')
+                .replace('{', '\\{')
+                .replace('}', '\\}')
+                .replace('[', '\\[')
+                .replace(']', '\\]')
+                .replace('(', '\\(')
+                .replace(')', '\\)')
+                .replace('^', '\\^')
+                .replace('~', '\\~')
+                .replace('*', '\\*')
+                .replace(':', '\\:')
+                .replace('\'', '\\\'');
+
+            String soslQuery = 'FIND {*' + sanitized + '*} IN ALL FIELDS ' +
+                               'RETURNING User(Id, Name, Username ' +
+                               'WHERE IsActive = true ' +
+                               'ORDER BY Name ASC LIMIT 50)';
+
+            List<List<SObject>> searchResults = Search.query(soslQuery);
+            List<User> users = (List<User>) searchResults[0];
+
+            List<User> eligible = new List<User>();
+            for (User u : users) {
+                if (!alreadyMemberUserIds.contains(u.Id)) {
+                    eligible.add(u);
+                }
+                if (eligible.size() >= 20) break;
+            }
+            return eligible;
+        } catch (Exception ex) {
+            throw new ServiceException('Error searching users: ' + ex.getMessage());
+        }
+    }
+
+    public static ProjectMember__c updateMemberRole(String memberId, String role) {
+        try {
+            List<ProjectMember__c> rows = [
+                SELECT Id, Role__c, RecordStatus__c
+                FROM ProjectMember__c
+                WHERE Id = :memberId
+                  AND RecordStatus__c != 'delete'
+                LIMIT 1
+            ];
+            if (rows.isEmpty()) {
+                throw new ServiceException('Project member not found.');
+            }
+            ProjectMember__c pm = rows[0];
+            pm.Role__c = role;
+            update pm;
+            return pm;
+        } catch (Exception ex) {
+            throw new ServiceException('Error updating member role: ' + ex.getMessage());
+        }
+    }
+
+    public static ProjectMember__c softDeleteMember(String memberId) {
+        try {
+            List<ProjectMember__c> rows = [
+                SELECT Id, RecordStatus__c
+                FROM ProjectMember__c
+                WHERE Id = :memberId
+                  AND RecordStatus__c != 'delete'
+                LIMIT 1
+            ];
+            if (rows.isEmpty()) {
+                throw new ServiceException('Project member not found.');
+            }
+            ProjectMember__c pm = rows[0];
+            pm.RecordStatus__c = 'delete';
+            update pm;
+            return pm;
+        } catch (Exception ex) {
+            throw new ServiceException('Error removing member: ' + ex.getMessage());
         }
     }
 

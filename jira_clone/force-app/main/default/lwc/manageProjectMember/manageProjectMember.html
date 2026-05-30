@@ -1,0 +1,163 @@
+<template>
+    <section class="mpm-page">
+
+        <!-- ── Header ─────────────────────────────────────────────────── -->
+        <header class="mpm-header">
+            <h1 class="mpm-header__title">Project Members</h1>
+            <span class="mpm-header__badge" title="Total projects">
+                {projectCount}
+            </span>
+        </header>
+
+        <!-- ── Project selector card ─────────────────────────────────── -->
+        <div class="mpm-card mpm-card--selector">
+            <span class="mpm-card__label">Project</span>
+            <c-ao-combobox
+                variant="label-hidden"
+                placeholder="Select a project"
+                value={_selectedProjectId}
+                options={projectOptions}
+                onchange={handleProjectChange}>
+            </c-ao-combobox>
+        </div>
+
+        <!-- ── Members panel ─────────────────────────────────────────── -->
+        <div class="mpm-card mpm-panel">
+
+            <div class="mpm-panel__head">
+                <h2 class="mpm-panel__title">
+                    Members
+                    <span class="mpm-pill">{memberCount}</span>
+                </h2>
+
+                <div class="mpm-search" onblur={handleSearchBlur}>
+                    <c-ao-input
+                        variant="label-hidden"
+                        placeholder="Search users to add…"
+                        value={_searchTerm}
+                        onchange={handleSearchInput}>
+                    </c-ao-input>
+
+                    <template lwc:if={showSearchDropdown}>
+                        <ul class="mpm-search__dropdown">
+                            <template for:each={_searchResults} for:item="u">
+                                <li key={u.Id} class="mpm-search__row">
+                                    <span class="mpm-avatar">{u.initials}</span>
+                                    <div class="mpm-search__meta">
+                                        <span class="mpm-search__name">{u.name}</span>
+                                        <span class="mpm-search__id">{u.Id}</span>
+                                    </div>
+                                    <c-ao-btn
+                                        label="Add"
+                                        icon-name="utility:add"
+                                        variant="primary"
+                                        size="sm"
+                                        data-userid={u.Id}
+                                        onclick={handleAddMember}>
+                                    </c-ao-btn>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Members list / empty state -->
+            <template lwc:if={hasMembers}>
+                <ul class="mpm-list">
+                    <template for:each={memberRows} for:item="m">
+                        <li key={m.Id} class="mpm-row">
+                            <div class="mpm-row__main">
+                                <span class="mpm-row__name">{m.name}</span>
+                                <span class="mpm-row__role">{m.roleLabel}</span>
+                            </div>
+                            <div class="mpm-row__actions">
+                                <c-ao-btn
+                                    icon-name="utility:edit"
+                                    variant="bare"
+                                    size="sm"
+                                    title="Edit member"
+                                    data-id={m.Id}
+                                    onclick={handleOpenEdit}>
+                                </c-ao-btn>
+                                <c-ao-btn
+                                    icon-name="utility:delete"
+                                    variant="bare"
+                                    size="sm"
+                                    title="Remove member"
+                                    data-id={m.Id}
+                                    onclick={handleOpenDelete}>
+                                </c-ao-btn>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <template lwc:else>
+                <div class="mpm-empty">
+                    <span class="mpm-empty__icon">👥</span>
+                    <p class="mpm-empty__title">No members yet</p>
+                    <p class="mpm-empty__hint">Use the search bar above to add members.</p>
+                </div>
+            </template>
+        </div>
+
+        <!-- ── Edit modal ─────────────────────────────────────────────── -->
+        <template lwc:if={showEditModal}>
+            <div class="modal-backdrop" onclick={handleCloseEdit}></div>
+            <div class="modal modal--sm" role="dialog" aria-modal="true">
+                <div class="modal__header">
+                    <h3 class="modal__title">Edit member</h3>
+                </div>
+                <div class="modal__content">
+                    <c-ao-input
+                        label="Account ID"
+                        value={editingMemberAccountId}
+                        readonly="true">
+                    </c-ao-input>
+                    <c-ao-input
+                        label="Display name"
+                        value={editingMemberName}
+                        readonly="true">
+                    </c-ao-input>
+                    <c-ao-combobox
+                        label="Role"
+                        value={_editingRole}
+                        options={_roleOptions}
+                        onchange={handleEditRoleChange}>
+                    </c-ao-combobox>
+                </div>
+                <div class="modal__footer">
+                    <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseEdit}></c-ao-btn>
+                    <c-ao-btn label="Save changes" variant="primary" onclick={handleSaveEdit}></c-ao-btn>
+                </div>
+            </div>
+        </template>
+
+        <!-- ── Delete confirmation modal ──────────────────────────────── -->
+        <template lwc:if={showDeleteModal}>
+            <div class="modal-backdrop" onclick={handleCloseDelete}></div>
+            <div class="modal modal--sm" role="dialog" aria-modal="true">
+                <div class="modal__header">
+                    <h3 class="modal__title">Remove member</h3>
+                </div>
+                <div class="modal__content">
+                    <p class="modal__message">
+                        Are you sure you want to remove <strong>{deletingMemberName}</strong> from this
+                        project? They will lose access to all project resources.
+                    </p>
+                </div>
+                <div class="modal__footer">
+                    <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseDelete}></c-ao-btn>
+                    <c-ao-btn label="Remove member" variant="danger" onclick={handleConfirmDelete}></c-ao-btn>
+                </div>
+            </div>
+        </template>
+
+        <!-- ── Toast ──────────────────────────────────────────────────── -->
+        <template lwc:if={_toast}>
+            <div class={toastClass} role="status">{_toast.message}</div>
+        </template>
+
+    </section>
+</template>

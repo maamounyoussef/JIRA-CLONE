@@ -18,6 +18,14 @@ description: >
   a new component name + path that does not yet exist in
   `force-app/main/default/lwc/`.
 
+  TRIGGER EXAMPLES:
+  - "create a new LWC" / "create a new component" / "make a new LWC called X"
+  - "create a new page" / "build a new Salesforce page for X" / "I need a new page component"
+  - "create a new pather" / "scaffold a new pather" / "I need a new parent component"
+  - "build a container component that holds [child components]"
+  - "I want a new LWC dashboard / form / layout for X"
+  - User provides a component name that does not exist yet under `force-app/main/default/lwc/`
+
   SKIP when the work targets an **existing** parent (use
   `add-interactive-with-data-persistance-functionality-in-pather` directly),
   when the work belongs in a **child** component (use `lwc-child`), or when

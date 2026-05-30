@@ -1,0 +1,355 @@
+:host {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+}
+
+.mpm-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    background-color: #F4F5F7;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.mpm-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mpm-header__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.mpm-header__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 22px;
+    padding: 0 8px;
+    background-color: #DEEBFF;
+    color: #0747A6;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* ── Cards / panels ──────────────────────────────────────────────────────── */
+.mpm-card {
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(9, 30, 66, 0.25);
+}
+
+.mpm-card--selector {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.mpm-card__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+.mpm-card--selector c-ao-combobox {
+    flex: 1;
+    max-width: 360px;
+}
+
+/* ── Members panel ───────────────────────────────────────────────────────── */
+.mpm-panel {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mpm-panel__head {
+    padding: 20px 24px;
+    border-bottom: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.mpm-panel__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mpm-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 20px;
+    padding: 0 8px;
+    background-color: #EBECF0;
+    color: #42526E;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
+
+/* ── Search ──────────────────────────────────────────────────────────────── */
+.mpm-search {
+    position: relative;
+    width: min(320px, 100%);
+}
+
+.mpm-search__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(9, 30, 66, 0.25);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.mpm-search__row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    transition: background-color 0.1s ease;
+}
+
+.mpm-search__row:hover {
+    background-color: #F4F5F7;
+}
+
+.mpm-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #DEEBFF;
+    color: #0747A6;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mpm-search__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mpm-search__name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #172B4D;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mpm-search__id {
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 0.75rem;
+    color: #6B778C;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Members list ────────────────────────────────────────────────────────── */
+.mpm-list {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.mpm-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 24px;
+    transition: background-color 0.1s ease;
+}
+
+.mpm-row + .mpm-row {
+    border-top: 1px solid #DFE1E6;
+}
+
+.mpm-row:hover {
+    background-color: #FAFBFC;
+}
+
+.mpm-row__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mpm-row__name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #172B4D;
+}
+
+.mpm-row__role {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.mpm-row__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.mpm-empty {
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    background-color: #FAFBFC;
+}
+
+.mpm-empty__icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.mpm-empty__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #42526E;
+    margin: 0;
+}
+
+.mpm-empty__hint {
+    font-size: 0.875rem;
+    color: #6B778C;
+    margin: 0;
+}
+
+/* ── Modal (shared overrides) ────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.54);
+    z-index: 9000;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9001;
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal--sm { width: min(440px, calc(100vw - 32px)); }
+
+.modal__header { padding: 20px 24px 8px; }
+
+.modal__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+}
+
+.modal__content {
+    padding: 8px 24px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal__message {
+    font-size: 0.9375rem;
+    color: #172B4D;
+    margin: 12px 0;
+    line-height: 1.5;
+}
+
+.modal__footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 9100;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 4px 8px rgba(9, 30, 66, 0.25);
+    animation: toast-in 0.15s ease-out;
+    max-width: min(420px, calc(100vw - 32px));
+    color: #FFFFFF;
+}
+
+.toast--default { background-color: #172B4D; }
+.toast--success { background-color: #00875A; }
+.toast--error   { background-color: #DE350B; }
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
