@@ -11,7 +11,7 @@ description: >
 
   TRIGGER (apply silently) when the user is working on a Salesforce LWC parent
   component and ANY of these is true: a request to "add an event handler",
-  "handle this event in the parent", "connect child to parent", "listen to this
+  "handle this event in the parent", "connect child to parent","add <lwcComponentName> to <lwcComponentName>" "listen to this
   event"; the user pastes a child LWC `dispatchEvent` call or an `onxxx`
   attribute and asks how to respond to it in the parent; the user mentions a
   child that "fires" or "dispatches" something the parent must react to; the

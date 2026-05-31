@@ -14,6 +14,10 @@ description: >
   it imports at least one `@salesforce/apex/<Class>.<method>` symbol, OR it
   declares a `@wire` adapter. Treat the presence of ANY one such import or
   wire as sufficient evidence; stop checking once one is found.
+  example when it should trigger : 
+    - create new functionality 
+    - create new functionality in ... 
+    - add ... to <lwcComponentName>
 
   SKIP when the target component has no Apex import AND no `@wire` (this skill
   assumes data persistence is in scope), when the change is purely cosmetic

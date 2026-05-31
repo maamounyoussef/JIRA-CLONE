@@ -1,4 +1,10 @@
 <template>
+    <!-- Project picker — shown until a project is chosen -->
+    <template if:false={hasProject}>
+        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
+    </template>
+
+    <template if:true={hasProject}>
     <div class="workflow-visualizer-container" style="--start-point-radius: {startPointRadius}px; --end-point-radius: {endPointRadius}px; --line-width: {config.lineWidth}px; --line-hover-width: {config.lineHoverWidth}px; --line-dasharray: {config.lineDashArray}; --rect-stroke-width: {config.rectStrokeWidth}px; --rect-stroke-opacity: {config.rectStrokeOpacity}; --rect-hover-stroke-opacity: {config.rectHoverStrokeOpacity}; --arrow-length: {config.arrowLength}px; --arrow-width: {config.arrowWidth}px; --label-offset: {config.labelOffset}px; --curve-factor: {config.curveFactor}; --max-curve-height: {config.maxCurveHeight}px; --rect-radius: {config.rectRadius}px; --legend-badge-width: 44px; --legend-badge-height: 20px;">
 
         <!-- Loading -->
@@ -408,4 +414,5 @@
             </div>
         </template>
     </div>
+    </template>
 </template>

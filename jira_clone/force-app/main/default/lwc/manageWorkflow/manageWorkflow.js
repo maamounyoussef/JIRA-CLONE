@@ -1,11 +1,12 @@
 import { LightningElement, track } from 'lwc';
-import getTicketTypeById        from '@salesforce/apex/ManageWorkflowPageController.getTicketTypeById';
 import getWorkflow              from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
 import createStatus             from '@salesforce/apex/ManageWorkflowPageController.createStatus';
 import addWorkflowTransition    from '@salesforce/apex/ManageWorkflowPageController.addWorkflowTransition';
 import getWorkflowTransitionById from '@salesforce/apex/ManageWorkflowPageController.getWorkflowTransitionById';
 import activateWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.activateWorkflowTransition';
 import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.deleteWorkflowTransition';
+
+const DEFAULT_WORKFLOW_ID = 'a01d200001g7lT3AAI';
 
 import { validateStatusName, validateTransition, validateTransitionName } from './workflowValidator';
 import {
@@ -30,11 +31,10 @@ import {
 export default class ManageWorkflow extends LightningElement {
 
     // ─── PROPERTIES & STATE ────────────────────────────────────────────────
-    _projectId    = null;
-    _ticketTypeId = null;
-    _workflowId   = null;
-    isLoading     = false;
-    errorMessage  = '';
+    @track _projectId    = null;
+    _workflowId          = null;
+    isLoading            = false;
+    errorMessage         = '';
 
     /*
      * Principal de-normalized state. Shape (from getWorkflow / WorkflowConfigDTO):
@@ -59,16 +59,31 @@ export default class ManageWorkflow extends LightningElement {
 
     // ─── LIFECYCLE ─────────────────────────────────────────────────────────
     connectedCallback() {
-        // Entry mirrors manageBacklog: identifiers come from localStorage, set
-        // by whichever page navigated here (project + ticket type selection).
-        this._projectId    = localStorage.getItem('projectId');
-        this._ticketTypeId = localStorage.getItem('ticketTypeId');
+        // Entry: workflowId is the primary identifier (falls back to a static
+        // default if not provided). projectId is still read from localStorage
+        // for the createStatus flow. If no projectId is set the chooseProject
+        // child is rendered instead of the workflow visualizer.
+        this._workflowId = localStorage.getItem('workflowId') || DEFAULT_WORKFLOW_ID;
+        this._projectId  = localStorage.getItem('projectId');
 
-        if (!this._projectId || !this._ticketTypeId) {
-            this.errorMessage = 'No project / ticket type selected. Please select one first.';
+        if (!this._projectId) {
+            return;
+        }
+        if (!this._workflowId) {
+            this.errorMessage = 'No workflow selected. Please select one first.';
             return;
         }
         this._loadWorkflow();
+    }
+
+    // ─── PROJECT SELECTION ─────────────────────────────────────────────────
+    get hasProject() { return !!this._projectId; }
+
+    handleProjectChosen(event) {
+        this._projectId = event.detail?.projectId || localStorage.getItem('projectId');
+        if (this._projectId && this._workflowId) {
+            this._loadWorkflow();
+        }
     }
 
     renderedCallback() {
@@ -99,23 +114,10 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     // ─── APEX CALLS ────────────────────────────────────────────────────────
-    // Resolves the workflow the same way the old form + container did:
-    // ticketType → Workflow__c → getWorkflow.
     _loadWorkflow() {
         this.isLoading = true;
         this.errorMessage = '';
-        getTicketTypeById({ ticketTypeId: this._ticketTypeId })
-            .then(res => {
-                if (!res.success || !res.data) {
-                    throw new Error(res.message || 'Failed to load ticket type');
-                }
-                const workflowId = res.data.Workflow__c;
-                if (!workflowId) {
-                    throw new Error('Ticket type does not have a workflow assigned');
-                }
-                this._workflowId = workflowId;
-                return getWorkflow({ workflowId });
-            })
+        getWorkflow({ workflowId: this._workflowId })
             .then(res => {
                 if (!res || !res.success || !res.data) {
                     throw new Error(res?.message || 'Failed to load workflow');
