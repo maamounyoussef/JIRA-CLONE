@@ -1,10 +1,99 @@
 <template>
-    <!-- Project picker — shown until a project is chosen -->
+    <!-- Step 1 — Project picker (no projectId yet) -->
     <template if:false={hasProject}>
         <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
     </template>
 
-    <template if:true={hasProject}>
+    <!-- Step 2 — Workflow list for the chosen project (no workflowId yet) -->
+    <template if:true={showWorkflowList}>
+        <div class="workflow-list-container slds-var-m-around_medium">
+            <div class="workflow-list-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-var-m-bottom_medium">
+                <h2 class="slds-text-heading_medium">Workflows</h2>
+                <lightning-button
+                    variant="brand"
+                    label="Create New Workflow"
+                    icon-name="utility:add"
+                    onclick={openCreateWorkflowModal}
+                ></lightning-button>
+            </div>
+
+            <template if:true={_workflowsLoading}>
+                <lightning-spinner alternative-text="Loading workflows..." class="slds-var-m-around_medium"></lightning-spinner>
+            </template>
+
+            <template if:true={_workflowsErrorMessage}>
+                <lightning-alert variant="error" title="Error">{_workflowsErrorMessage}</lightning-alert>
+            </template>
+
+            <template if:true={hasWorkflows}>
+                <ul class="workflow-list slds-has-dividers_bottom-space">
+                    <template for:each={_workflows} for:item="wf">
+                        <li key={wf.id} class="workflow-list-item slds-box slds-var-m-bottom_x-small">
+                            <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+                                <div>
+                                    <div class="slds-text-heading_small">{wf.name}</div>
+                                    <div class="slds-text-body_small slds-text-color_weak">{wf.recordStatus}</div>
+                                </div>
+                                <lightning-button
+                                    variant="neutral"
+                                    label="Edit"
+                                    icon-name="utility:edit"
+                                    data-workflow-id={wf.id}
+                                    onclick={handleEditWorkflow}
+                                ></lightning-button>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+
+            <template if:false={hasWorkflows}>
+                <template if:false={_workflowsLoading}>
+                    <div class="slds-text-color_weak slds-var-p-around_medium slds-text-align_center">
+                        No workflows for this project yet — create one to get started.
+                    </div>
+                </template>
+            </template>
+        </div>
+
+        <!-- Create Workflow Modal -->
+        <template if:true={showCreateWorkflowModal}>
+            <div class="modal-backdrop" onclick={closeCreateWorkflowModal}></div>
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 class="modal-title">Create New Workflow</h2>
+                    <lightning-button-icon icon-name="utility:close" alternative-text="Close" class="close-button" onclick={closeCreateWorkflowModal}></lightning-button-icon>
+                </div>
+
+                <div class="modal-body">
+                    <lightning-input
+                        type="text"
+                        label="Workflow Name"
+                        value={newWorkflowName}
+                        onchange={handleNewWorkflowNameChange}
+                        class="modal-input"
+                        disabled={isCreatingWorkflow}
+                        placeholder="Enter Workflow Name"
+                    ></lightning-input>
+
+                    <template if:true={createWorkflowErrorMessage}>
+                        <div class="error-message">
+                            <span class="error-icon">⚠</span>
+                            <span>{createWorkflowErrorMessage}</span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="modal-footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={closeCreateWorkflowModal} disabled={isCreatingWorkflow}></lightning-button>
+                    <lightning-button variant="brand" label="Create" onclick={handleCreateWorkflowSubmit} disabled={isCreatingWorkflow}></lightning-button>
+                </div>
+            </div>
+        </template>
+    </template>
+
+    <!-- Step 3 — Existing workflow visualizer (workflowId selected) -->
+    <template if:true={hasWorkflow}>
     <div class="workflow-visualizer-container" style="--start-point-radius: {startPointRadius}px; --end-point-radius: {endPointRadius}px; --line-width: {config.lineWidth}px; --line-hover-width: {config.lineHoverWidth}px; --line-dasharray: {config.lineDashArray}; --rect-stroke-width: {config.rectStrokeWidth}px; --rect-stroke-opacity: {config.rectStrokeOpacity}; --rect-hover-stroke-opacity: {config.rectHoverStrokeOpacity}; --arrow-length: {config.arrowLength}px; --arrow-width: {config.arrowWidth}px; --label-offset: {config.labelOffset}px; --curve-factor: {config.curveFactor}; --max-curve-height: {config.maxCurveHeight}px; --rect-radius: {config.rectRadius}px; --legend-badge-width: 44px; --legend-badge-height: 20px;">
 
         <!-- Loading -->

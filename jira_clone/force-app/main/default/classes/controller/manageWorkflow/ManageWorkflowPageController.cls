@@ -57,6 +57,26 @@ public with sharing class ManageWorkflowPageController {
     }
 
     /**
+     * @description Load every (non-deleted) Workflow that belongs to a given
+     * Project, with the basic info the manage-workflow list UI needs (name, id,
+     * record status, audit fields). Drives the project → workflow list step
+     * after a user picks a project on the manage workflow page.
+     * @param projectId - The Project__c record Id
+     * @return APIResponse containing List<Workflow__c> in data attribute
+     */
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadWorkflowsByProject(String projectId) {
+        try {
+            if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            DomainCorrectness.requireProjectExists(projectId);
+            List<Workflow__c> workflows = WorkflowService.loadWorkflowsByProject(projectId);
+            return new APIResponse(true, 'Workflows loaded successfully', workflows);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading workflows: ' + ex.getMessage());
+        }
+    }
+
+    /**
      * @description Create a new workflow
      * @param name - The workflow name
      * @param projectId - The Project__c record Id

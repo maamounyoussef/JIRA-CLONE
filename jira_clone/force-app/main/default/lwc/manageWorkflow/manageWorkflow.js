@@ -5,8 +5,8 @@ import addWorkflowTransition    from '@salesforce/apex/ManageWorkflowPageControl
 import getWorkflowTransitionById from '@salesforce/apex/ManageWorkflowPageController.getWorkflowTransitionById';
 import activateWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.activateWorkflowTransition';
 import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.deleteWorkflowTransition';
-
-const DEFAULT_WORKFLOW_ID = 'a01d200001g7lT3AAI';
+import loadWorkflowsByProject   from '@salesforce/apex/ManageWorkflowPageController.loadWorkflowsByProject';
+import createWorkflow           from '@salesforce/apex/ManageWorkflowPageController.createWorkflow';
 
 import { validateStatusName, validateTransition, validateTransitionName } from './workflowValidator';
 import {
@@ -32,9 +32,20 @@ export default class ManageWorkflow extends LightningElement {
 
     // ─── PROPERTIES & STATE ────────────────────────────────────────────────
     @track _projectId    = null;
-    _workflowId          = null;
+    @track _workflowId   = null;
     isLoading            = false;
     errorMessage         = '';
+
+    // Workflow list step (project chosen, no workflow chosen yet)
+    @track _workflows               = [];
+    @track _workflowsLoading        = false;
+    @track _workflowsErrorMessage   = '';
+
+    // Create-workflow modal state
+    @track showCreateWorkflowModal       = false;
+    @track newWorkflowName               = '';
+    @track isCreatingWorkflow            = false;
+    @track createWorkflowErrorMessage    = '';
 
     /*
      * Principal de-normalized state. Shape (from getWorkflow / WorkflowConfigDTO):
@@ -59,31 +70,115 @@ export default class ManageWorkflow extends LightningElement {
 
     // ─── LIFECYCLE ─────────────────────────────────────────────────────────
     connectedCallback() {
-        // Entry: workflowId is the primary identifier (falls back to a static
-        // default if not provided). projectId is still read from localStorage
-        // for the createStatus flow. If no projectId is set the chooseProject
-        // child is rendered instead of the workflow visualizer.
-        this._workflowId = localStorage.getItem('workflowId') || DEFAULT_WORKFLOW_ID;
-        this._projectId  = localStorage.getItem('projectId');
+        // Three-step entry:
+        //   1. No projectId  → chooseProject child is rendered.
+        //   2. projectId set → workflow list for that project.
+        //   3. workflowId selected (edit existing OR create new) → visualizer.
+        this._projectId = localStorage.getItem('projectId');
 
         if (!this._projectId) {
             return;
         }
-        if (!this._workflowId) {
-            this.errorMessage = 'No workflow selected. Please select one first.';
-            return;
-        }
-        this._loadWorkflow();
+        this._loadWorkflowsForProject();
     }
 
     // ─── PROJECT SELECTION ─────────────────────────────────────────────────
-    get hasProject() { return !!this._projectId; }
+    get hasProject()  { return !!this._projectId; }
+    get hasWorkflow() { return !!this._workflowId; }
+    get showWorkflowList() { return this.hasProject && !this.hasWorkflow; }
+    get hasWorkflows() { return Array.isArray(this._workflows) && this._workflows.length > 0; }
 
     handleProjectChosen(event) {
         this._projectId = event.detail?.projectId || localStorage.getItem('projectId');
-        if (this._projectId && this._workflowId) {
-            this._loadWorkflow();
+        if (this._projectId) {
+            this._loadWorkflowsForProject();
         }
+    }
+
+    // ─── WORKFLOW LIST ─────────────────────────────────────────────────────
+    _loadWorkflowsForProject() {
+        if (!this._projectId) return;
+        this._workflowsLoading = true;
+        this._workflowsErrorMessage = '';
+        loadWorkflowsByProject({ projectId: this._projectId })
+            .then(res => {
+                if (!res || !res.success) {
+                    throw new Error(res?.message || 'Failed to load workflows');
+                }
+                this._workflows = (res.data || []).map(w => ({
+                    id: w.Id,
+                    name: w.Name,
+                    recordStatus: w.RecordStatus__c,
+                    createdDate: w.CreatedDate,
+                    lastModifiedDate: w.LastModifiedDate
+                }));
+            })
+            .catch(err => {
+                this._workflowsErrorMessage = 'Error loading workflows: ' + (err?.body?.message || err?.message || err);
+                this._workflows = [];
+            })
+            .finally(() => { this._workflowsLoading = false; });
+    }
+
+    handleEditWorkflow(event) {
+        const workflowId = event.currentTarget.dataset.workflowId;
+        if (!workflowId) return;
+        this._enterWorkflowEditor(workflowId);
+    }
+
+    _enterWorkflowEditor(workflowId) {
+        this._workflowId = workflowId;
+        localStorage.setItem('workflowId', workflowId);
+        this._loadWorkflow();
+    }
+
+    // ─── CREATE WORKFLOW MODAL ─────────────────────────────────────────────
+    openCreateWorkflowModal() {
+        this.showCreateWorkflowModal = true;
+        this.newWorkflowName = '';
+        this.createWorkflowErrorMessage = '';
+    }
+
+    closeCreateWorkflowModal() {
+        this.showCreateWorkflowModal = false;
+        this.newWorkflowName = '';
+        this.createWorkflowErrorMessage = '';
+        this.isCreatingWorkflow = false;
+    }
+
+    handleNewWorkflowNameChange(event) {
+        this.newWorkflowName = event.target.value;
+        this.createWorkflowErrorMessage = '';
+    }
+
+    handleCreateWorkflowSubmit() {
+        const name = (this.newWorkflowName || '').trim();
+        if (!name) {
+            this.createWorkflowErrorMessage = 'Workflow name is required';
+            return;
+        }
+        if (!this._projectId) {
+            this.createWorkflowErrorMessage = 'Project ID not found. Please select a project first.';
+            return;
+        }
+
+        this.isCreatingWorkflow = true;
+        this.createWorkflowErrorMessage = '';
+
+        createWorkflow({ name, projectId: this._projectId })
+            .then(res => {
+                if (!res || !res.success || !res.data) {
+                    throw new Error(res?.message || 'Failed to create workflow');
+                }
+                const newId = res.data.Id;
+                this.showCreateWorkflowModal = false;
+                this.newWorkflowName = '';
+                this._enterWorkflowEditor(newId);
+            })
+            .catch(err => {
+                this.createWorkflowErrorMessage = err?.body?.message || err?.message || 'An error occurred while creating the workflow';
+            })
+            .finally(() => { this.isCreatingWorkflow = false; });
     }
 
     renderedCallback() {

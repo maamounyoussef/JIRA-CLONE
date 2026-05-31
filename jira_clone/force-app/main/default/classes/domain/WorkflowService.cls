@@ -369,6 +369,28 @@ public with sharing class WorkflowService {
         }
     }
 
+    /**
+     * @description Load every (non-deleted) Workflow for a single Project together
+     * with the basic info needed by the workflow list UI (name, project, record
+     * status, audit fields).
+     * @param projectId - The Project__c record Id to scope the query to
+     * @return List<Workflow__c> ordered by Name ASC
+     */
+    public static List<Workflow__c> loadWorkflowsByProject(String projectId) {
+        try {
+            return [
+                SELECT Id, Name, Project__c, Project__r.Name, RecordStatus__c,
+                       CreatedDate, LastModifiedDate
+                FROM Workflow__c
+                WHERE Project__c = :projectId
+                  AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
+                ORDER BY Name ASC
+            ];
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading workflows for project: ' + ex.getMessage());
+        }
+    }
+
     public static List<WorkflowTransition__c> loadWorkflowDfa(String projectId) {
         try {
             return [
