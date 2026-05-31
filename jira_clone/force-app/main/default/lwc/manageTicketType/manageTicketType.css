@@ -1,0 +1,298 @@
+:host {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+}
+
+.tt-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    background-color: #F4F5F7;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.tt-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tt-header__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.tt-header__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 22px;
+    padding: 0 8px;
+    background-color: #DEEBFF;
+    color: #0747A6;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tt-header__spacer {
+    flex: 1;
+}
+
+/* ── Card / panel ────────────────────────────────────────────────────────── */
+.tt-card {
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(9, 30, 66, 0.25);
+}
+
+.tt-panel {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+.tt-loading {
+    position: relative;
+    min-height: 120px;
+}
+
+/* ── List ────────────────────────────────────────────────────────────────── */
+.tt-list {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.tt-row {
+    display: grid;
+    grid-template-columns: 40px 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    transition: background-color 0.1s ease;
+}
+
+.tt-row + .tt-row {
+    border-top: 1px solid #DFE1E6;
+}
+
+.tt-row:hover {
+    background-color: #FAFBFC;
+}
+
+.tt-row__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #DEEBFF;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tt-row__icon-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tt-row__icon-fallback {
+    font-size: 1.125rem;
+    line-height: 1;
+}
+
+.tt-row__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.tt-row__name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #172B4D;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tt-row__desc {
+    font-size: 0.8125rem;
+    color: #6B778C;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tt-row__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 120px;
+}
+
+.tt-row__meta-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tt-row__meta-value {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #42526E;
+}
+
+.tt-row__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.tt-empty {
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    background-color: #FAFBFC;
+}
+
+.tt-empty__icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.tt-empty__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #42526E;
+    margin: 0;
+}
+
+.tt-empty__hint {
+    font-size: 0.875rem;
+    color: #6B778C;
+    margin: 0;
+}
+
+/* ── Error message (inside modal) ────────────────────────────────────────── */
+.tt-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: #FFEBE6;
+    color: #DE350B;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+}
+
+.tt-error__icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* ── Modal (shared) ──────────────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.54);
+    z-index: 9000;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9001;
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal--sm { width: min(440px, calc(100vw - 32px)); }
+
+.modal__header { padding: 20px 24px 8px; }
+
+.modal__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+}
+
+.modal__content {
+    padding: 8px 24px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal__message {
+    font-size: 0.9375rem;
+    color: #172B4D;
+    margin: 12px 0;
+    line-height: 1.5;
+}
+
+.modal__footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 9100;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 4px 8px rgba(9, 30, 66, 0.25);
+    animation: toast-in 0.15s ease-out;
+    max-width: min(420px, calc(100vw - 32px));
+    color: #FFFFFF;
+}
+
+.toast--default { background-color: #172B4D; }
+.toast--success { background-color: #00875A; }
+.toast--error   { background-color: #DE350B; }
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}

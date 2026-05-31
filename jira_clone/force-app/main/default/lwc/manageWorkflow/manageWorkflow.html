@@ -9,12 +9,12 @@
         <div class="workflow-list-container slds-var-m-around_medium">
             <div class="workflow-list-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-var-m-bottom_medium">
                 <h2 class="slds-text-heading_medium">Workflows</h2>
-                <lightning-button
-                    variant="brand"
+                <c-ao-btn
+                    variant="primary"
                     label="Create New Workflow"
                     icon-name="utility:add"
                     onclick={openCreateWorkflowModal}
-                ></lightning-button>
+                ></c-ao-btn>
             </div>
 
             <template if:true={_workflowsLoading}>
@@ -34,13 +34,13 @@
                                     <div class="slds-text-heading_small">{wf.name}</div>
                                     <div class="slds-text-body_small slds-text-color_weak">{wf.recordStatus}</div>
                                 </div>
-                                <lightning-button
-                                    variant="neutral"
+                                <c-ao-btn
+                                    variant="secondary"
                                     label="Edit"
                                     icon-name="utility:edit"
                                     data-workflow-id={wf.id}
                                     onclick={handleEditWorkflow}
-                                ></lightning-button>
+                                ></c-ao-btn>
                             </div>
                         </li>
                     </template>
@@ -62,11 +62,11 @@
             <div class="modal-container">
                 <div class="modal-header">
                     <h2 class="modal-title">Create New Workflow</h2>
-                    <lightning-button-icon icon-name="utility:close" alternative-text="Close" class="close-button" onclick={closeCreateWorkflowModal}></lightning-button-icon>
+                    <c-ao-btn icon-name="utility:close" variant="bare" title="Close" class="close-button" onclick={closeCreateWorkflowModal}></c-ao-btn>
                 </div>
 
                 <div class="modal-body">
-                    <lightning-input
+                    <c-ao-input
                         type="text"
                         label="Workflow Name"
                         value={newWorkflowName}
@@ -74,7 +74,7 @@
                         class="modal-input"
                         disabled={isCreatingWorkflow}
                         placeholder="Enter Workflow Name"
-                    ></lightning-input>
+                    ></c-ao-input>
 
                     <template if:true={createWorkflowErrorMessage}>
                         <div class="error-message">
@@ -85,8 +85,8 @@
                 </div>
 
                 <div class="modal-footer">
-                    <lightning-button variant="neutral" label="Cancel" onclick={closeCreateWorkflowModal} disabled={isCreatingWorkflow}></lightning-button>
-                    <lightning-button variant="brand" label="Create" onclick={handleCreateWorkflowSubmit} disabled={isCreatingWorkflow}></lightning-button>
+                    <c-ao-btn variant="ghost" label="Cancel" onclick={closeCreateWorkflowModal} disabled={isCreatingWorkflow}></c-ao-btn>
+                    <c-ao-btn variant="primary" label="Create" onclick={handleCreateWorkflowSubmit} disabled={isCreatingWorkflow}></c-ao-btn>
                 </div>
             </div>
         </template>
@@ -108,12 +108,12 @@
 
         <!-- Toolbar -->
         <div class="toolbar">
-            <lightning-button
-                variant="brand"
+            <c-ao-btn
+                variant="primary"
                 label="Create Status"
                 onclick={openCreateStatusModal}
                 icon-name="utility:add"
-            ></lightning-button>
+            ></c-ao-btn>
             <span class="toolbar-info">
                 <template if:true={selectedFromStatus}>
                     <strong>From: {selectedFromStatus.name}</strong>
@@ -285,11 +285,11 @@
             <div class="modal-container">
                 <div class="modal-header">
                     <h2 class="modal-title">Create New Status</h2>
-                    <lightning-button-icon icon-name="utility:close" alternative-text="Close" class="close-button" onclick={closeCreateModal}></lightning-button-icon>
+                    <c-ao-btn icon-name="utility:close" variant="bare" title="Close" class="close-button" onclick={closeCreateModal}></c-ao-btn>
                 </div>
 
                 <div class="modal-body">
-                    <lightning-input
+                    <c-ao-input
                         type="text"
                         label="Status Name"
                         value={newStatusName}
@@ -298,7 +298,7 @@
                         class="modal-input"
                         disabled={isCreatingStatus}
                         placeholder="Enter Status Name"
-                    ></lightning-input>
+                    ></c-ao-input>
 
                     <template if:true={createStatusErrorMessage}>
                         <div class="error-message">
@@ -309,8 +309,8 @@
                 </div>
 
                 <div class="modal-footer">
-                    <lightning-button variant="neutral" label="Cancel" onclick={closeCreateModal} disabled={isCreatingStatus}></lightning-button>
-                    <lightning-button variant="brand" label={createStatusButtonLabel} onclick={handleCreateSubmit} disabled={isCreatingStatus}></lightning-button>
+                    <c-ao-btn variant="ghost" label="Cancel" onclick={closeCreateModal} disabled={isCreatingStatus}></c-ao-btn>
+                    <c-ao-btn variant="primary" label={createStatusButtonLabel} onclick={handleCreateSubmit} disabled={isCreatingStatus}></c-ao-btn>
                 </div>
             </div>
         </template>
@@ -340,7 +340,7 @@
                     </template>
 
                     <!-- Transition Name Input -->
-                    <lightning-input
+                    <c-ao-input
                         type="text"
                         label="Transition Name"
                         placeholder="Enter transition name (e.g., Start Work)"
@@ -348,22 +348,22 @@
                         onchange={handleTransitionNameChange}
                         class="modal-input"
                         disabled={isCreatingTransition}
-                    ></lightning-input>
+                    ></c-ao-input>
 
                     <!-- Action Buttons -->
                     <div class="modal-actions">
-                        <lightning-button
-                            variant="neutral"
+                        <c-ao-btn
+                            variant="ghost"
                             label="Cancel"
                             onclick={closeCreateTransitionModal}
                             disabled={isCreatingTransition}
-                        ></lightning-button>
-                        <lightning-button
-                            variant="brand"
+                        ></c-ao-btn>
+                        <c-ao-btn
+                            variant="primary"
                             label="Create Transition"
                             onclick={handleCreateTransitionSubmit}
                             disabled={isCreatingTransition}
-                        ></lightning-button>
+                        ></c-ao-btn>
                     </div>
                 </div>
             </div>
@@ -380,28 +380,28 @@
                     </h2>
                     <div class="panel-header-actions">
                         <template if:true={transitionCanActivate}>
-                            <lightning-button
-                                variant="success"
+                            <c-ao-btn
+                                variant="primary"
                                 label="Activate"
                                 onclick={handleActivateTransition}
                                 icon-name="utility:check"
                                 disabled={transitionIsActivating}
-                            ></lightning-button>
+                            ></c-ao-btn>
                         </template>
-                        <lightning-button
-                            variant="destructive"
+                        <c-ao-btn
+                            variant="danger"
                             label="Delete"
                             onclick={handleDeleteTransition}
                             icon-name="utility:delete"
                             disabled={transitionIsDeleting}
-                        ></lightning-button>
-                        <lightning-button-icon
+                        ></c-ao-btn>
+                        <c-ao-btn
                             icon-name="utility:close"
-                            alternative-text="Close"
-                            variant="border-filled"
+                            title="Close"
+                            variant="bare"
                             onclick={handleCloseTransitionDetail}
                             class="close-button"
-                        ></lightning-button-icon>
+                        ></c-ao-btn>
                     </div>
                 </div>
 

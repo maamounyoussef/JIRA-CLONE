@@ -147,7 +147,7 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleNewWorkflowNameChange(event) {
-        this.newWorkflowName = event.target.value;
+        this.newWorkflowName = event.detail.value;
         this.createWorkflowErrorMessage = '';
     }
 
@@ -369,7 +369,7 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleStatusNameChange(event) {
-        this.newStatusName = event.target.value;
+        this.newStatusName = event.detail.value;
         this.createStatusErrorMessage = '';
     }
 
@@ -427,7 +427,7 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleTransitionNameChange(event) {
-        this.newTransitionName = event.target.value;
+        this.newTransitionName = event.detail.value;
         this.createTransitionErrorMessage = '';
     }
 

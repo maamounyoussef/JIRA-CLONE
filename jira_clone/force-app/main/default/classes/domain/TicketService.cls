@@ -752,6 +752,26 @@ public with sharing class TicketService {
         }
     }
 
+    public static TicketType__c updateTicketType(String ticketTypeId, String name, String iconUrl, String workflowId) {
+        try {
+            TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
+            ticketType.Name        = name;
+            ticketType.IconUrl__c  = iconUrl;
+            ticketType.Workflow__c = workflowId;
+            update ticketType;
+            return [
+                SELECT Id, Name, Description__c, IconUrl__c, Project__c, RecordStatus__c,
+                       Workflow__c, Workflow__r.Name
+                FROM TicketType__c
+                WHERE Id = :ticketType.Id
+                  AND RecordStatus__c != 'delete'
+                LIMIT 1
+            ];
+        } catch (DmlException ex) {
+            throw new ServiceException('Error updating ticket type: ' + ex.getMessage());
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // TICKET LINKS
     // ═══════════════════════════════════════════════════════════════
