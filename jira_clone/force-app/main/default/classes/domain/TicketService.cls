@@ -752,9 +752,42 @@ public with sharing class TicketService {
         }
     }
 
+    public static TicketType__c deleteTicketType(TicketType__c ticketType) {
+        try {
+            List<Ticket__c> referencingTickets = [
+                SELECT Id
+                FROM Ticket__c
+                WHERE Ticket_Type__c = :ticketType.Id
+                  AND RecordStatus__c != 'delete'
+                LIMIT 1
+            ];
+            DomainCompleteValidator.requireNoTicketsReferenceTicketType(referencingTickets);
+
+            ticketType.RecordStatus__c = 'delete';
+            update ticketType;
+            return ticketType;
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error deleting ticket type: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error deleting ticket type: ' + ex.getMessage());
+        }
+    }
+
     public static TicketType__c updateTicketType(String ticketTypeId, String name, String iconUrl, String workflowId) {
         try {
             TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
+
+            if (ticketType.Workflow__c != workflowId) {
+                List<Ticket__c> referencingTickets = [
+                    SELECT Id
+                    FROM Ticket__c
+                    WHERE Ticket_Type__c = :ticketType.Id
+                      AND RecordStatus__c != 'delete'
+                    LIMIT 1
+                ];
+                DomainCompleteValidator.requireNoTicketsReferenceTicketTypeOnWorkflowChange(referencingTickets);
+            }
+
             ticketType.Name        = name;
             ticketType.IconUrl__c  = iconUrl;
             ticketType.Workflow__c = workflowId;

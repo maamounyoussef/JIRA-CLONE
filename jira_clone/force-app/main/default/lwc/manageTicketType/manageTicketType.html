@@ -194,8 +194,8 @@
                         </p>
                     </div>
                     <div class="modal__footer">
-                        <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseDelete}></c-ao-btn>
-                        <c-ao-btn label="Delete" variant="danger" onclick={handleConfirmDelete}></c-ao-btn>
+                        <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseDelete} disabled={_isDeleting}></c-ao-btn>
+                        <c-ao-btn label="Delete" variant="danger" onclick={handleConfirmDelete} disabled={_isDeleting}></c-ao-btn>
                     </div>
                 </div>
             </template>

@@ -13,7 +13,7 @@ public with sharing class ManageWorkflowPageController {
      * @param workflowId - The Workflow record Id
      * @return APIResponse containing WorkflowConfigDTO in data attribute
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled(cacheable=false)
     public static APIResponse getWorkflow(String workflowId) {
         try {
             if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
@@ -118,6 +118,31 @@ public with sharing class ManageWorkflowPageController {
             );
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating workflow: ' + ex.getMessage());
+        }
+    }
+
+    /**
+     * @description Activate every pending WorkflowTransition for the given
+     * Workflow. Triggered by the Update Workflow button in step 3 of the
+     * manage workflow page.
+     * @param workflowId - The Workflow__c record Id
+     * @return APIResponse with the number of activated transitions in data
+     */
+    @AuraEnabled
+    public static APIResponse updateFullWorkflowTransition(String workflowId) {
+        try {
+            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
+
+            DomainCorrectness.requireWorkflowExists(workflowId);
+
+            Integer activatedCount = WorkflowService.updateFullWorkflowTransition(workflowId);
+            return new APIResponse(
+                true,
+                activatedCount + ' pending transition(s) activated successfully',
+                activatedCount
+            );
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error activating pending workflow transitions: ' + ex.getMessage());
         }
     }
 

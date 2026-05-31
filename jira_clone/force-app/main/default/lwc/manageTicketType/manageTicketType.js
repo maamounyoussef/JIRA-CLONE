@@ -1,8 +1,10 @@
 import { LightningElement, track } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import loadTicketTypesByProject from '@salesforce/apex/ManageTicketTypeController.loadTicketTypesByProject';
 import loadWorkflowsByProject   from '@salesforce/apex/ManageTicketTypeController.loadWorkflowsByProject';
 import createTicketTypeApex     from '@salesforce/apex/ManageTicketTypeController.createTicketType';
 import updateTicketTypeApex     from '@salesforce/apex/ManageTicketTypeController.updateTicketType';
+import deleteTicketTypeApex     from '@salesforce/apex/ManageTicketTypeController.deleteTicketType';
 
 const TOAST_VISIBLE_MS = 2600;
 
@@ -33,6 +35,7 @@ export default class TicketType extends LightningElement {
 
     // delete modal
     @track _deletingTicketType  = null;
+    @track _isDeleting          = false;
 
     // toast
     @track _toast       = null;
@@ -233,15 +236,41 @@ export default class TicketType extends LightningElement {
 
     handleCloseDelete() {
         this._deletingTicketType = null;
+        this._isDeleting         = false;
     }
 
     handleConfirmDelete() {
         const tt = this._deletingTicketType;
         if (!tt) return;
-        // eslint-disable-next-line no-console
-        console.log('delete ticket type', { id: tt.Id, name: tt.Name, projectId: tt.Project__c });
-        this._showToast('default', `Delete "${tt.Name}" — not implemented yet (logged to console)`);
-        this._deletingTicketType = null;
+
+        this._isDeleting = true;
+        deleteTicketTypeApex({ ticketTypeId: tt.Id })
+            .then(res => {
+                if (!res || !res.success) {
+                    this.dispatchEvent(new ShowToastEvent({
+                        title: 'Error',
+                        message: (res && res.message) || 'Failed to delete ticket type',
+                        variant: 'error'
+                    }));
+                    return;
+                }
+                const deletedName = tt.Name;
+                this._ticketTypes = this._ticketTypes.filter(x => x.Id !== tt.Id);
+                this._deletingTicketType = null;
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Success',
+                    message: `Ticket type "${deletedName}" deleted`,
+                    variant: 'success'
+                }));
+            })
+            .catch(err => {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Error',
+                    message: this._readErr(err),
+                    variant: 'error'
+                }));
+            })
+            .finally(() => { this._isDeleting = false; });
     }
 
     get showDeleteModal() { return this._deletingTicketType !== null; }

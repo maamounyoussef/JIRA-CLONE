@@ -7,12 +7,12 @@ import activateWorkflowTransition from '@salesforce/apex/ManageWorkflowPageContr
 import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.deleteWorkflowTransition';
 import loadWorkflowsByProject   from '@salesforce/apex/ManageWorkflowPageController.loadWorkflowsByProject';
 import createWorkflow           from '@salesforce/apex/ManageWorkflowPageController.createWorkflow';
+import updateFullWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.updateFullWorkflowTransition';
 
 import { validateStatusName, validateTransition, validateTransitionName } from './workflowValidator';
 import {
     VISUALIZATION_CONFIG,
     getResponsiveConfig,
-    normalizeWorkflowData,
     gatherSortedStatuses,
     transitionFromApex,
     calculatePositions,
@@ -48,7 +48,12 @@ export default class ManageWorkflow extends LightningElement {
     @track createWorkflowErrorMessage    = '';
 
     /*
-     * Principal de-normalized state. Shape (from getWorkflow / WorkflowConfigDTO):
+     * Principal de-normalized state — single source of truth for the active
+     * workflow editor. Inherent fields plus the related objects (statuses and
+     * transitions) all live here. Anything reachable from this shape is exposed
+     * as a derived getter; nothing about the editor is stored twice.
+     *
+     * Shape (from getWorkflow / WorkflowConfigDTO):
      * {
      *   id,
      *   projectStatus: [ { id, name } ],
@@ -57,16 +62,10 @@ export default class ManageWorkflow extends LightningElement {
      */
     @track workflowData = null;
 
-    // Computed presentation geometry (recomputed by processWorkflowData()).
-    @track sortedStatuses         = [];
-    @track statusPositions        = {};
-    @track activeTransitionLines  = [];
-    @track pendingTransitionLines = [];
-
-    // Responsive SVG config.
-    config = VISUALIZATION_CONFIG;
-    _resizeObserver    = null;
-    _lastMeasuredWidth = 0;
+    // Responsive SVG config — reassigned (immutable) by the ResizeObserver below.
+    @track config       = VISUALIZATION_CONFIG;
+    _resizeObserver     = null;
+    _lastMeasuredWidth  = 0;
 
     // ─── LIFECYCLE ─────────────────────────────────────────────────────────
     connectedCallback() {
@@ -132,6 +131,41 @@ export default class ManageWorkflow extends LightningElement {
         this._loadWorkflow();
     }
 
+    handleBackToWorkflowList() {
+        this._workflowId = null;
+        localStorage.removeItem('workflowId');
+        this.workflowData = null;
+        this.errorMessage = '';
+        this.handleCloseTransitionDetail();
+        this._loadWorkflowsForProject();
+    }
+
+    handleUpdateWorkflow() {
+        // eslint-disable-next-line no-console
+        console.log('Current workflow id:', this._workflowId);
+
+        if (!this._workflowId) {
+            this.errorMessage = 'Workflow ID not found';
+            return;
+        }
+
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        updateFullWorkflowTransition({ workflowId: this._workflowId })
+            .then(res => {
+                if (!res || !res.success) {
+                    throw new Error(res?.message || 'Failed to update workflow');
+                }
+                this._activatePendingTransitions();
+                this.handleBackToWorkflowList();
+            })
+            .catch(err => {
+                this.errorMessage = 'Error updating workflow: ' + (err?.body?.message || err?.message || err);
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
     // ─── CREATE WORKFLOW MODAL ─────────────────────────────────────────────
     openCreateWorkflowModal() {
         this.showCreateWorkflowModal = true;
@@ -189,10 +223,10 @@ export default class ManageWorkflow extends LightningElement {
                     for (const entry of entries) {
                         const width = entry.contentRect.width;
                         // Only recalculate if width changed meaningfully (> 20px).
+                        // Reassigning `this.config` re-runs the derived geometry getters.
                         if (Math.abs(width - this._lastMeasuredWidth) > 20) {
                             this._lastMeasuredWidth = width;
                             this.config = getResponsiveConfig(width);
-                            this.processWorkflowData();
                         }
                     }
                 });
@@ -218,7 +252,6 @@ export default class ManageWorkflow extends LightningElement {
                     throw new Error(res?.message || 'Failed to load workflow');
                 }
                 this.workflowData = res.data;
-                this.processWorkflowData();
             })
             .catch(err => {
                 this.errorMessage = 'Error loading workflow: ' + (err?.body?.message || err?.message || err);
@@ -226,35 +259,67 @@ export default class ManageWorkflow extends LightningElement {
             .finally(() => { this.isLoading = false; });
     }
 
+    // ─── PRINCIPAL-STATE CRUD ──────────────────────────────────────────────
+    // The workflow lives in `workflowData`. Everything else in the editor
+    // reads it through these accessors / writes it through these mutators —
+    // no inline `workflowData.workflow.transitions` access anywhere else.
+    get _statuses()    { return this.workflowData?.projectStatus || []; }
+    get _transitions() { return this.workflowData?.workflow?.transitions || []; }
+
+    _addStatus(status) {
+        if (!this.workflowData) return;
+        this.workflowData = { ...this.workflowData, projectStatus: [...this._statuses, status] };
+    }
+    _addPendingTransition({ id, name, fromStatus, toStatus }) {
+        this._writeTransitions([
+            ...this._transitions,
+            { id, name, fromStatus, toStatus, recordStatus: 'pending' }
+        ]);
+    }
+    _setTransitionRecordStatus(id, recordStatus) {
+        this._writeTransitions(this._transitions.map(t =>
+            this._matchesId(t, id) ? { ...t, recordStatus } : t
+        ));
+    }
+    _activatePendingTransitions() {
+        this._writeTransitions(this._transitions.map(t =>
+            t.recordStatus === 'pending' ? { ...t, recordStatus: 'active' } : t
+        ));
+    }
+    _removeTransition(id) {
+        this._writeTransitions(this._transitions.filter(t => !this._matchesId(t, id)));
+    }
+    _writeTransitions(transitions) {
+        if (!this.workflowData) return;
+        this.workflowData = {
+            ...this.workflowData,
+            workflow: { ...this.workflowData.workflow, transitions }
+        };
+    }
+
     // ─── DERIVED GEOMETRY ──────────────────────────────────────────────────
-    /**
-     * Recompute the SVG-renderable geometry from the principal state + config.
-     * Called on load, after every workflowData mutation, and on resize.
-     */
-    processWorkflowData() {
-        if (!this.workflowData || (!this.workflowData.projectStatus && !this.workflowData.workflow)) {
-            this.sortedStatuses = [];
-            this.statusPositions = {};
-            this.activeTransitionLines = [];
-            this.pendingTransitionLines = [];
-            return;
-        }
+    // Pure projections of `workflowData` + `config`. No stored copies; the
+    // template re-reads them on each render.
+    get sortedStatuses() {
+        return this.workflowData
+            ? gatherSortedStatuses({ projectStatus: this._statuses, workflow: { transitions: this._transitions } })
+            : [];
+    }
+    get statusPositions()        { return calculatePositions(this.sortedStatuses, this.config); }
+    get activeTransitionLines()  { return this.findActiveTransitionLines(); }
+    get pendingTransitionLines() { return this.findPendingTransitionLines(); }
 
-        const normalized = normalizeWorkflowData(this.workflowData);
-        const allTransitions = normalized.workflow.transitions;
-
-        this.sortedStatuses  = gatherSortedStatuses(normalized);
-        this.statusPositions = calculatePositions(this.sortedStatuses, this.config);
-
-        const active  = allTransitions.filter(t => t.recordStatus === 'active');
-        const pending = allTransitions.filter(t => t.recordStatus === 'pending');
-
-        this.activeTransitionLines  = calculateTransitionLines({ workflow: { transitions: active } }, this.statusPositions, this.config);
-        this.pendingTransitionLines = calculateTransitionLines({ workflow: { transitions: pending } }, this.statusPositions, this.config);
+    findActiveTransitionLines() {
+        const transitions = this._transitions.filter(t => t.recordStatus === 'active');
+        return calculateTransitionLines({ workflow: { transitions } }, this.statusPositions, this.config);
+    }
+    findPendingTransitionLines() {
+        const transitions = this._transitions.filter(t => t.recordStatus === 'pending');
+        return calculateTransitionLines({ workflow: { transitions } }, this.statusPositions, this.config);
     }
 
     // ─── GETTERS ───────────────────────────────────────────────────────────
-    get hasStatuses()      { return this.sortedStatuses && this.sortedStatuses.length > 0; }
+    get hasStatuses()      { return this.sortedStatuses.length > 0; }
     get startPointRadius() { return this.config.startPointRadius || 5; }
     get endPointRadius()   { return this.config.endPointRadius || 5; }
     get rectRadius()       { return this.config.rectRadius || 10; }
@@ -262,58 +327,6 @@ export default class ManageWorkflow extends LightningElement {
     get markerArrow()      { return getMarkerArrow(); }
     get statusesWithSVGData() {
         return getStatusesWithSVGData(this.sortedStatuses, this.statusPositions, this.config, this.clickedStatusIds);
-    }
-
-    // ─── PRINCIPAL-STATE MUTATORS ──────────────────────────────────────────
-    _addStatusToWorkflow(status) {
-        if (!this.workflowData) return;
-        this.workflowData = {
-            ...this.workflowData,
-            projectStatus: this.workflowData.projectStatus
-                ? [...this.workflowData.projectStatus, status]
-                : [status]
-        };
-        this.processWorkflowData();
-    }
-
-    _addTransitionToWorkflow(transition) {
-        const existing = this.workflowData?.workflow?.transitions || [];
-        this.workflowData = {
-            ...this.workflowData,
-            workflow: {
-                ...this.workflowData.workflow,
-                transitions: [...existing, transition]
-            }
-        };
-        this.processWorkflowData();
-    }
-
-    _updateTransitionRecordStatus(transitionId, recordStatus) {
-        const transitions = this.workflowData?.workflow?.transitions;
-        if (!Array.isArray(transitions)) return;
-        this.workflowData = {
-            ...this.workflowData,
-            workflow: {
-                ...this.workflowData.workflow,
-                transitions: transitions.map(t =>
-                    this._matchesId(t, transitionId) ? { ...t, recordStatus } : t
-                )
-            }
-        };
-        this.processWorkflowData();
-    }
-
-    _removeTransitionFromWorkflow(transitionId) {
-        const transitions = this.workflowData?.workflow?.transitions;
-        if (!Array.isArray(transitions)) return;
-        this.workflowData = {
-            ...this.workflowData,
-            workflow: {
-                ...this.workflowData.workflow,
-                transitions: transitions.filter(t => !this._matchesId(t, transitionId))
-            }
-        };
-        this.processWorkflowData();
     }
 
     _matchesId(t, id) {
@@ -398,7 +411,7 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res.success || !res.data) {
                     throw new Error(res.message || 'Failed to create status');
                 }
-                this._addStatusToWorkflow({ id: res.data.Id, name: res.data.Name });
+                this._addStatus({ id: res.data.Id, name: res.data.Name });
                 this.clickedStatusIds = clearClicks();
                 this.showCreateModal = false;
             })
@@ -459,12 +472,11 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res.success || !res.data) {
                     throw new Error(res.message || 'Failed to create transition');
                 }
-                this._addTransitionToWorkflow({
+                this._addPendingTransition({
                     id: res.data.Id,
                     name: this.newTransitionName,
                     fromStatus: this.selectedFromStatus.id,
-                    toStatus: this.selectedToStatus.id,
-                    recordStatus: 'pending'
+                    toStatus: this.selectedToStatus.id
                 });
                 this.clickedStatusIds = clearClicks();
                 this.closeCreateTransitionModal();
@@ -547,7 +559,7 @@ export default class ManageWorkflow extends LightningElement {
                 if (res && res.success && res.data) {
                     this.transitionData = transitionFromApex(res.data);
                     // Prefer the locally-known recordStatus (e.g. just activated).
-                    const local = this.workflowData?.workflow?.transitions?.find(t => this._matchesId(t, this.selectedTransitionId));
+                    const local = this._transitions.find(t => this._matchesId(t, this.selectedTransitionId));
                     const localRecordStatus = local && (local.recordStatus || local.RecordStatus__c || local.RecordStatus);
                     if (localRecordStatus && localRecordStatus !== this.transitionData.recordStatus) {
                         this.transitionData = { ...this.transitionData, recordStatus: localRecordStatus };
@@ -579,7 +591,7 @@ export default class ManageWorkflow extends LightningElement {
                 }
                 this.transitionSuccessMessage = 'Transition activated successfully!';
                 this.transitionData = { ...this.transitionData, recordStatus: 'active' };
-                this._updateTransitionRecordStatus(this.transitionData.id, 'active');
+                this._setTransitionRecordStatus(this.transitionData.id, 'active');
                 this.handleCloseTransitionDetail();
             })
             .catch(err => {
@@ -609,7 +621,7 @@ export default class ManageWorkflow extends LightningElement {
                     throw new Error(res?.message || 'Failed to delete transition');
                 }
                 this.transitionSuccessMessage = 'Transition deleted successfully!';
-                this._removeTransitionFromWorkflow(this.transitionData.id);
+                this._removeTransition(this.transitionData.id);
                 this.handleCloseTransitionDetail();
             })
             .catch(err => {

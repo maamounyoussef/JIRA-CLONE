@@ -82,4 +82,17 @@ public with sharing class ManageTicketTypeController {
             return new APIResponse(false, 'Error updating ticket type: ' + ex.getMessage());
         }
     }
+
+    @AuraEnabled
+    public static APIResponse deleteTicketType(String ticketTypeId) {
+        try {
+            if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
+
+            TicketType__c existing = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
+            TicketService.deleteTicketType(existing);
+            return new APIResponse(true, 'Ticket type deleted', existing.Id);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error deleting ticket type: ' + ex.getMessage());
+        }
+    }
 }

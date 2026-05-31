@@ -298,6 +298,29 @@ public with sharing class WorkflowService {
 
     public static void deleteWorkflowTransition(WorkflowTransition__c transition) {
         try {
+            // Active transitions guard tickets currently in their FromStatus —
+            // verify none would be stranded before allowing the soft delete.
+            if (transition.RecordStatus__c == WorkflowConstants.RECORD_STATUS_ACTIVE) {
+                List<TicketType__c> ticketTypes = [
+                    SELECT Id
+                    FROM TicketType__c
+                    WHERE Workflow__c = :transition.Workflow__c
+                      AND RecordStatus__c != 'delete'
+                ];
+
+                if (!ticketTypes.isEmpty()) {
+                    Set<Id> ticketTypeIds = new Map<Id, TicketType__c>(ticketTypes).keySet();
+                    List<Ticket__c> ticketsInFromStatus = [
+                        SELECT Id
+                        FROM Ticket__c
+                        WHERE Ticket_Type__c IN :ticketTypeIds
+                          AND CurrentState__c = :transition.FromStatus__c
+                          AND RecordStatus__c != 'delete'
+                    ];
+                    DomainCompleteValidator.requireNoTicketsInTransitionFromStatus(ticketsInFromStatus);
+                }
+            }
+
             transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
             updateRecord(transition);
         } catch (Exception ex) {
@@ -426,6 +449,31 @@ public with sharing class WorkflowService {
         }
 
         return null;
+    }
+
+    /**
+     * @description Activate every pending WorkflowTransition for a workflow in
+     * one shot. Single SOQL fetch + single DML update — bulk-safe.
+     * @param workflowId - The Workflow__c record Id
+     * @return Number of transitions activated
+     */
+    public static Integer updateFullWorkflowTransition(String workflowId) {
+        try {
+            List<WorkflowTransition__c> pendingTransitions = getPendingTransitions(workflowId);
+
+            if (pendingTransitions.isEmpty()) {
+                return 0;
+            }
+
+            for (WorkflowTransition__c transition : pendingTransitions) {
+                transition.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
+            }
+
+            updateRecords(pendingTransitions);
+            return pendingTransitions.size();
+        } catch (Exception ex) {
+            throw new ServiceException('Error activating pending workflow transitions: ' + ex.getMessage());
+        }
     }
 
     public static void updateWorkflow(Workflow__c workflow) {

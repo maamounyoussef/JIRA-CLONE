@@ -109,10 +109,22 @@
         <!-- Toolbar -->
         <div class="toolbar">
             <c-ao-btn
+                variant="secondary"
+                label="Back"
+                onclick={handleBackToWorkflowList}
+                icon-name="utility:back"
+            ></c-ao-btn>
+            <c-ao-btn
                 variant="primary"
                 label="Create Status"
                 onclick={openCreateStatusModal}
                 icon-name="utility:add"
+            ></c-ao-btn>
+            <c-ao-btn
+                variant="secondary"
+                label="Update Workflow"
+                onclick={handleUpdateWorkflow}
+                icon-name="utility:edit"
             ></c-ao-btn>
             <span class="toolbar-info">
                 <template if:true={selectedFromStatus}>

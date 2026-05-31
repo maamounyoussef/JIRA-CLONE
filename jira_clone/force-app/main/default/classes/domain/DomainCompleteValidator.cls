@@ -116,6 +116,35 @@ public with sharing class DomainCompleteValidator {
         }
     }
 
+    /**
+     * A TicketType cannot be deleted while at least one Ticket still
+     * references it via Ticket__c.Ticket_Type__c (FK guard).
+     * Caller queries the referencing tickets and passes the result.
+     */
+    public static void requireNoTicketsReferenceTicketType(List<Ticket__c> referencingTickets) {
+        if (!referencingTickets.isEmpty()) {
+            throw new ServiceException(
+                'Cannot delete Ticket Type: ' + referencingTickets.size() +
+                ' Ticket(s) still reference it'
+            );
+        }
+    }
+
+    /**
+     * The Workflow of a TicketType cannot be changed while at least one Ticket
+     * still references that TicketType — switching workflows would strand the
+     * tickets in statuses that may not exist in the new workflow.
+     * Caller queries the referencing tickets and passes the result.
+     */
+    public static void requireNoTicketsReferenceTicketTypeOnWorkflowChange(List<Ticket__c> referencingTickets) {
+        if (!referencingTickets.isEmpty()) {
+            throw new ServiceException(
+                'Cannot change Workflow: ' + referencingTickets.size() +
+                ' Ticket(s) still reference this Ticket Type'
+            );
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // WORKFLOW — transition availability
     // ═══════════════════════════════════════════════════════════════
@@ -148,6 +177,40 @@ public with sharing class DomainCompleteValidator {
     public static void requireToStatusNotStart(Status__c toStatus) {
         if (toStatus.isStart__c) {
             throw new ServiceException('Cannot create a transition to the start (todo) status');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW — deletion guards
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * A Workflow cannot be deleted while at least one TicketType still
+     * references it via TicketType__c.Workflow__c (FK guard).
+     * Caller queries the referencing ticket types and passes the result.
+     */
+    public static void requireNoTicketTypesReferenceWorkflow(List<TicketType__c> referencingTicketTypes) {
+        if (!referencingTicketTypes.isEmpty()) {
+            throw new ServiceException(
+                'Cannot delete Workflow: ' + referencingTicketTypes.size() +
+                ' Ticket Type(s) still reference it'
+            );
+        }
+    }
+
+    /**
+     * An active Workflow Transition cannot be deleted while at least one
+     * Ticket — belonging to a TicketType bound to the parent Workflow —
+     * currently sits in the transition's FromStatus. Deleting it would
+     * strand those tickets in a status with no outgoing path.
+     * Caller queries the offending tickets and passes the result.
+     */
+    public static void requireNoTicketsInTransitionFromStatus(List<Ticket__c> ticketsInFromStatus) {
+        if (!ticketsInFromStatus.isEmpty()) {
+            throw new ServiceException(
+                'Cannot delete active Workflow Transition: ' + ticketsInFromStatus.size() +
+                ' ticket(s) are currently in its From Status'
+            );
         }
     }
 
