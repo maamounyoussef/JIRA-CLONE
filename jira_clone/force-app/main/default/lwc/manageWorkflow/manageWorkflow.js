@@ -137,7 +137,21 @@ export default class ManageWorkflow extends LightningElement {
         this.workflowData = null;
         this.errorMessage = '';
         this.handleCloseTransitionDetail();
+        // The visualizer container is about to unmount. Drop the ResizeObserver
+        // bound to the old DOM node and reset responsive state so the next entry
+        // re-measures the freshly-mounted container instead of inheriting stale
+        // dimensions (which caused the SVG viewBox to mis-match the new width).
+        this._teardownResizeObserver();
         this._loadWorkflowsForProject();
+    }
+
+    _teardownResizeObserver() {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+        this._lastMeasuredWidth = 0;
+        this.config = VISUALIZATION_CONFIG;
     }
 
     handleUpdateWorkflow() {
@@ -236,10 +250,7 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     disconnectedCallback() {
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-            this._resizeObserver = null;
-        }
+        this._teardownResizeObserver();
     }
 
     // ─── APEX CALLS ────────────────────────────────────────────────────────
