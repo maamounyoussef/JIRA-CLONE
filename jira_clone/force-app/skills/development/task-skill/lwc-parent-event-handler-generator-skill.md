@@ -32,6 +32,28 @@ data drift the day a second user edits the same record.
 
 ## Instructions
 
+### Step 0 — Run `lwc-architecture` first (MANDATORY)
+
+Before any interview question in this skill, you MUST follow the
+**`lwc-architecture`** skill
+(`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
+That umbrella skill settles the architectural decisions BEFORE any UI
+behavior is implemented:
+
+- Page vs. child (or inline section) — Q1
+- Principal state shape — Q2
+- `localStorage` entry keys + load call — Q3
+- Apex methods: exist or to-create (+ Service + guards + test) — Q4
+- Event names + payloads (children) — Q5
+- Sidecar `<feature>Utils.js` / `<feature>Validator.js` needs — Step 2
+- `meta.xml` exposure + targets — Step 2
+
+Only after the `lwc-architecture` handoff checklist (its Step 4) is green do
+you proceed to Step 1 of this skill. Never start the per-event interview
+without those decisions settled — Steps 1–4 here assume them.
+
+---
+
 ### Step 1 — Detect the interview entry point
 
 Before writing any handler, identify which child + event pair the work targets.
@@ -209,6 +231,30 @@ it before emitting code:
 | 8 | On Apex failure, is a `ShowToastEvent` dispatched? (Rule 6) | Add the toast in the `.then()` failure branch. |
 | 9 | When updating, are all levels on the path to the leaf spread, and is `_key` regenerated to flag the change? (Rule 7) | Apply the spread pattern; use `Id` to find, `_key` to flag. |
 | 10 | Does every dispatched event from the child have a handler wired via `onxxx={handler}` in the template? | Add the missing `on<event>={handle<Child><Event>}` attribute. |
+
+---
+
+### Step 5 — Optionally apply `lwc-css-design`
+
+After the handlers are emitted and accepted, ASK the user via the
+interactive `AskUserQuestion` tool (NOT plain text) whether to also apply
+the **`lwc-css-design`** skill
+(`force-app/skills/development/architecture/lwc-css-design.md`) to style any
+new parent-side UI that surfaces these handlers (toasts, error banners,
+loading overlays, modals, peek panels, bulk bars). Frame it as a single
+yes/no choice (e.g. "Apply the project's CSS design system to the new
+parent-side UI now?" with options "Yes, apply lwc-css-design" / "No, skip
+styling").
+
+- Yes → follow `lwc-css-design` end-to-end: produce/update the parent
+  `.css` file using the project's Atlassian/Jira palette, type scale,
+  spacing, BEM naming, interactive-state recipes, and shared patterns
+  (modal, peek panel, error banner, empty state, bulk bar, drag-and-drop).
+- No → exit this skill.
+
+Never invent CSS without invoking `lwc-css-design` — it codifies the
+project's visual language so new parent-side UI blends with the rest of
+`manageBacklog` / `manageWorkflow` without any visual tuning.
 
 ---
 

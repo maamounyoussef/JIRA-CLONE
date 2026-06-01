@@ -13,6 +13,28 @@ the architecture and silently leak business logic into the view.
 
 ## Instructions
 
+### Step 0 — Run `lwc-architecture` first (MANDATORY)
+
+Before any interview question in this skill, you MUST follow the
+**`lwc-architecture`** skill
+(`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
+That umbrella skill settles the architectural decisions BEFORE any UI
+behavior is implemented:
+
+- Page vs. child (or inline section) — Q1
+- Principal state shape — Q2
+- `localStorage` entry keys + load call — Q3
+- Apex methods: exist or to-create (+ Service + guards + test) — Q4
+- Event names + payloads (children) — Q5
+- Sidecar `<feature>Utils.js` / `<feature>Validator.js` needs — Step 2
+- `meta.xml` exposure + targets — Step 2
+
+Only after the `lwc-architecture` handoff checklist (its Step 4) is green do
+you proceed to Step 1 of this skill. Never start the per-sub-component
+interview without those decisions settled — Steps 1–4 here assume them.
+
+---
+
 ### Step 1 — Detect the interview entry point
 
 Before writing any code, identify which branch of the interview applies. If
@@ -158,6 +180,28 @@ any row fails, fix it before emitting code:
 | 7 | Does every dispatched event carry the right payload shape (Create / Update / Delete / Load)? | See "Event payload shapes" in Resources. |
 | 8 | Is every value bound in the template exposed through a getter (never a raw class field)? | Wrap in a `get xxx() { return this._xxx; }`. |
 | 9 | Does each user story map to at least one task and one dispatched event? | Report the gap and ask the user to resolve it BEFORE coding. |
+
+---
+
+### Step 5 — Optionally apply `lwc-css-design`
+
+After the code is emitted and accepted, ASK the user via the interactive
+`AskUserQuestion` tool (NOT plain text) whether to also apply the
+**`lwc-css-design`** skill
+(`force-app/skills/development/architecture/lwc-css-design.md`) to style the
+new child template. Frame it as a single yes/no choice (e.g. "Apply the
+project's CSS design system to the new child component now?" with options
+"Yes, apply lwc-css-design" / "No, skip styling").
+
+- Yes → follow `lwc-css-design` end-to-end: produce the `<childName>.css`
+  file using the project's Atlassian/Jira palette, type scale, spacing, BEM
+  naming, interactive-state recipes, and shared patterns (modal, peek panel,
+  error banner, empty state, bulk bar, drag-and-drop).
+- No → exit this skill.
+
+Never invent CSS without invoking `lwc-css-design` — it codifies the
+project's visual language so a new child drops in next to `ticketView` /
+`manageBacklog` / `aoBtn` without any visual tuning.
 
 ---
 

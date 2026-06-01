@@ -57,6 +57,28 @@ the sub-skills.
 
 ## Instructions
 
+### Step 0 — Run `lwc-architecture` first (MANDATORY)
+
+Before any question, scaffold step, or iteration in this skill, you MUST
+follow the **`lwc-architecture`** skill
+(`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
+That umbrella skill settles the architectural decisions BEFORE any UI
+behavior is implemented:
+
+- Page vs. child (or inline section) — Q1
+- Principal state shape — Q2
+- `localStorage` entry keys + load call — Q3
+- Apex methods: exist or to-create (+ Service + guards + test) — Q4
+- Event names + payloads (children) — Q5
+- Sidecar `<feature>Utils.js` / `<feature>Validator.js` needs — Step 2
+- `meta.xml` exposure + targets — Step 2
+
+Only after the `lwc-architecture` handoff checklist (its Step 4) is green do
+you proceed to Step 1 of this skill. Never start scaffolding or the outer
+iteration loop without those decisions settled — Steps 1–3 here assume them.
+
+---
+
 ### Step 1 — Confirm the entry point and scaffold the new parent
 
 Before the loop starts, confirm BOTH conditions are true:
@@ -200,6 +222,28 @@ iterations. If any row fails, fix it before exiting.
 | 5 | Are derived child props exposed as getters (never duplicated into a new `@track` data state)? | Replace the `@track` with `get childProp() { return ...; }`. |
 | 6 | Does every Apex method referenced by any iteration actually exist (Branch A/B) or get created via the Creation Sub-Loop (Branch C)? Branches A/B/C are defined once in [shared/apex-method-resolution.md](./shared/apex-method-resolution.md) and reused by path A's Step 2.7 and path B's Step 10. | Run the shared Creation Sub-Loop ([shared/apex-method-resolution.md](./shared/apex-method-resolution.md)) for any unresolved method. |
 | 7 | Are project-wide instructions satisfied? — bulkified Apex (`apex-bulk-soql`), soft-delete filter on `RecordStatus__c`-bearing objects (`soql-exclude-deleted`), required-fields per `OBJECT_VALIDATION_LWC_APEX.md` (`object-required-fields`), and the thin controller → Service → `APIResponse` layering (`lwc-architecture`). | Apply the named skill on the offending code path. |
+
+---
+
+### Step 4 — Optionally apply `lwc-css-design`
+
+After the final verification passes (the user picked path C and Step 3 is
+green), ASK the user via the interactive `AskUserQuestion` tool (NOT plain
+text) whether to also apply the **`lwc-css-design`** skill
+(`force-app/skills/development/architecture/lwc-css-design.md`) to style the
+new parent. Frame it as a single yes/no choice (e.g. "Apply the project's
+CSS design system to the new parent component now?" with options "Yes,
+apply lwc-css-design" / "No, skip styling").
+
+- Yes → follow `lwc-css-design` end-to-end: produce the `<componentName>.css`
+  file using the project's Atlassian/Jira palette, type scale, spacing, BEM
+  naming, interactive-state recipes, and shared patterns (modal, peek panel,
+  error banner, empty state, bulk bar, drag-and-drop).
+- No → exit this skill.
+
+Never invent CSS without invoking `lwc-css-design` — it codifies the
+project's visual language so a new parent drops in next to `manageBacklog` /
+`manageWorkflow` without any visual tuning.
 
 ---
 
