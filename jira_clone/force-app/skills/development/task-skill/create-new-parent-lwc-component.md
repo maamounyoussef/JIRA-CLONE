@@ -1,36 +1,15 @@
 ---
 name: create-new-parent-lwc-component
 description: >
-  Build a brand-new parent ("pather") LWC component from scratch by driving an
-  outer iteration loop that, on each pass, asks the user to pick ONE of three
-  paths — (A) add a new functionality, (B) handle a child-dispatched event, or
-  (C) stop — and then delegates to the matching sub-skill for that path. Path A
-  delegates to `add-interactive-with-data-persistance-functionality-in-pather`,
-  but its "parent must already use Apex" entry check is intentionally
-  suppressed because this skill is for a brand-new parent that has not yet
-  introduced Apex. Path B delegates to `lwc-parent-event-handler-generator`.
-  Path C ends the loop and the skill exits.
-
-  TRIGGER (apply silently) when the user asks to **create a new parent LWC
-  component** (a.k.a. "pather"): phrasings include "create a new parent LWC",
-  "scaffold a new pather", "I want to build a new parent component for X",
-  "make a new container LWC that will hold sub-components", or the user names
-  a new component name + path that does not yet exist in
-  `force-app/main/default/lwc/`.
-
-  TRIGGER EXAMPLES:
-  - "create a new LWC" / "create a new component" / "make a new LWC called X"
-  - "create a new page" / "build a new Salesforce page for X" / "I need a new page component"
-  - "create a new pather" / "scaffold a new pather" / "I need a new parent component"
-  - "build a container component that holds [child components]"
-  - "I want a new LWC dashboard / form / layout for X"
-  - User provides a component name that does not exist yet under `force-app/main/default/lwc/`
-
-  SKIP when the work targets an **existing** parent (use
-  `add-interactive-with-data-persistance-functionality-in-pather` directly),
-  when the work belongs in a **child** component (use `lwc-child`), or when
-  the change is template-only (CSS / label text / layout) and does not involve
-  any new functionality or any new child-event wiring.
+  Contains the brand-new-parent ("pather") scaffold steps (component name,
+  path, initial `.js` / `.html` / `.js-meta.xml`, lazy
+  `<name>Validator.js`) and the outer iteration loop that, on each pass, asks
+  the user to pick one of three paths — (A) add a new functionality, delegated
+  to `add-interactive-with-data-persistance-functionality-in-pather` (with its
+  "parent must already use Apex" entry check suppressed), (B) handle a
+  child-dispatched event, delegated to `lwc-parent-event-handler-generator`,
+  or (C) stop and run the final verification checklist. Also contains the
+  optional `lwc-css-design` handoff at exit.
 ---
 
 # Create New Parent LWC Component
@@ -91,7 +70,7 @@ Before the loop starts, confirm BOTH conditions are true:
 If either check fails, this is not the right skill:
 
 - Existing parent → use
-  [add-interactive-with-data-persistance-functionality-in-pather](./add-interactive-with-data-persistance-functionality-in-pather-skill.md).
+  [add-interactive-with-data-persistance-functionality-in-pather](./add-interactive-with-data-persistance-functionality-in-pather.md).
 - Child-only work → use the `lwc-child` skill.
 - Template-only change → no skill needed.
 
@@ -155,7 +134,7 @@ choices.
 #### Path A — Add a new functionality
 
 Delegate to
-[add-interactive-with-data-persistance-functionality-in-pather](./add-interactive-with-data-persistance-functionality-in-pather-skill.md).
+[add-interactive-with-data-persistance-functionality-in-pather](./add-interactive-with-data-persistance-functionality-in-pather.md).
 
 Apply its **Step 2.1 → Step 2.7** interview verbatim, then its layering
 (Step 3) and checklist (Step 4). Use the sub-skill's tracker line format:
@@ -178,7 +157,7 @@ top of the loop with `Iteration: <N+1>`.
 #### Path B — Handle a child-dispatched event
 
 Delegate to
-[lwc-parent-event-handler-generator](./lwc-parent-event-handler-generator-skill.md).
+[lwc-parent-event-handler-generator](./lwc-parent-event-handler-generator.md).
 
 Apply its **Step 0 → Step 10** interview for the chosen event, then its
 layering (Step 3) and checklist (Step 4). Use the sub-skill's tracker line
@@ -263,8 +242,8 @@ that iteration, then switch back when returning to the loop.
 
 | Path | User intent | Sub-skill | Tracker line during the iteration |
 |---|---|---|---|
-| A | Add new functionality (sub-components, stories, behavior, validations, data state, base component, Apex) | [add-interactive-with-data-persistance-functionality-in-pather](./add-interactive-with-data-persistance-functionality-in-pather-skill.md) | `[Component: <name> \| Functionality: <fname> \| Step 2.<N>]` |
-| B | Handle a `CustomEvent` from a child (choose `@wire` / imperative, gate, update state from response) | [lwc-parent-event-handler-generator](./lwc-parent-event-handler-generator-skill.md) | `[Child: <name> \| Event: <eventName> \| Step <N>]` |
+| A | Add new functionality (sub-components, stories, behavior, validations, data state, base component, Apex) | [add-interactive-with-data-persistance-functionality-in-pather](./add-interactive-with-data-persistance-functionality-in-pather.md) | `[Component: <name> \| Functionality: <fname> \| Step 2.<N>]` |
+| B | Handle a `CustomEvent` from a child (choose `@wire` / imperative, gate, update state from response) | [lwc-parent-event-handler-generator](./lwc-parent-event-handler-generator.md) | `[Child: <name> \| Event: <eventName> \| Step <N>]` |
 | C | Stop and finalise | — | `[Parent: <componentName> \| Iteration: <N> \| Path: C]` |
 
 ### Why an outer loop (instead of one mega-interview)

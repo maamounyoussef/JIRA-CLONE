@@ -1,17 +1,14 @@
 ---
 name: add-interactive-with-data-persistance-functionality-in-pather
 description: >
-  Add an interactive-with-data-persistence functionality to an EXISTING parent
-  LWC component. Drives a six-question interview that captures the
-  sub-components involved, the user stories (one per operation), the full
-  behavior prompt (verified to cover every story by semantic comparison), the
-  validation rules (placed in a sibling `<name>Validator.js` file, never
-  inline), the backing data state (source object + field), and any reusable
-  base component — all BEFORE any code is emitted. Then resolves the Apex
-  method to call and places the resulting code across the right layers:
-  handler in the parent `.js`, validations in the sibling validator file, UI
-  primitives in the chosen base component, sub-component wiring in the parent
-  `.html`, and the Apex method in the existing controller (extended if needed).
+  Contains the six-step interview (sub-components, user stories, behavior
+  prompt, validation rules, backing data state, reusable base component) plus
+  the Apex method resolution sub-step used when adding an interactive
+  data-persisting functionality to an existing parent LWC. Also contains the
+  layering map (handler → parent `.js`, validations → sibling
+  `<name>Validator.js`, UI primitives → chosen base component, wiring →
+  parent `.html`, Apex method → existing controller) and the optional
+  `lwc-css-design` handoff.
 ---
 
 # Add Interactive-with-Data-Persistence Functionality in Parent

@@ -1,17 +1,15 @@
 ---
 name: lwc-parent-event-handler-generator
 description: >
-  Generate the parent-component logic that handles `CustomEvent`s dispatched
-  from a child LWC: choose the right Apex call style (`@wire` vs imperative,
-  with or without `refreshApex`), wire it to the correct Apex method, and update
-  the de-normalised principal state from the response — never from optimistic
-  local values. This is an interview-driven skill: it walks the user one
-  question at a time through state identification, concurrency, visibility
-  urgency, expand-timing, and Apex resolution before emitting any code, then
-  produces one handler per dispatched event (`handle<Child><Event>`), derived
-  child props as getters off principal state, find/update/delete/create
-  mutators with the spread + `_key` pattern, a `ShowToastEvent` on the failure
-  branch, and `onxxx={handler}` wiring in the parent template.
+  Contains the per-event interview (Steps 0–10: state identification,
+  concurrent writes, visibility urgency, expand-timing, Apex resolution) used
+  when wiring a parent LWC to handle `CustomEvent`s dispatched by a child.
+  Also contains the Apex call-style decision tables (`@wire` vs imperative,
+  with or without `refreshApex`, expand-gated vs `activeObjectId` wires), the
+  output contract (one `handle<Child><Event>` per event, derived child props
+  as getters, find/update/delete/create mutators with the spread + `_key`
+  pattern, `ShowToastEvent` on failure, `onxxx={handler}` wiring), and the
+  optional `lwc-css-design` handoff.
 ---
 
 # LWC Parent Event Handler Generator
