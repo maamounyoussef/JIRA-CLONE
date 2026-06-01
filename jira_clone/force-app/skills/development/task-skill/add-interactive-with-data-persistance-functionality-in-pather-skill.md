@@ -107,22 +107,9 @@ component (`c-ao-input`, `c-ao-btn`, `c-ao-combobox`, any `lightning-*`)
 should be used instead of writing the UI from scratch. The user provides the
 name. If they say "none", record that and continue.
 
-**Step 2.7 — Apex method resolution.** *"Which Apex method should handle this?
-(A) class + method + line, (B) point to a folder/class and AI finds it, (C)
-method doesn't exist — create it."*
-- *Branch A:* user supplied the line — record `<ApexClass>.<method>` and skip
-  verification entirely. **→ Final Output.**
-- *Branch B:* search the named location, identify the method, confirm. **→
-  Final Output.**
-- *Branch C:* run the **Creation Sub-Loop** below.
-> *Creation Sub-Loop (Branch C).* Ask **Step 2.7.1** (*"What should the
-> controller do?"*) — then parse the answer for any other class/method it
-> references. For each referenced symbol that doesn't exist, recurse: *"You
-> mentioned `<Class>.<method>`, which doesn't exist. What should it do?"*
-> Continue until no description references an unresolved class/method. Track
-> depth in the tracker line (`[... | Step 2.7.1 | depth 2: FooSvc.bar]`). Then
-> ask **Step 2.7.2** (*"Where should the controller live?"*) for every method
-> created during the recursion.
+**Step 2.7 — Apex method resolution.** Run the shared step defined in
+[shared/apex-method-resolution.md](shared/apex-method-resolution.md). Do not
+inline the branches here — load that file and follow it verbatim.
 
 ---
 

@@ -130,23 +130,11 @@ gates the `@wire`. **→ Step 10.**
 
 **Step 9 — Active-object wire.** `@wire` on `activeObjectId`. **→ Step 10.**
 
-**Step 10 — Apex method resolution.** *"Which Apex method should handle this?
-(A) class + method + line, (B) point to a folder/class and AI finds it, (C)
-method doesn't exist — create it."*
-- *Branch A:* user supplied the line — record `<ApexClass>.<method>` and skip
-  verification entirely. **→ Final Output.**
-- *Branch B:* search the named location, identify the method, confirm. **→
-  Final Output.**
-- *Branch C:* run the **Creation Sub-Loop** below.
-
-> *Creation Sub-Loop (Branch C).* Ask **Step 10.01** (*"What should the
-> controller do?"*) — then parse the answer for any other class/method it
-> references. For each referenced symbol that doesn't exist, recurse: *"You
-> mentioned `<Class>.<method>`, which doesn't exist. What should it do?"*
-> Continue until no description references an unresolved class/method. Track
-> depth in the tracker line (`[... | Step 10.01 | depth 2: FooSvc.bar]`). Then
-> ask **Step 10.02** (*"Where should the controller live?"*) for every method
-> created during the recursion.
+**Step 10 — Apex method resolution.** Run the shared sub-step defined in
+[shared/apex-method-resolution.md](shared/apex-method-resolution.md). Keep
+this skill's step prefix (`Step 10`, with sub-questions `Step 10.01` /
+`Step 10.02`) in the tracker line, but follow the branches and the Creation
+Sub-Loop verbatim from the shared file — do not inline them here.
 
 Anti-pattern to detect:
 

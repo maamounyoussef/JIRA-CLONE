@@ -198,7 +198,7 @@ iterations. If any row fails, fix it before exiting.
 | 3 | Is every dispatched child event from every path B iteration wired in the template via `on<event>={handler}`? | Add the missing attribute(s). |
 | 4 | Is every Apex call (from path A or path B) gated by either a validator (path A) or the chosen `@wire` / imperative pattern (path B), with state updated from the **response data**, never optimistically? | Move state mutation inside `.then()` / the wired-function body. |
 | 5 | Are derived child props exposed as getters (never duplicated into a new `@track` data state)? | Replace the `@track` with `get childProp() { return ...; }`. |
-| 6 | Does every Apex method referenced by any iteration actually exist (Branch A/B of Step 2.7 / Step 10) or get created via the Creation Sub-Loop (Branch C)? | Run the matching sub-skill's Creation Sub-Loop for any unresolved method. |
+| 6 | Does every Apex method referenced by any iteration actually exist (Branch A/B) or get created via the Creation Sub-Loop (Branch C)? Branches A/B/C are defined once in [shared/apex-method-resolution.md](./shared/apex-method-resolution.md) and reused by path A's Step 2.7 and path B's Step 10. | Run the shared Creation Sub-Loop ([shared/apex-method-resolution.md](./shared/apex-method-resolution.md)) for any unresolved method. |
 | 7 | Are project-wide instructions satisfied? — bulkified Apex (`apex-bulk-soql`), soft-delete filter on `RecordStatus__c`-bearing objects (`soql-exclude-deleted`), required-fields per `OBJECT_VALIDATION_LWC_APEX.md` (`object-required-fields`), and the thin controller → Service → `APIResponse` layering (`lwc-architecture`). | Apply the named skill on the offending code path. |
 
 ---
