@@ -48,6 +48,30 @@ interview without those decisions settled — Steps 1–4 here assume them.
 
 ---
 
+### Step 0b — Mandatory LWC guards for this parent (apply without being asked)
+
+This is a **pather (parent)** component, so BOTH guards below are mandatory on
+every functionality that emits JS/HTML/CSS. They run silently — never gated on
+a user question:
+
+- **`lwc-apex-loading`** (`force-app/skills/development/guard/lwc-apex-loading.md`)
+  — every user-initiated imperative Apex call (`apexMethod(...).then(...).catch(...)`)
+  or `@wire`-with-function-handler is wired to the component's `isLoading`
+  flag, with a `.loading-overlay` spinner stacked above modals/peek-panels in
+  the HTML and CSS. Reuse the existing loading flag; never add a per-handler
+  boolean.
+- **`lwc-error-handling`** (`force-app/skills/development/guard/lwc-error-handling-skill.md`)
+  — every failure path (Apex `.catch`, `@wire` error / `success === false`,
+  synchronous validation failure) surfaces through `ShowToastEvent`
+  (`variant: 'error'`), never a tracked inline `errorMessage` banner. Applies
+  to new error paths added to this existing component too.
+
+Each guard's own SKIP conditions still hold; when you skip one, state the
+reason in the iteration message. Confirm both guards' completion checklists
+pass before reporting the functionality done.
+
+---
+
 ### Step 1 — Detect the interview entry point
 
 Before any questions, confirm BOTH conditions are true:

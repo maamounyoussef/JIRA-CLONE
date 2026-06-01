@@ -52,6 +52,30 @@ without those decisions settled — Steps 1–4 here assume them.
 
 ---
 
+### Step 0b — Mandatory LWC guards for this parent (apply without being asked)
+
+The handlers this skill generates live in a **pather (parent)** component, so
+BOTH guards below are mandatory on every event handler that emits JS/HTML/CSS.
+They run silently — never gated on a user question:
+
+- **`lwc-apex-loading`** (`force-app/skills/development/guard/lwc-apex-loading.md`)
+  — the `handle<Child><Event>` mutator's imperative Apex call (or its
+  `@wire`-with-function-handler, including the expand-gated / `activeObjectId`
+  wires this skill chooses between) is wired to the component's `isLoading`
+  flag, with a `.loading-overlay` spinner stacked above modals/peek-panels.
+  Reuse the existing loading flag; never add a per-handler boolean.
+- **`lwc-error-handling`** (`force-app/skills/development/guard/lwc-error-handling-skill.md`)
+  — every failure path (Apex `.catch`, `@wire` error / `success === false`)
+  surfaces through `ShowToastEvent` (`variant: 'error'`), consistent with this
+  skill's existing "`ShowToastEvent` on failure" output contract; never a
+  tracked inline `errorMessage` banner.
+
+Each guard's own SKIP conditions still hold; when you skip one, state the
+reason in the iteration message. Confirm both guards' completion checklists
+pass before reporting the handler done.
+
+---
+
 ### Step 1 — Detect the interview entry point
 
 Before writing any handler, identify which child + event pair the work targets.
