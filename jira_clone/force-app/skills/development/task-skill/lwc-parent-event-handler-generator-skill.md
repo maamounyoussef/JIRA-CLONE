@@ -7,22 +7,11 @@ description: >
   the de-normalised principal state from the response — never from optimistic
   local values. This is an interview-driven skill: it walks the user one
   question at a time through state identification, concurrency, visibility
-  urgency, expand-timing, and Apex resolution before emitting any code.
-
-  TRIGGER (apply silently) when the user is working on a Salesforce LWC parent
-  component and ANY of these is true: a request to "add an event handler",
-  "handle this event in the parent", "connect child to parent","add <lwcComponentName> to <lwcComponentName>" "listen to this
-  event"; the user pastes a child LWC `dispatchEvent` call or an `onxxx`
-  attribute and asks how to respond to it in the parent; the user mentions a
-  child that "fires" or "dispatches" something the parent must react to; the
-  user is wiring an `@wire` / imperative Apex call in direct response to a child
-  event.
-
-  SKIP when the work is purely inside the child (use `lwc-child` instead), when
-  the parent change is cosmetic (CSS / template-only) and does not touch Apex
-  or principal state, or when the parent already handles the event and the user
-  only wants a one-line tweak that does not change Apex resolution or state
-  update.
+  urgency, expand-timing, and Apex resolution before emitting any code, then
+  produces one handler per dispatched event (`handle<Child><Event>`), derived
+  child props as getters off principal state, find/update/delete/create
+  mutators with the spread + `_key` pattern, a `ShowToastEvent` on the failure
+  branch, and `onxxx={handler}` wiring in the parent template.
 ---
 
 # LWC Parent Event Handler Generator

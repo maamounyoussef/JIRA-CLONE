@@ -1,3 +1,20 @@
+---
+name: add-functionality-in-child-lwc-component
+description: >
+  Extend an EXISTING child LWC component by adding a new sub-component or new
+  functionality to an existing sub-component. Drives a five-question
+  per-sub-component interview that captures the user stories (one per
+  Load / Update / Create / Delete operation), the behavior prompt (verified to
+  cover every story by semantic comparison), the validation rules (placed in a
+  sibling `<childName>Validator.js` file, never inline), the backing `@api`
+  data state (source object + field), and any reusable base component — all
+  BEFORE any code is emitted. Enforces the child contract: presentation only,
+  no Apex calls, no `@api` mutation, local draft/edit state with `_` + `@track`,
+  events dispatched upward with lowercase names and the correct payload shape
+  per operation, and all sub-components rendered as `<section>`s inside the
+  same single LWC template.
+---
+
 # Add Functionality In Child LWC Component
 
 Turns a free-form "add a section to my child" or "add functionality to this

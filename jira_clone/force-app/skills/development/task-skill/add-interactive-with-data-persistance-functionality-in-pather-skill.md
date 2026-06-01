@@ -7,22 +7,11 @@ description: >
   behavior prompt (verified to cover every story by semantic comparison), the
   validation rules (placed in a sibling `<name>Validator.js` file, never
   inline), the backing data state (source object + field), and any reusable
-  base component — all BEFORE any code is emitted.
-
-  TRIGGER (apply silently) when the user asks to add a NEW functionality to an
-  EXISTING parent LWC component AND that component already uses Apex — either
-  it imports at least one `@salesforce/apex/<Class>.<method>` symbol, OR it
-  declares a `@wire` adapter. Treat the presence of ANY one such import or
-  wire as sufficient evidence; stop checking once one is found.
-  example when it should trigger : 
-    - create new functionality 
-    - create new functionality in ... 
-    - add ... to <lwcComponentName>
-
-  SKIP when the target component has no Apex import AND no `@wire` (this skill
-  assumes data persistence is in scope), when the change is purely cosmetic
-  (CSS / label text / template-only), or when the work is creating a
-  brand-new component rather than extending an existing one.
+  base component — all BEFORE any code is emitted. Then resolves the Apex
+  method to call and places the resulting code across the right layers:
+  handler in the parent `.js`, validations in the sibling validator file, UI
+  primitives in the chosen base component, sub-component wiring in the parent
+  `.html`, and the Apex method in the existing controller (extended if needed).
 ---
 
 # Add Interactive-with-Data-Persistence Functionality in Parent
