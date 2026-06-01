@@ -1,18 +1,23 @@
 ---
 name: apex-method-monitor
 description: >
-  After creating or editing ANY Apex controller method that runs SOQL, SOSL, or DML,
-  offer to profile it: generate a governor-limit test method, run it, parse the real
-  numbers from the debug log, and append them to a persistent report file
-  (`docs/apex-method-report.md`). Tracks per method: CPU time (ms), Heap (bytes),
-  SOQL queries, DML rows, DML statements.
+  Profiles an Apex controller method with a real governor-limit test and
+  records the result in `docs/apex-method-report.md`. It generates a test
+  that wraps the method in `Test.startTest()`/`stopTest()`, snapshots
+  `Limits.getCpuTime()`, `getHeapSize()`, `getQueries()`, `getDmlRows()`,
+  and `getDmlStatements()` around the call, deploys, runs the test against
+  the org, parses the pipe-delimited metric line from the debug log, and
+  appends one dated row to the report. Every number comes from an actual
+  test run — never estimated — so re-profiling after an optimization adds
+  a new row instead of overwriting, and the report keeps the before/after
+  trend.
 
-  TRIGGER (offer, do not run silently) when you have just written or modified an
-  `@AuraEnabled` method in `classes/controller/**` whose body contains a SOQL
-  `[SELECT ...]`, a SOSL `[FIND ...]`, or a query/DML helper call.
-
-  SKIP when the method does no SOQL/SOSL/DML (pure computation), or the user has
-  already declined for this method in the current session.
+  Use this after creating or editing any `@AuraEnabled` method in
+  `classes/controller/**` whose body does SOQL, SOSL, or DML. It asks
+  before running, via the interactive `AskUserQuestion` tool, so it never
+  profiles without consent. Skip it for pure-computation methods that
+  touch no data, and for methods you have already declined to profile in
+  the current session.
 ---
 
 # Apex Method Monitor

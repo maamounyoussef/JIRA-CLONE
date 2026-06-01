@@ -1,21 +1,25 @@
 ---
 name: apex-bulk-soql
 description: >
-  Rewrite Apex that performs a bulk retrieve or bulk update into a single
-  synchronous SOQL query and a single bulk DML per object — automatically,
-  without the user asking. This is the **rewrite recipe**: the detection of
-  whether a method needs bulkifying lives in the [[apex-governor-limit-guard]]
-  skill. Whenever that guard flags a method, apply this skill to produce the
-  bulk-safe form.
+  Rewrites N+1 Apex (one SOQL or one DML per record) into the bulk-safe
+  shape: one query per object loaded into a `Map<Id, SObject>`, in-memory
+  validation via `containsKey`/`get` that preserves the per-id error
+  messages, and one DML per object run after the loop. The result is a
+  method whose SOQL and DML counts stay flat as the input grows — so it
+  survives triggers and bulk callers instead of failing the first time it
+  sees 100 records. The "should this method be bulkified?" decision lives
+  in `apex-governor-limit-guard`; this skill is the rewrite recipe that
+  picks up once that answer is yes, plus the measurement that proves the
+  rewrite is actually O(1).
 
-  TRIGGER (apply silently) when the [[apex-governor-limit-guard]] flags an
-  N+1 pattern, OR when you are deliberately editing an existing bulk method
-  in `classes/domain/<Name>Service` / `classes/controller/**` and need to
-  preserve or improve its O(1) SOQL/DML profile.
-
-  SKIP when the operation is genuinely single-record (one id in, one record
-  out and no collection), or the code is asynchronous Batch Apex already
-  chunking by design.
+  Use this when `apex-governor-limit-guard` flags an N+1 pattern, or when
+  you are editing an existing bulk method in `classes/domain/<Name>Service`
+  or `classes/controller/**` and want to preserve or improve its O(1)
+  SOQL/DML profile. Skip it for genuinely single-record operations and for
+  async Batch Apex that already chunks by design. See
+  `docs/deleteTickets-SOQL-Optimization.docx` for the canonical
+  before/after on this codebase (SOQL 49 → 26, CPU ≈ −47%, identical
+  behaviour).
 ---
 
 # Apex Bulk SOQL

@@ -1,27 +1,24 @@
 ---
 name: apex-governor-limit-guard
 description: >
-  Guardrail that REFUSES to let synchronous Apex ship when it would hit a
-  governor limit at scale — CPU time, SOQL queries, DML statements, or heap
-  size. Whenever YOU (the AI) write or edit Apex that touches more than one
-  record, run the detection signals and the execution checklist below —
-  silently, without the user asking. If any signal matches, the method will
-  N+1 under real load and must be rewritten via the [[apex-bulk-soql]] skill
-  before you present the code.
+  Catches Apex that will blow a synchronous governor limit (CPU, SOQL, DML,
+  or heap) before it ships. It scans a method for the six common N+1 and
+  heap signals — queries inside a loop, DML inside a loop, per-record
+  guards (`requireXExists`, `findX`, `getX`) called across a collection,
+  parent records fetched per row, and over-wide `SELECT`s on large result
+  sets — and flags anything that will fail at real batch size, even when
+  it looks fine for 5 records on a developer's machine. If the scan flags
+  the method, the matching rewrite recipe is in `apex-bulk-soql`.
 
-  TRIGGER (apply silently) when writing or editing Apex and ANY of these is
-  true: a method accepts a `List<...>`, `Set<...>`, or `Map<...>` of
-  ids/records; there is a `for`/`while` loop whose body contains a SOQL
-  `[SELECT ...]`, a query method (`findX`, `requireXExists`, `getX`), or a
-  DML statement (`insert`/`update`/`delete`/`upsert`); the work is described
-  as bulk / batch / "delete tickets", "update statuses", "load by ids", "for
-  each ... query/save"; you call a per-record guard (e.g.
-  `DomainCorrectness.requireXExists(id)`) once per element of a collection.
-
-  SKIP when the operation is genuinely single-record (one id in, one record
-  out and no collection), or the code is asynchronous Batch Apex
-  (`Database.Batchable`) already chunking by design — its governor limits
-  reset per batch.
+  Use this when you are writing or editing an Apex method that touches
+  more than one record: anything that takes a `List`/`Set`/`Map` of
+  ids/records, contains a `for`/`while` over records, or runs a per-record
+  helper on every element. Skip it for genuinely single-record methods
+  (one id in, one record out, no collection) and for async Batch Apex
+  (`Database.Batchable`), whose governor limits reset per chunk. Do not
+  skip on the grounds that "current callers only pass a handful of
+  records" — triggers and future bulk callers will not respect that
+  assumption.
 ---
 
 # Apex Governor Limit Guard
