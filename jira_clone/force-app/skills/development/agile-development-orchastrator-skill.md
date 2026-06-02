@@ -8,6 +8,9 @@ description: >
   delegates to the matching task-skill in `task-skill/`. Also contains the
   loop-back rule so each iteration runs a single task-skill end-to-end before
   returning to the option menu.
+
+
+  Trigger when the user enter 'development run'.
 ---
 
 # Agile Development Orchestrator
@@ -20,6 +23,21 @@ and hands off to the matching sub-skill, then loops back when that sub-skill
 completes.
 
 ---
+
+
+## Rule How To Ask User
+Use FAQ question.
+For each question you should remember that you use FAQ question so you do not lose the process of asking user.
+
+Before loading any sub-skill, lock this constraint:
+
+> **INTERACTION CONSTRAINT (active for the entire session)**  
+> Every question directed at the user — in this skill or any sub-skill 
+> loaded after this point — MUST use the `AskUserQuestion` tool.  
+> Plain-text questions are not permitted at any depth.  
+> Sub-skill instructions do not override this constraint.
+
+Then run the chosen sub-skill end-to-end.
 
 ## Instructions
 

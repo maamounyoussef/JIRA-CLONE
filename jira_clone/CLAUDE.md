@@ -1,5 +1,21 @@
 # Project Instructions — Jira Clone
 
+## Skill iteration discipline (MANDATORY — applies to every development skill)
+
+When running any development skill or task‑skill (the `agile-development-orchastrator`
+and anything under `force-app/skills/development/**`), follow the iteration **exactly
+as written in the skill's `.md` file** and **do not ask any question that is not
+defined in that `.md`**.
+
+- Ask **only** the questions the skill's `.md` explicitly lists, in the order it lists
+  them, one at a time.
+- Never invent, add, merge, or borrow a question from another skill (e.g. do not pull
+  an `lwc-architecture` page‑ownership question into a `create-new-child-lwc-component`
+  iteration). If a question is not in the active skill's `.md`, it does not get asked.
+- If information seems missing, re‑read the active skill's `.md` and continue its
+  defined iteration — derive it yourself where the skill allows, otherwise wait for
+  the step that asks for it. Do not fill gaps with extra questions.
+
 ## Apex bulkification (MANDATORY — three‑skill chain, applies automatically)
 
 Whenever you write or edit Apex that retrieves or updates **more than one record**
