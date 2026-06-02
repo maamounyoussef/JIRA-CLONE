@@ -1,5 +1,5 @@
 ---
-name: how-to-handle-wire-implementation
+name: how-to-handle-apex-call-implementation
 description: >
   Shared interview sub-step for deciding the `@wire` call style . 
   Goal is to know frontEnd level implementation of a lwc component.

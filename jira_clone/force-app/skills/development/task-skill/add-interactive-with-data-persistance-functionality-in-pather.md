@@ -144,7 +144,7 @@ name. If they say "none", record that and continue.
 inline the branches here — load that file and follow it verbatim.
 
 **Step 2.8 — Wire implementation.** Run the shared step defined in
-[shared/how-to-handle-wire-implementation.md](shared/how-to-handle-wire-implementation.md).
+[shared/how-to-handle-apex-call-implementation.md](shared/how-to-handle-apex-call-implementation.md).
 Keep this skill's tracker line (substitute `Step 2.8`) and follow the
 answer-to-action mapping in that file verbatim — the visibility-urgency
 branch, the `connectedCallback` auto-wire question, and the

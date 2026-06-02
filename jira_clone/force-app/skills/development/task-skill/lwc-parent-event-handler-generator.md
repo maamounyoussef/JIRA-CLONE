@@ -139,7 +139,7 @@ modify this data while this component is open?"* Yes → Step 2. No → Step 6.
 
 **Step 2 — Wire implementation (visibility urgency + auto-wire gating).** Run
 the shared sub-step defined in
-[shared/how-to-handle-wire-implementation.md](shared/how-to-handle-wire-implementation.md).
+[shared/how-to-handle-apex-call-implementation.md](shared/how-to-handle-apex-call-implementation.md).
 Keep this skill's step prefix (`Step 2`, covering its inlined sub-steps
 `Step 3` / `Step 4` / `Step 5`) in the tracker line, but follow the
 visibility-urgency branches (Very important / Important / Not important), the
