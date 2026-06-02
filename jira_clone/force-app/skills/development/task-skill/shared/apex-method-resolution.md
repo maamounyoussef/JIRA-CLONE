@@ -49,3 +49,10 @@ depth in the tracker line, e.g.:
 
 Then ask sub-question **.2** (*"Where should the controller live?"*) for
 every method created during the recursion.
+
+Then ask sub-question **.3** (*"Should this method be cacheable
+(`@AuraEnabled(cacheable=true)`) or not?"*) for every method created during
+the recursion. A method that only reads data and never performs DML can be
+cacheable; any method that performs DML or must always return fresh data must
+not be cacheable. Record the choice so the emitted controller method carries
+the correct `@AuraEnabled` / `@AuraEnabled(cacheable=true)` annotation.
