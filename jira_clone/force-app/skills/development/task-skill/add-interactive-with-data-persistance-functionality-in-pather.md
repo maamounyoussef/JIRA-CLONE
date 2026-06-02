@@ -181,6 +181,10 @@ Before emitting any code, walk the checklist. If any row fails, fix it first.
 | 6 | Is parent state updated from the Apex **response data**, never optimistically? | Move the state mutation inside `.then()` / the wired-function body. |
 | 7 | Is the every sub-component from Step 2.1 wired into the template? | Add the missing `<c-...>` tag with its props/handlers. |
 
+Then also walk the shared state-management checklist (Rules 0–7) in
+[shared/pather_lwc_state_management_checklist.md](shared/pather_lwc_state_management_checklist.md).
+Fix any failing row there before emitting code.
+
 ---
 
 ### Step 5 — Optionally apply `lwc-css-design`
