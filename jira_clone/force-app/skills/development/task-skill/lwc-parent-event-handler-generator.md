@@ -137,19 +137,15 @@ Interview discipline (non-negotiable):
 **Step 1 — Concurrent writes.** *"Can other users or other browser sessions
 modify this data while this component is open?"* Yes → Step 2. No → Step 6.
 
-**Step 2 — Visibility urgency.** *"Do you want this value to be visible to
-other users as soon as possible?"*
-- *Very important* → Step 3.
-- *Important* → Step 4.
-- *Not important* → Step 5.
-
-**Step 3.** `@wire` with `refreshApex` on **every** applicable request from the
-child. **→ Step 6.**
-
-**Step 4.** `@wire` with `refreshApex` only on actions **related to this data**.
-**→ Step 6.**
-
-**Step 5.** `@wire` **without** `refreshApex`. **→ Step 6.**
+**Step 2 — Wire implementation (visibility urgency + auto-wire gating).** Run
+the shared sub-step defined in
+[shared/how-to-handle-wire-implementation.md](shared/how-to-handle-wire-implementation.md).
+Keep this skill's step prefix (`Step 2`, covering its inlined sub-steps
+`Step 3` / `Step 4` / `Step 5`) in the tracker line, but follow the
+visibility-urgency branches (Very important / Important / Not important), the
+second question (prevent the auto `@wire` call in `connectedCallback`), and the
+separate-`_wired<State>` rule verbatim from the shared file — do not inline them
+here. **→ Step 6.**
 
 **Step 6 — Expand action check.** *"Was this dispatch caused by an expand
 action?"* (Yes / No / Do your own check from the event name.) Yes → Step 7. No

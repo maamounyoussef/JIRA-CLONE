@@ -95,7 +95,7 @@ Interview discipline (non-negotiable):
   anything else.
 - ONE question per message. Never present two steps together. Never
   pre-answer a later step.
-- Do not skip steps. Walk 2.1 → 2.6 in order.
+- Do not skip steps. Walk 2.1 → 2.8 in order.
 - No code emitted until every step is answered.
 - **Never invent a user story or a behavior detail.** The user writes those.
 
@@ -142,6 +142,14 @@ name. If they say "none", record that and continue.
 **Step 2.7 — Apex method resolution.** Run the shared step defined in
 [shared/apex-method-resolution.md](shared/apex-method-resolution.md). Do not
 inline the branches here — load that file and follow it verbatim.
+
+**Step 2.8 — Wire implementation.** Run the shared step defined in
+[shared/how-to-handle-wire-implementation.md](shared/how-to-handle-wire-implementation.md).
+Keep this skill's tracker line (substitute `Step 2.8`) and follow the
+answer-to-action mapping in that file verbatim — the visibility-urgency
+branch, the `connectedCallback` auto-wire question, and the
+separate-`wired<State>` rule. Do not inline the branches here or invent a
+fourth option.
 
 ---
 
@@ -276,7 +284,8 @@ How to parse a prompt like this:
 3. For every step that is **missing**, ask that one question (and only that
    one) using the tracker line, then continue.
 4. Do not invent answers for missing steps, and do not skip them — code may
-   only be emitted once all six steps (2.1 → 2.6) plus 2.7 are resolved.
+   only be emitted once all six steps (2.1 → 2.6) plus 2.7 and 2.8 are
+   resolved.
 
 ### Interview tracker template
 
