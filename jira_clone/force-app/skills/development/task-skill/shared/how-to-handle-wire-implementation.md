@@ -18,6 +18,33 @@ This is the visibility-urgency branch lifted from
 (its Steps 2 → 3/4/5). Follow the answer-to-action mapping below verbatim; do
 not invent a fourth option.
 
+## Step 0 — gate: is the called Apex method `cacheable`?
+
+`@wire` can only bind to an Apex method annotated
+`@AuraEnabled(cacheable=true)`. Before doing anything below, check the method
+the component calls:
+
+- **Not cacheable** (`@AuraEnabled` without `cacheable=true`) → `@wire` is
+  impossible. Use an **imperative call** instead (import the method and invoke
+  it from `connectedCallback` / an action handler, updating principal state in
+  the `.then(...)`). Skip the question and the `@wire` branches entirely.
+- **Cacheable** (`@AuraEnabled(cacheable=true)`) → `@wire` is available.
+  Proceed to the visibility-urgency question below.
+
+```javascript
+// Not cacheable → imperative call, no @wire.
+import loadTickets from '@salesforce/apex/TicketController.loadTickets';
+
+connectedCallback() {
+    loadTickets({ sprintId: this.activeSprintId })
+        .then(res => {
+            if (res?.success) {
+                this._tickets = res.data?.tickets || [];
+            }
+        });
+}
+```
+
 ## Question
 
 > *"Do you want this value to be visible to other users as soon as possible?"*
