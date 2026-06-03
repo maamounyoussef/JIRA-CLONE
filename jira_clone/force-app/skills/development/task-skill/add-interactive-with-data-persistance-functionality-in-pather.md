@@ -126,13 +126,22 @@ name. If they say "none", record that and continue.
 
 **Step 2.7 — Apex method resolution.** Run the shared step defined in
 [guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Do not
-inline the branches here — load that file and follow it verbatim.
+inline the branches here — load that file and follow it verbatim. **Resolve the
+method first — including whether it is cacheable** (the cacheable sub-question
+`.3` in the Creation Sub-Loop, asked for every method created during the
+recursion) — so the wire question in Step 2.8 is meaningful: a method created
+**non-cacheable** is an imperative call, and the `@wire` / `refreshApex` branches
+never arise for it. Record the choice so the emitted controller method carries
+the correct `@AuraEnabled` / `@AuraEnabled(cacheable=true)` annotation.
 
 **Step 2.8 — Wire implementation.** Run the shared step defined in
 [guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md).
-Keep this skill's tracker line (substitute `Step 2.8`) and follow the
-answer-to-action mapping in that file verbatim — the visibility-urgency
-branch, the `connectedCallback` auto-wire question, and the
+The Apex method is already resolved (Step 2.7), so its **cacheability is known**:
+that guide's Step 0 gate uses it — **not cacheable → imperative call, skip the
+visibility-urgency question and the `@wire` branches entirely; cacheable → `@wire`
+is available**, proceed to the branch. Keep this skill's tracker line (substitute
+`Step 2.8`) and follow the answer-to-action mapping in that file verbatim — the
+visibility-urgency branch, the `connectedCallback` auto-wire question, and the
 separate-`wired<State>` rule. Do not inline the branches here or invent a
 fourth option.
 

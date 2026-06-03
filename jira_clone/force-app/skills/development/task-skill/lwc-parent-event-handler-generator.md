@@ -1,8 +1,9 @@
 ---
 name: lwc-parent-event-handler-generator
 description: >
-  Contains the per-event interview (Steps 0–10: state identification,
-  concurrent writes, visibility urgency, expand-timing, Apex resolution) used
+  Contains the per-event interview (Steps 0–10, run in the order state
+  identification → Apex resolution → concurrent writes → visibility urgency →
+  expand-timing) used
   when wiring a parent LWC to handle `CustomEvent`s dispatched by a child.
   Also contains the Apex call-style decision tables (`@wire` vs imperative,
   with or without `refreshApex`, expand-gated vs `activeObjectId` wires), the
@@ -112,9 +113,13 @@ per-event loop with the first event.
 
 ### Step 2 — Run the per-event interview
 
-Apply the **eleven steps (0 → 10)** in order, one question per message, for
-every dispatched event. Every event must walk the full flow before code is
-emitted.
+Apply the **eleven steps**, one question per message, for every dispatched
+event, following the branch arrows below. The traversal order is
+`0 → 10 → 1 → 2 → 6 → 7 → 8 → 9`: **Apex method resolution (Step 10) runs
+before the wire-implementation question (Step 2)** so the call style (`@wire`
+vs imperative) and its `refreshApex` follow-ups are only asked once the method
+— and its cacheability — is known. Every event must walk the full flow before
+code is emitted.
 
 Interview discipline (non-negotiable):
 
@@ -139,21 +144,29 @@ Interview discipline (non-negotiable):
 **single (separate)** value.
 - *Separate* → imperative Apex call, update state with the response. **→ Step 10.**
 - *No specific state* → `@wire` with its own state to remember values if
-  needed. **→ Step 1.**
-- *Otherwise* → continue to Step 1.
+  needed. **→ Step 10.**
+- *Otherwise* → **→ Step 10.**
+
+**Step 10 — Apex method resolution.** Run the shared sub-step defined in
+[guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Keep
+this skill's step prefix (`Step 10`, with sub-questions `Step 10.01` /
+`Step 10.02`) in the tracker line, but follow the branches and the Creation
+Sub-Loop verbatim from the shared file — do not inline them here. **Resolve the
+method first** — including whether it is cacheable (the cacheable sub-question in
+the Creation Sub-Loop) — so the wire question in Step 2 is meaningful: a method
+that does not exist yet and is created **non-cacheable** is an imperative call,
+and the `@wire` / `refreshApex` branches never arise for it.
+- If Step 0 was *separate* (single value) → the call is imperative; you now have
+  the method. **→ done.**
+- Otherwise → **Step 1.**
 
 **Step 1 — Concurrent writes.** *"Can other users or other browser sessions
-modify this data while this component is open?"* Yes → Step 2. No → Step 6.
+modify this data while this component is open?"* Yes → Step 2. No → finish.
 
 **Step 2 — Wire implementation (visibility urgency + auto-wire gating).** Run
 the shared sub-step defined in
 [guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md).
-Keep this skill's step prefix (`Step 2`, covering its inlined sub-steps
-`Step 3` / `Step 4` / `Step 5`) in the tracker line, but follow the
-visibility-urgency branches (Very important / Important / Not important), the
-second question (prevent the auto `@wire` call in `connectedCallback`), and the
-separate-`_wired<State>` rule verbatim from the shared file — do not inline them
-here. **→ Step 6.**
+The Apex method is already resolved (Step 10), so its `cacheable`. **→ Step 6.**
 
 **Step 6 — Expand action check.** *"Was this dispatch caused by an expand
 action?"* (Yes / No / Do your own check from the event name.) Yes → Step 7. No
@@ -163,15 +176,9 @@ action?"* (Yes / No / Do your own check from the event name.) Yes → Step 7. No
 → Step 8. Created → Step 9.
 
 **Step 8 — Expand-gated wire.** New state field separate from `activeObjectId`
-gates the `@wire`. **→ Step 10.**
+gates the `@wire`. **→ done.**
 
-**Step 9 — Active-object wire.** `@wire` on `activeObjectId`. **→ Step 10.**
-
-**Step 10 — Apex method resolution.** Run the shared sub-step defined in
-[guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Keep
-this skill's step prefix (`Step 10`, with sub-questions `Step 10.01` /
-`Step 10.02`) in the tracker line, but follow the branches and the Creation
-Sub-Loop verbatim from the shared file — do not inline them here.
+**Step 9 — Active-object wire.** `@wire` on `activeObjectId`. **→ done.**
 
 ---
 
