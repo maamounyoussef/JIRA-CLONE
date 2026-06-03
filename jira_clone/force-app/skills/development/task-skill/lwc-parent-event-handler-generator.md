@@ -156,9 +156,12 @@ method first** — including whether it is cacheable (the cacheable sub-question
 the Creation Sub-Loop) — so the wire question in Step 2 is meaningful: a method
 that does not exist yet and is created **non-cacheable** is an imperative call,
 and the `@wire` / `refreshApex` branches never arise for it.
-- If Step 0 was *separate* (single value) → the call is imperative; you now have
-  the method. **→ done.**
-- Otherwise → **Step 1.**
+- If Step 0 was *separate* (single value), **or** the method is created/resolved
+  **non-cacheable** → the call is imperative; you now have the method, and the
+  `@wire` / `refreshApex` / expand-gating branches (Steps 1–2, 6–9) never arise.
+  **The interview for the current event ends here — return to the top of the loop
+  for the next event.**
+- Otherwise (the method is **cacheable**, so a `@wire` is in play) → **Step 1.**
 
 **Step 1 — Concurrent writes.** *"Can other users or other browser sessions
 modify this data while this component is open?"* Yes → Step 2. No → finish.

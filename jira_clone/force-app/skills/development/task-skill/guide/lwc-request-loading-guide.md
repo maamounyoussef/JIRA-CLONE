@@ -149,6 +149,36 @@ Rules specific to the wire form:
   view, refresh ticket view), every one of them must flip `isLoading = true`
   — the wire callback is the single source of truth for flipping it off.
 
+#### Guard against re-assigning the SAME reactive value (avoids stuck spinner)
+
+A `@wire` only refires when its reactive parameter **changes**. Assigning the
+param the value it already holds does nothing — the framework skips the wire,
+the callback never runs, and so `isLoading` is never flipped back off. The
+spinner spins forever.
+
+So before you flip `isLoading = true`, check whether the value you are about to
+assign is the one already in the param. If it is, the data is already loaded:
+turn the spinner **off** and return. Only flip it **on** when the wire will
+actually run.
+
+```js
+handleEpicsForProject(projectId) {
+    if (projectId === this._epicsTargetProjectId) {
+        // Wire won't refire — data is already loaded
+        this.isLoading = false;
+        return;
+    }
+    this.isLoading = true;          // only when the wire will actually run
+    this._epicsTargetProjectId = projectId;
+}
+```
+
+Do NOT reach for `refreshApex` to force the wire to re-run on the same value.
+`refreshApex` exists to re-fetch fresh data from the **server** (the backend
+changed), not to re-render UI you already have. Using it as a way to "retrigger
+the spinner" round-trips to Apex for data you already hold and masks the real
+bug, which is toggling the spinner for a wire that was never going to fire.
+
 ### Step 4 — Ensure the HTML renders the overlay
 
 In `<name>.html`, look for an existing render of the loading flag. Three
@@ -235,6 +265,8 @@ inconsistency, not to balloon the diff.
 | New per-handler boolean (`isSavingComment`, `isDeletingThing`) | One spinner-driving flag per visual region is enough; per-handler flags multiply state | Reuse the existing `isLoading` (or the region-scoped flag) |
 | Flipping `isLoading = true` BEFORE early-return validation | Spinner flashes and clears for actions that never hit the network | Do validation first, then flip the flag |
 | Lowering modal z-index to make the spinner show | Other modals in the codebase still expect `9001` — you've created an inconsistency | Raise the overlay's z-index above the modal, never the reverse |
+| Flipping `isLoading = true` before assigning a reactive `@wire` param without checking the value first | If the new value equals the current one, the wire never refires, the callback never runs, and the spinner stays on forever | Early-return (spinner off) when the value is unchanged; only flip on when the param actually changes |
+| Calling `refreshApex` just to re-trigger the spinner on an unchanged value | `refreshApex` re-fetches from the server — it's for stale **backend** data, not for re-rendering UI you already hold; it hides the real toggle bug | Guard the assignment instead; reserve `refreshApex` for genuine server-side refreshes |
 
 ---
 
