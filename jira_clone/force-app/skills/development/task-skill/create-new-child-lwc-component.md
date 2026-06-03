@@ -7,7 +7,7 @@ description: >
   child-contract checklist (no Apex, no `@api` mutation, `_` + `@track` draft
   state, lowercase event names, payload shapes per Create / Update / Delete /
   Load operation, sub-components inlined as `<section>`s in one template) and
-  the optional `lwc-css-design` handoff.
+  the optional `lwc-css-design-guide` handoff.
 ---
 
 # Create New Child LWC Component
@@ -25,15 +25,16 @@ the architecture and silently leak business logic into the view.
 
 ## Instructions
 
-### Step 0 — Run `lwc-path-architecture` first (MANDATORY)
-run [architecture/lwc-path-architecture](architecture/lwc-path-architecture)
----
+### Step 0 — Mandatory guides
 
-### Step 0b — Mandatory guides
+Follow every guide below before any interview question in this skill. They are
+required and run silently — never gated on a user question:
 
-- **`lwc-error-handling-guide`**
-  ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md)) —
-  required: route every child failure (synchronous validation, `success ===
+- **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
+  — required: settle the LWC layering (page vs child, principal state, sidecars,
+  naming / event conventions) before any interview question.
+- **`lwc-error-handling-guide`** ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md))
+  — required: route every child failure (synchronous validation, `success ===
   false`, or error branch the child handles before emitting upward) through
   `ShowToastEvent`, never a tracked inline `errorMessage` banner.
 
@@ -155,23 +156,23 @@ any row fails, fix it before emitting code:
 
 ---
 
-### Step 5 — Optionally apply `lwc-css-design`
+### Step 5 — Optionally apply `lwc-css-design-guide`
 
 After the code is emitted and accepted, ASK the user via the interactive
 `AskUserQuestion` tool (NOT plain text) whether to also apply the
-**`lwc-css-design`** skill
-(`force-app/skills/development/architecture/lwc-css-design.md`) to style the
+**`lwc-css-design-guide`** skill
+(`force-app/skills/development/task-skill/guide/lwc-css-design-guide.md`) to style the
 new child template. Frame it as a single yes/no choice (e.g. "Apply the
 project's CSS design system to the new child component now?" with options
-"Yes, apply lwc-css-design" / "No, skip styling").
+"Yes, apply lwc-css-design-guide" / "No, skip styling").
 
-- Yes → follow `lwc-css-design` end-to-end: produce the `<childName>.css`
+- Yes → follow `lwc-css-design-guide` end-to-end: produce the `<childName>.css`
   file using the project's Atlassian/Jira palette, type scale, spacing, BEM
   naming, interactive-state recipes, and shared patterns (modal, peek panel,
   error banner, empty state, bulk bar, drag-and-drop).
 - No → exit this skill.
 
-Never invent CSS without invoking `lwc-css-design` — it codifies the
+Never invent CSS without invoking `lwc-css-design-guide` — it codifies the
 project's visual language so a new child drops in next to `ticketView` /
 `manageBacklog` / `aoBtn` without any visual tuning.
 

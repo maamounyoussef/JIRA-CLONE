@@ -1,7 +1,11 @@
 ---
-name: lwc-architecture
+name: lwc-path-architecture-guide
 description: >
-  
+  Settles the LWC layering before any interview question: page (smart) vs child
+  (presentation) split, principal state ownership, sidecar
+  `<feature>Utils.js` / `<feature>Validator.js`, and the naming / event
+  conventions (camelCase bundle, lowercase event names, `_`-prefixed
+  presentation state bound via getters). Required guide for every LWC task-skill.
 ---
 ## Resources
 

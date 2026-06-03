@@ -1,5 +1,9 @@
 # Project Instructions — Jira Clone
 
+These instructions say **which** discipline applies and **when**. The **how** lives
+in the referenced skill / guide `.md` files — read those for the rules, checklists,
+and examples. Do not duplicate implementation detail here.
+
 ## Skill iteration discipline (MANDATORY — applies to every development skill)
 
 When running any development skill or task‑skill (the `agile-development-orchastrator`
@@ -7,82 +11,57 @@ and anything under `force-app/skills/development/**`), follow the iteration **ex
 as written in the skill's `.md` file** and **do not ask any question that is not
 defined in that `.md`**.
 
-- Ask **only** the questions the skill's `.md` explicitly lists, in the order it lists
-  them, one at a time.
-- Never invent, add, merge, or borrow a question from another skill (e.g. do not pull
-  an `lwc-architecture` page‑ownership question into a `create-new-child-lwc-component`
-  iteration). If a question is not in the active skill's `.md`, it does not get asked.
+- Ask **only** the questions the skill's `.md` lists, in its order, one at a time.
+- Never invent, add, merge, or borrow a question from another skill. If a question
+  is not in the active skill's `.md`, it does not get asked.
 - If information seems missing, re‑read the active skill's `.md` and continue its
-  defined iteration — derive it yourself where the skill allows, otherwise wait for
-  the step that asks for it. Do not fill gaps with extra questions.
+  defined iteration. Do not fill gaps with extra questions.
 
-## Apex bulkification (MANDATORY — three‑skill chain, applies automatically)
+## Mandatory‑guides step: optional vs required (MANDATORY)
 
-Whenever you write or edit Apex that retrieves or updates **more than one record**
-(a method taking a `List`/`Set`/`Map`, a loop containing SOQL/DML, or a per‑record
-guard like `requireXExists(id)` called over a collection), you MUST run the
-following three skills **in order, without being asked**:
+Every task‑skill under `force-app/skills/development/task-skill/**` opens with a
+**"Mandatory guides"** step listing guides from `task-skill/guide/**`. Each guide is
+tagged **optional** or **required**, and that tag decides how you read it:
+
+- **optional** → a question for the user determines whether the guide is read.
+  Apply it only when the user answers yes; never apply it silently.
+- **required** → no question. Look at the scope of the change: read and apply the
+  guide when its trigger matches that scope; otherwise skip it and state the skip
+  reason in the iteration message.
+
+## Apex bulkification (MANDATORY — applies automatically)
+
+Whenever you write or edit Apex that retrieves or updates **more than one record**,
+run the bulkification skill chain **in order, without being asked**, following each
+skill's `.md`:
 
 1. **Detect** — `apex-governor-limit-guard`
    (`force-app/skills/development/guard/apex-governor-limit-guard.md`).
-   Scan the method against the six N+1 / heap signals. If any signal matches,
-   the method will breach CPU / SOQL / DML / heap at scale and must be
-   rewritten before you present it.
 2. **Rewrite** — `apex-bulk-soql`
    (`force-app/skills/development/performance/apex-bulk-soql.md`).
-   Apply the three non‑negotiable rules below, then walk the guard's Step 2
-   execution checklist before presenting the code.
 3. **Measure** — `apex-method-monitor`
    (`force-app/skills/development/performance/apex-method-monitor.md`).
-   For any `@AuraEnabled` controller method in `classes/controller/**` that
-   runs SOQL/SOSL/DML, ASK the user via the interactive `AskUserQuestion`
-   tool (not plain text) whether to create a monitoring report. If yes,
-   generate a governor‑limit test method, RUN it, and append the real
-   CPU / Heap / SOQL / DML‑rows / DML‑statements to
-   `docs/apex-method-report.md` (create the file if it doesn't exist).
-   Never record estimated numbers — always run the test first.
 
-Non‑negotiable bulk rules (rewrite step):
-1. **No SOQL inside a loop** — query once with `WHERE Id IN :ids` into a `Map<Id, SObject>`.
-2. **No DML inside a loop** — accumulate a `List` and `insert`/`update`/`delete` once.
-3. **Validate/look up in memory** with `map.containsKey(id)` / `map.get(id)`.
-
-Skip the whole chain only for genuinely single‑record operations (one id in,
-one record out, no collection) or async Batch Apex that chunks by design.
-See `docs/deleteTickets-SOQL-Optimization.docx` for a worked example
-(SOQL 49 → 26, CPU ≈ −47%).
+Skip the chain only for genuinely single‑record operations, or async Batch Apex
+that chunks by design.
 
 ## SOQL: exclude soft‑deleted rows (MANDATORY — applies automatically)
 
-Whenever you write or edit Apex that contains `[SELECT ... FROM <Object>__c]`
-where the object has a `RecordStatus__c` field (Ticket__c, Subtask__c,
-Sprint__c, Epic__c, TicketLink__c, TicketType__c, ProjectMember__c, etc.),
-you MUST follow the **`soql-exclude-deleted`** skill
-(`force-app/skills/development/contract/soql-exclude-deleted-skill.md`) **without being asked**.
+Whenever you write or edit Apex that queries a custom object carrying a
+`RecordStatus__c` field, follow the **`soql-exclude-deleted`** skill
+(`force-app/skills/development/task-skill/guide/soql-exclude-deleted-guide.md`) without
+being asked. The guide defines the required `WHERE`‑clause rule and the only
+allowed exception.
 
-Non‑negotiable rule: every such query's `WHERE` clause includes either
-`RecordStatus__c != 'delete'` (default) or `RecordStatus__c = '<live state>'`
-(when only one live state is wanted). Subqueries and aggregates count too.
-Skip only with an inline comment explaining intentional inclusion of deleted
-rows (audit/restore tooling).
+## Governor‑limit guard (MANDATORY)
 
-## Object required fields (MANDATORY — read before any retrieve/update)
+Apply [guard/apex-governor-limit-guard](force-app/skills/development/guard/apex-governor-limit-guard.md)
+whenever a **bulk query** (a `SELECT` returning more than one record) or a
+**bulk command** (DML — `insert`/`update`/`delete`/`upsert` — over more than one
+record) is written or edited, to catch governor‑limit (CPU/SOQL/DML/heap) and
+N+1 risks before they ship. This stays in effect long‑term.
 
-Before writing or editing any code that retrieves, creates, or updates a
-custom object — Apex or LWC — you MUST follow the **`object-required-fields`**
-skill (`force-app/skills/development/contract/object-required-fields-skill.md`) **without being
-asked**: READ `OBJECT_VALIDATION_LWC_APEX.md` first and pick the correct
-column for the layer ("for lwc" vs. "for apex and store"). Server‑side code
-and DTO/store contracts use "for apex and store"; LWC forms and
-`createRecord`/`updateRecord` calls use "for lwc".
+## Interview discipline (MANDATORY)
 
-## Architecture
-
-For new LWC/Apex components, follow:
-- `force-app/skills/development/architecture/lwc-architecture.md`
-- `force-app/skills/development/architecture/apex-architecture.md`
-
-
-## Interview Discpline
-Apply [guard/interview-discpline](guard/interview-discpline) on all sub-skill when we have a iterations faq question .
-This should stay with us long time runing.
+Apply [guard/interview-discpline](guard/interview-discpline) on every sub‑skill
+whenever an iteration has an FAQ / question step. This stays in effect long‑term.

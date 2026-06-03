@@ -1,5 +1,5 @@
 ---
-name: lwc-css-design
+name: lwc-css-design-guide
 description: >
   Authoritative CSS design system for every Lightning Web Component in this
   project. Defines the color palette, typography, spacing, border-radius,

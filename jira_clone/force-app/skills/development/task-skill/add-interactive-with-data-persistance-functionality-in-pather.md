@@ -8,7 +8,7 @@ description: >
   layering map (handler → parent `.js`, validations → sibling
   `<name>Validator.js`, UI primitives → chosen base component, wiring →
   parent `.html`, Apex method → existing controller) and the optional
-  `lwc-css-design` handoff.
+  `lwc-css-design-guide` handoff.
 ---
 
 # Add Interactive-with-Data-Persistence Functionality in Parent
@@ -26,34 +26,16 @@ rework once the user reviews the implementation.
 
 ## Instructions
 
-### Step 0 — Run `lwc-architecture` first (MANDATORY)
-
-Before any interview question in this skill, you MUST follow the
-**`lwc-architecture`** skill
-(`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
-That umbrella skill settles the architectural decisions BEFORE any UI
-behavior is implemented or extended:
-
-- Page vs. child (or inline section) — Q1
-- Principal state shape — Q2
-- `localStorage` entry keys + load call — Q3
-- Apex methods: exist or to-create (+ Service + guards + test) — Q4
-- Event names + payloads (children) — Q5
-- Sidecar `<feature>Utils.js` / `<feature>Validator.js` needs — Step 2
-- `meta.xml` exposure + targets — Step 2
-
-Only after the `lwc-architecture` handoff checklist (its Step 4) is green do
-you proceed to Step 1 of this skill. Never start the per-functionality
-interview without those decisions settled — Steps 1–4 here assume them.
-
----
-
-### Step 0b — Mandatory guides
+### Step 0 — Mandatory guides
 
 This is a **pather (parent)** component, so ALL guides below are mandatory on
 every functionality that emits JS/HTML/CSS. They run silently — never gated on
-a user question:
+a user question, and must be settled before any interview question:
 
+- **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
+  — required: settle the LWC layering (page vs child, principal state, sidecars,
+  `meta.xml` exposure, naming / event conventions) before any interview
+  question.
 - **`apex-method-resolution-guide`** (`force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md`)
   — required: resolve which Apex method backs each new functionality / event
   handler (existing-known, existing-find, or create-new), recursively resolving
@@ -69,6 +51,13 @@ a user question:
 - **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
   — required: walk the state-management checklist (Rules 0–7) and fix every
   failing row before emitting code.
+- **`soql-exclude-deleted-guide`** (`force-app/skills/development/task-skill/guide/soql-exclude-deleted-guide.md`)
+  — optional: ask the user whether to apply it, and apply it only on "yes". It
+  is relevant **only when an Apex method is created** for this functionality
+  (a new `[SELECT ... FROM <Object>__c]` against a custom object that carries a
+  `RecordStatus__c` field); it adds the `RecordStatus__c != 'delete'` filter so
+  soft‑deleted rows never leak to callers. Skip the question entirely when no
+  Apex method is created.
 
 Each guide's own SKIP conditions still hold; when you skip one, state the
 reason in the iteration message. Confirm each guide's completion checklist
@@ -175,23 +164,23 @@ Fix any failing row there before emitting code.
 
 ---
 
-### Step 5 — Optionally apply `lwc-css-design`
+### Step 5 — Optionally apply `lwc-css-design-guide`
 
 After the code is emitted and accepted, ASK the user via the interactive
 `AskUserQuestion` tool (NOT plain text) whether to also apply the
-**`lwc-css-design`** skill
-(`force-app/skills/development/architecture/lwc-css-design.md`) to style the
+**`lwc-css-design-guide`** skill
+(`force-app/skills/development/task-skill/guide/lwc-css-design-guide.md`) to style the
 new functionality. Frame it as a single yes/no choice (e.g. "Apply the
 project's CSS design system to the new functionality now?" with options
-"Yes, apply lwc-css-design" / "No, skip styling").
+"Yes, apply lwc-css-design-guide" / "No, skip styling").
 
-- Yes → follow `lwc-css-design` end-to-end: produce/update the parent
+- Yes → follow `lwc-css-design-guide` end-to-end: produce/update the parent
   `.css` file using the project's Atlassian/Jira palette, type scale,
   spacing, BEM naming, interactive-state recipes, and shared patterns
   (modal, peek panel, error banner, empty state, bulk bar, drag-and-drop).
 - No → exit this skill.
 
-Never invent CSS without invoking `lwc-css-design` — it codifies the
+Never invent CSS without invoking `lwc-css-design-guide` — it codifies the
 project's visual language so a new functionality blends with the rest of
 `manageBacklog` / `ticketView` without any visual tuning.
 

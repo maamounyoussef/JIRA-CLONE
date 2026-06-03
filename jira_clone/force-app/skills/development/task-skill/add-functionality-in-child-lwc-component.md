@@ -7,7 +7,7 @@ description: >
   functionality. Also contains the child-contract checklist (no Apex, no `@api`
   mutation, `_` + `@track` draft state, lowercase event names, payload shapes
   per Create / Update / Delete / Load operation, sub-components inlined as
-  `<section>`s in one template) and the optional `lwc-css-design` handoff.
+  `<section>`s in one template) and the optional `lwc-css-design-guide` handoff.
 ---
 
 # Add Functionality In Child LWC Component
@@ -26,31 +26,24 @@ and silently leak business logic into the view.
 
 ## Instructions
 
-### Step 0 — Run `lwc-architecture`, then the pather state checklist (MANDATORY)
+### Step 0 — Mandatory guides
 
-Before any interview question in this skill, you MUST follow these two in order:
+Follow every guide below before any interview question in this skill. They are
+required and run silently — never gated on a user question:
 
-1. **`lwc-architecture`**
-   (`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
-2. The pather state-management checklist
-   (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
-   for the parent that handles the events this child dispatches.
-
-Only after the `lwc-architecture` handoff checklist (its Step 4) is green and
-the pather state checklist passes do you proceed to Step 1 of this skill. Never
-start the per-sub-component interview without those decisions settled — Steps
-1–4 here assume them.
-
----
-
-### Step 0b — Mandatory guides
-
-- **`lwc-error-handling-guide`**
-  ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md)) —
-  required: route every failure this functionality surfaces (synchronous
+- **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
+  — required: settle the LWC layering (page vs child, principal state, sidecars,
+  naming / event conventions) before any interview question.
+- **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
+  — required: the parent that handles the events this child dispatches must pass
+  the state-management checklist (Rules 0–7).
+- **`lwc-error-handling-guide`** ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md))
+  — required: route every failure this functionality surfaces (synchronous
   validation, `success === false`, or error branch handled before emitting
-  upward) through `ShowToastEvent`, never a tracked inline `errorMessage`
-  banner.
+  upward) through `ShowToastEvent`, never a tracked inline `errorMessage` banner.
+
+Never start the per-sub-component interview without these settled — Steps 1–4
+here assume them.
 
 ---
 
@@ -196,23 +189,23 @@ any row fails, fix it before emitting code:
 
 ---
 
-### Step 5 — Optionally apply `lwc-css-design`
+### Step 5 — Optionally apply `lwc-css-design-guide`
 
 After the code is emitted and accepted, ASK the user via the interactive
 `AskUserQuestion` tool (NOT plain text) whether to also apply the
-**`lwc-css-design`** skill
-(`force-app/skills/development/architecture/lwc-css-design.md`) to style the
+**`lwc-css-design-guide`** skill
+(`force-app/skills/development/task-skill/guide/lwc-css-design-guide.md`) to style the
 new/modified sections. Frame it as a single yes/no choice (e.g. "Apply the
 project's CSS design system to the new section(s) now?" with options "Yes,
-apply lwc-css-design" / "No, skip styling").
+apply lwc-css-design-guide" / "No, skip styling").
 
-- Yes → follow `lwc-css-design` end-to-end: produce/update the `.css` file
+- Yes → follow `lwc-css-design-guide` end-to-end: produce/update the `.css` file
   using the project's Atlassian/Jira palette, type scale, spacing, BEM
   naming, interactive-state recipes, and shared patterns (modal, peek panel,
   error banner, empty state, bulk bar, drag-and-drop).
 - No → exit this skill.
 
-Never invent CSS without invoking `lwc-css-design` — it codifies the
+Never invent CSS without invoking `lwc-css-design-guide` — it codifies the
 project's visual language so a new section drops in next to `ticketView` /
 `manageBacklog` / `aoBtn` without any visual tuning.
 
