@@ -61,6 +61,23 @@ whenever a **bulk query** (a `SELECT` returning more than one record) or a
 record) is written or edited, to catch governor‑limit (CPU/SOQL/DML/heap) and
 N+1 risks before they ship. This stays in effect long‑term.
 
+## Bulk‑SOQL rewrite (MANDATORY)
+
+Apply [performance/apex-bulk-soql](force-app/skills/development/performance/apex-bulk-soql.md)
+whenever a **bulk query** or **bulk command** is written or edited — and
+whenever `apex-governor-limit-guard` flags an N+1 pattern — to rewrite it into
+the bulk‑safe shape (one query per object into a `Map<Id, SObject>`, in‑memory
+validation, one DML per object after the loop) so the SOQL/DML count stays flat
+as the input grows. This stays in effect long‑term.
+
+## Method profiling (MANDATORY)
+
+Apply [performance/apex-method-monitor](force-app/skills/development/performance/apex-method-monitor.md)
+after creating or editing any `@AuraEnabled` controller method whose body does
+SOQL, SOSL, or DML, to profile it against a real governor‑limit test and record
+the result. It asks before running, via the interactive `AskUserQuestion` tool,
+so it never profiles without consent. This stays in effect long‑term.
+
 ## Interview discipline (MANDATORY)
 
 Apply [guard/interview-discpline](guard/interview-discpline) on every sub‑skill
