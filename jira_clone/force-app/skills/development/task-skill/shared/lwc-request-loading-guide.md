@@ -1,5 +1,5 @@
 ---
-name: lwc-apex-loading
+name: lwc-request-loading-guide
 description: >
   When a new (or newly edited) JavaScript handler in an LWC parent component
   makes an imperative Apex call (`apexMethod(...).then(...).catch(...)`),

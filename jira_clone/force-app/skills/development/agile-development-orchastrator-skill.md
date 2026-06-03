@@ -89,47 +89,13 @@ Run the chosen sub-skill end-to-end before doing anything else. Each
 sub-skill owns its own interview, its own checklist, and its own code
 emission — this orchestrator does not interleave them.
 
-| Option | Parent / Child | Sub-skill | Mandatory guards |
+| Option | Parent / Child | Sub-skill 
 |---|---|---|---|
-| A — create new component | parent | [task-skill/create-new-parent-lwc-component.md](./task-skill/create-new-parent-lwc-component.md) | `lwc-apex-loading` + `lwc-error-handling` |
-| A — create new component | child | [task-skill/create-new-child-lwc-component.md](./task-skill/create-new-child-lwc-component.md) | `lwc-error-handling` |
-| B — create new functionality | parent | [task-skill/add-interactive-with-data-persistance-functionality-in-pather.md](./task-skill/add-interactive-with-data-persistance-functionality-in-pather.md) | `lwc-apex-loading` + `lwc-error-handling` |
-| B — create new functionality | child | [task-skill/add-functionality-in-child-lwc-component.md](./task-skill/add-functionality-in-child-lwc-component.md) | `lwc-error-handling` |
-| C — add existing component to another | (parent only) | [task-skill/lwc-parent-event-handler-generator.md](./task-skill/lwc-parent-event-handler-generator.md) | `lwc-apex-loading` + `lwc-error-handling` |
-
----
-
-### Step 5b — Mandatory LWC guards (run every iteration, without being asked)
-
-Before the chosen sub-skill's code is presented as complete, the relevant
-guard skills MUST have been applied. These are not optional and are not
-gated on a user question — they run silently as part of every LWC iteration:
-
-- **All LWC (parent AND child)** → **`lwc-error-handling`**
-  (`force-app/skills/development/guard/lwc-error-handling-skill.md`).
-  Every failure path the sub-skill emits — imperative Apex `.catch`, a
-  `@wire` `error` / `success === false` branch, or a synchronous validation
-  failure — surfaces through `ShowToastEvent` (`variant: 'error'`), never a
-  tracked `errorMessage` inline banner. Applies to new error paths added to
-  an existing component too.
-
-- **Pather (parent) LWC only** → **`lwc-apex-loading`**
-  (`force-app/skills/development/guard/lwc-apex-loading.md`).
-  Every user-initiated imperative Apex call (`apexMethod(...).then(...).catch(...)`)
-  or `@wire`-with-function-handler in the parent JS is wired to the
-  component's `isLoading` flag, with a `.loading-overlay` spinner stacked
-  above modals/peek-panels in the HTML and CSS. Reuse the existing loading
-  flag rather than introducing a per-handler boolean.
-
-Each guard's own SKIP conditions still hold (e.g. `lwc-error-handling` does
-not flip a component already committed to the legacy inline `errorMessage`
-pattern; `lwc-apex-loading` skips private helpers already covered by a public
-handler that owns the flag). When you skip a guard, state the skip reason in
-the iteration message — silence is not an allowed outcome.
-
-Child task-skills (A-child, B-child) run **only** `lwc-error-handling`;
-parents and option C run **both**. Confirm both guards' completion
-checklists pass before looping back.
+| A — create new component | parent | [task-skill/create-new-parent-lwc-component.md](./task-skill/create-new-parent-lwc-component.md) |
+| A — create new component | child | [task-skill/create-new-child-lwc-component.md](./task-skill/create-new-child-lwc-component.md) 
+| B — create new functionality | parent | [task-skill/add-interactive-with-data-persistance-functionality-in-pather.md](./task-skill/add-interactive-with-data-persistance-functionality-in-pather.md) | 
+| B — create new functionality | child | [task-skill/add-functionality-in-child-lwc-component.md](./task-skill/add-functionality-in-child-lwc-component.md) | 
+| C — add existing component to another | (parent only) | [task-skill/lwc-parent-event-handler-generator.md](./task-skill/lwc-parent-event-handler-generator.md) | 
 
 ---
 

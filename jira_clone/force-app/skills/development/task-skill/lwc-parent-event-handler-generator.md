@@ -58,13 +58,13 @@ The handlers this skill generates live in a **pather (parent)** component, so
 BOTH guards below are mandatory on every event handler that emits JS/HTML/CSS.
 They run silently — never gated on a user question:
 
-- **`lwc-apex-loading`** (`force-app/skills/development/guard/lwc-apex-loading.md`)
+- **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/shared/lwc-request-loading-guide.md`)
   — the `handle<Child><Event>` mutator's imperative Apex call (or its
   `@wire`-with-function-handler, including the expand-gated / `activeObjectId`
   wires this skill chooses between) is wired to the component's `isLoading`
   flag, with a `.loading-overlay` spinner stacked above modals/peek-panels.
   Reuse the existing loading flag; never add a per-handler boolean.
-- **`lwc-error-handling`** (`force-app/skills/development/guard/lwc-error-handling-skill.md`)
+- **`lwc-error-handling`** (`force-app/skills/development/task-skill/shared/lwc-error-handling-guide.md`)
   — every failure path (Apex `.catch`, `@wire` error / `success === false`)
   surfaces through `ShowToastEvent` (`variant: 'error'`), consistent with this
   skill's existing "`ShowToastEvent` on failure" output contract; never a

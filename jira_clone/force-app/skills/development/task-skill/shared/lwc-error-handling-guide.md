@@ -1,5 +1,5 @@
 ---
-name: lwc-error-handling
+name: lwc-error-handling-guide
 description: >
   When an LWC needs to surface a failure (Apex error, validation failure, missing
   precondition) to the user, dispatch a `ShowToastEvent` with `variant: 'error'`
@@ -8,17 +8,6 @@ description: >
   inline error region competes with toasts, leaks failure UI into the page
   layout, and forces every error path to also manage a "dismiss" handler.
 
-  TRIGGER (apply silently) when adding or editing an LWC and ANY of these is
-  true: a new imperative Apex `.catch(...)` is being written, a `@wire`
-  callback handles `result.error` or `result.data.success === false`, a
-  synchronous client-side validation needs to tell the user something is
-  wrong, or the file is about to introduce a new `errorMessage` / tracked
-  string for surfacing failures.
-
-  SKIP when the component already follows the inline `errorMessage` pattern
-  AND the user is editing within that pattern (e.g. `manageBacklog`'s legacy
-  `errorMessage` banner) — do not flip an existing component mid-feature.
-  This rule applies to NEW LWCs and to NEW error paths inside an existing one.
 ---
 
 # LWC Error Handling

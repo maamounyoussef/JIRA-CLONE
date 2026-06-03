@@ -141,8 +141,8 @@ force-app/skills/development/
 │   └── soql-exclude-deleted-skill.md
 ├── guard/
 │   ├── apex-governor-limit-guard.md
-│   ├── lwc-apex-loading.md
-│   └── lwc-error-handling-skill.md
+│   ├
+│   
 ├── performance/
 │   ├── apex-bulk-soql.md
 │   └── apex-method-monitor.md
@@ -154,4 +154,6 @@ force-app/skills/development/
     ├── lwc-parent-event-handler-generator.md
     └── shared/
         └── apex-method-resolution.md
+        └── lwc-request-loading-guide.md
+        └── lwc-error-handling-guide.md
 ```

@@ -273,8 +273,8 @@ add_code_block(
     "│   └── soql-exclude-deleted-skill.md\n"
     "├── guard/\n"
     "│   ├── apex-governor-limit-guard.md\n"
-    "│   ├── lwc-apex-loading.md\n"
-    "│   └── lwc-error-handling-skill.md\n"
+    "│   
+    "│   
     "├── performance/\n"
     "│   ├── apex-bulk-soql.md\n"
     "│   └── apex-method-monitor.md\n"
@@ -286,6 +286,8 @@ add_code_block(
     "    ├── lwc-parent-event-handler-generator.md\n"
     "    └── shared/\n"
     "        └── apex-method-resolution.md"
+    "        ├── lwc-request-loading-guide.md\n"
+    "        └── lwc-error-handling-guide.md\n
 )
 
 # ----- Save -----
