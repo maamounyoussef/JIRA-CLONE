@@ -174,16 +174,22 @@ body_p("The orchestrator does not invent rules — it routes work into "
        "the leaf guides it depends on. Two mechanisms keep this adaptation "
        "predictable.")
 
-h2("3.1 The Mandatory-guides step: required vs optional")
-body_p("Every task-skill opens with a Step 0 — Mandatory guides that lists the "
-       "leaf guides it depends on. Each guide is tagged, and the tag decides "
-       "how it is read:")
-lead("required — ", "no question is asked. Look at the scope of the change: "
-     "read and apply the guide when its trigger matches that scope (most run "
-     "on every iteration); otherwise skip it and state the skip reason in the "
-     "iteration message.")
-lead("optional — ", "a single AskUserQuestion decides whether the guide is "
-     "read. Apply it only when the user answers yes; never apply it silently.")
+h2("3.1 The Mandatory-guides step: the activation contract lives on the guide")
+body_p("Every task-skill opens with a Step 0 — Mandatory guides, but that step "
+       "lists guide NAMES only — it does not restate when each guide fires. The "
+       "trigger lives with the guide: every file under task-skill/guide/ declares "
+       "an activation: block in its frontmatter (mode, applies_when, and — for "
+       "optional guides — question). One rule in CLAUDE.md says how to read that "
+       "block, so the activation logic is written once instead of being copied "
+       "into every task-skill that lists the guide:")
+lead("required — ", "no question. Read and apply the guide when its applies_when "
+     "matches the change scope; otherwise skip it and state the skip reason in "
+     "the iteration message.")
+lead("optional — ", "ask the guide's declared question first; apply only on "
+     "yes, never silently.")
+lead("cross-cutting — ", "the guide is project-wide and fires from CLAUDE.md, "
+     "never gated by a task-skill's Mandatory-guides question (e.g. "
+     "soql-exclude-deleted).")
 
 h2("3.2 Project-wide cross-cutting skills live in CLAUDE.md, not in a task-skill")
 body_p("The performance/ and guard/ skills encode disciplines that apply to any "
@@ -228,10 +234,11 @@ code([
 
 # ---- 5. Task-skills and their guide dependencies ------------------------
 h1('5. Task-skills and their guide dependencies')
-body_p("For each task-skill below: its name, what it does, and every guide it "
-       "depends on — the guide's type and the simple condition that governs it. "
-       "A required guide carries a trigger (when it is read); an optional guide "
-       "carries the yes/no question that gates it.")
+body_p("For each task-skill below: its name, what it does, and the guide NAMES "
+       "its Step 0 lists. The condition that governs each guide is no longer "
+       "restated per task-skill — it lives in the guide's own activation: "
+       "contract (reproduced here for reference, but read from the guide at "
+       "runtime).")
 
 GUIDE_HEADERS = ['Guide', 'Type', 'When read / question']
 
@@ -261,12 +268,12 @@ table(GUIDE_HEADERS, [
      'Always — walk the state checklist (Rules 0-7) before emitting code.'],
     ['apex-path-architecture-guide', 'required',
      'When a new Apex method is implemented (skip if none is created).'],
-    ['soql-exclude-deleted-guide', 'optional',
-     'Q: "Apply the soft-delete filter?" — only when a new SELECT on a '
-     'RecordStatus__c object is created.'],
     ['lwc-css-design-guide', 'optional',
      'Q (Step 5): "Apply the project\'s CSS design system now?"'],
 ])
+body_p("Soft-delete filtering (soql-exclude-deleted) is no longer a row here: "
+       "it is cross-cutting and fires from CLAUDE.md whenever a new/edited SELECT "
+       "touches a RecordStatus__c object.")
 
 h2("lwc-parent-event-handler-generator")
 body_p("Per-event interview for wiring a parent LWC to handle CustomEvents "
@@ -288,12 +295,11 @@ table(GUIDE_HEADERS, [
      'Always — walk the state checklist (Rules 0-7) before emitting code.'],
     ['apex-path-architecture-guide', 'required',
      'When a new Apex method is implemented (skip if none is created).'],
-    ['soql-exclude-deleted-guide', 'optional',
-     'Q: "Apply the soft-delete filter?" — only when a new SELECT on a '
-     'RecordStatus__c object is created.'],
     ['lwc-css-design-guide', 'optional',
      'Q (Step 5): "Apply the project\'s CSS design system now?"'],
 ])
+body_p("As above, soft-delete filtering is cross-cutting (CLAUDE.md), not a row "
+       "in this skill's Step 0.")
 
 h2("create-new-child-lwc-component")
 body_p("Per-sub-component interview (user stories, behavior, validations, @api "
@@ -346,8 +352,9 @@ table(['Skill', 'When it fires'], [
     ['guard/interview-discpline',
      'On every iteration that has a question step.'],
     ['guide/soql-exclude-deleted-guide',
-     'For any SELECT on a RecordStatus__c object (mandatory via CLAUDE.md; also '
-     'surfaced as the optional question inside the parent functionality skills).'],
+     'For any new/edited SELECT on a RecordStatus__c object — fires silently, '
+     'project-wide, from CLAUDE.md. Single home: not gated by any task-skill '
+     'question (its activation: mode is cross-cutting).'],
 ])
 
 # ---- 6. Resolving the spaghetti dependency ------------------------------
@@ -366,6 +373,11 @@ lead("One rule, one home. ",
      "A shared rule lives in exactly one guide; N task-skills reference it by "
      "listing it in their Mandatory-guides step, not by copying it — change it "
      "once and every caller gets the change.")
+lead("Activation is declared once, on the guide. ",
+     "When a guide fires — its mode and applies_when, plus the question for "
+     "optional guides — lives in the guide's activation: frontmatter, read via a "
+     "single rule in CLAUDE.md. A task-skill's Step 0 lists guide names only, so "
+     "the trigger text is never copied across the task-skills that share a guide.")
 lead("Adding a task-skill is additive. ",
      "A new task-skill only adds edges to existing leaf guides; it never forces "
      "an edit in a sibling task-skill.")

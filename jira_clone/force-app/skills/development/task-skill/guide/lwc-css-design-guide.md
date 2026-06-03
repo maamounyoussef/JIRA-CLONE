@@ -1,5 +1,11 @@
 ---
 name: lwc-css-design-guide
+activation:
+  mode: optional
+  question: "Apply the project's CSS design system now?"
+  applies_when: >-
+    a component's .css is created or restyled — ask the declared question
+    first and apply only on "yes"; never silent
 description: >
   Authoritative CSS design system for every Lightning Web Component in this
   project. Defines the color palette, typography, spacing, border-radius,

@@ -17,17 +17,23 @@ defined in that `.md`**.
 - If information seems missing, re‑read the active skill's `.md` and continue its
   defined iteration. Do not fill gaps with extra questions.
 
-## Mandatory‑guides step: optional vs required (MANDATORY)
+## Mandatory‑guides step: read each guide's `activation:` contract (MANDATORY)
 
 Every task‑skill under `force-app/skills/development/task-skill/**` opens with a
-**"Mandatory guides"** step listing guides from `task-skill/guide/**`. Each guide is
-tagged **optional** or **required**, and that tag decides how you read it:
+**"Mandatory guides"** step. That step lists guide **names only** — it does NOT
+restate when each guide fires. The trigger lives with the guide: every file under
+`task-skill/guide/**` declares an `activation:` block in its frontmatter
+(`mode`, `applies_when`, and — for optional guides — `question`). For each guide a
+task‑skill lists, open it, read its `activation:` block, and apply it by its
+declared `mode`:
 
-- **optional** → a question for the user determines whether the guide is read.
-  Apply it only when the user answers yes; never apply it silently.
 - **required** → no question. Look at the scope of the change: read and apply the
-  guide when its trigger matches that scope; otherwise skip it and state the skip
-  reason in the iteration message.
+  guide when its `applies_when` matches that scope; otherwise skip it and state the
+  skip reason in the iteration message.
+- **optional** → ask the guide's declared `question` first. Apply it only when the
+  user answers yes; never apply it silently.
+- **cross-cutting** → the guide is project‑wide and fires from this CLAUDE.md (not
+  from any task‑skill's list). It is never gated by a Mandatory‑guides question.
 
 ## Apex bulkification (MANDATORY — applies automatically)
 

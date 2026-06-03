@@ -1,5 +1,11 @@
 ---
 name: soql-exclude-deleted
+activation:
+  mode: cross-cutting
+  source: CLAUDE.md
+  applies_when: >-
+    any new/edited SELECT on a custom object carrying RecordStatus__c — fires
+    silently, project-wide; NOT gated by a task-skill question
 description: >
   Every SOQL query that retrieves records from a custom object with a
   `RecordStatus__c` field MUST exclude soft‑deleted rows by adding

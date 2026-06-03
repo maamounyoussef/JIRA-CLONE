@@ -1,5 +1,10 @@
 ---
 name: lwc-error-handling-guide
+activation:
+  mode: required
+  applies_when: >-
+    always — any component that can surface a failure (Apex .catch, @wire
+    error, success===false, synchronous validation failure)
 description: >
   When an LWC needs to surface a failure (Apex error, validation failure, missing
   precondition) to the user, dispatch a `ShowToastEvent` with `variant: 'error'`

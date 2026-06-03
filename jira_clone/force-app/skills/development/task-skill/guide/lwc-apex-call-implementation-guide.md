@@ -1,5 +1,10 @@
 ---
 name: lwc-apex-call-implementation-guide
+activation:
+  mode: required
+  applies_when: >-
+    the component calls an Apex method — decide @wire vs imperative from the
+    method's cacheability and the visibility-urgency branch
 description: >
   Shared interview sub-step for deciding the `@wire` call style . 
   Goal is to know frontEnd level implementation of a lwc component.

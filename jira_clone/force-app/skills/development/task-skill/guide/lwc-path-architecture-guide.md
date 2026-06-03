@@ -1,5 +1,8 @@
 ---
 name: lwc-path-architecture-guide
+activation:
+  mode: required
+  applies_when: always — settle LWC layering before any interview question
 description: >
   Settles the LWC layering before any interview question: page (smart) vs child
   (presentation) split, principal state ownership, sidecar

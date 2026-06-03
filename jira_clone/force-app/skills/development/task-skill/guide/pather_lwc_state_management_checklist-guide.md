@@ -1,3 +1,20 @@
+---
+name: pather_lwc_state_management_checklist-guide
+activation:
+  mode: required
+  applies_when: >-
+    before emitting parent/pather code that owns principal state or handles
+    child events
+description: >
+  State-management checklist (Rules 0–7) for parent/pather LWCs: principal
+  state updated from Apex response data, wired-function form, one handler per
+  dispatched event, child props derived via getters, presentation state behind
+  getters, active-object id stored separately, find/update/delete/create
+  mutators, toast on failure, immutable spread + _key regeneration on update,
+  and every dispatched event wired in the template. Walk it and fix every
+  failing row before emitting code.
+---
+
 Before presenting the generated code, walk the checklist. If any row fails, fix
 it before emitting code:
 

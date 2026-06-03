@@ -27,16 +27,12 @@ the architecture and silently leak business logic into the view.
 
 ### Step 0 — Mandatory guides
 
-Follow every guide below before any interview question in this skill. They are
-required and run silently — never gated on a user question:
+Apply each guide below per its own `activation:` contract — see CLAUDE.md →
+"Mandatory‑guides step" for how required / optional guides are read. Settle every
+matching guide before the first interview question.
 
 - **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
-  — required: settle the LWC layering (page vs child, principal state, sidecars,
-  naming / event conventions) before any interview question.
 - **`lwc-error-handling-guide`** ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md))
-  — required: route every child failure (synchronous validation, `success ===
-  false`, or error branch the child handles before emitting upward) through
-  `ShowToastEvent`, never a tracked inline `errorMessage` banner.
 
 ---
 

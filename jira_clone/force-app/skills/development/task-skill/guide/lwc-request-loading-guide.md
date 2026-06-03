@@ -1,5 +1,10 @@
 ---
 name: lwc-request-loading-guide
+activation:
+  mode: required
+  applies_when: >-
+    a parent handler makes an imperative Apex call (or @wire-with-function-handler
+    driven by a user action); self-skips for child-only or background-refresh code
 description: >
   When a new (or newly edited) JavaScript handler in an LWC parent component
   makes an imperative Apex call (`apexMethod(...).then(...).catch(...)`),

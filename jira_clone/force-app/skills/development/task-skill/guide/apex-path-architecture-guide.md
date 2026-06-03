@@ -1,5 +1,10 @@
 ---
 name: apex-path-architecture-guide
+activation:
+  mode: required
+  applies_when: >-
+    a new Apex method/class is implemented for the functionality
+    (skip when no new server-side method is created)
 description: >
   BEFORE creating or scaffolding any new Apex that backs a Lightning Web
   Component, decide WHERE every class goes and HOW the layers connect

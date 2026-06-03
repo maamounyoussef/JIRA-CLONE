@@ -33,55 +33,22 @@ data drift the day a second user edits the same record.
 
 ### Step 0 — Mandatory guides
 
-The handlers this skill generates live in a **pather (parent)** component, so
-ALL guides below are mandatory on every event handler that emits JS/HTML/CSS.
-They run silently — never gated on a user question, and must be settled before
-any interview question:
+The handlers this skill generates live in a **pather (parent)** component. Apply
+each guide below per its own `activation:` contract — see CLAUDE.md →
+"Mandatory‑guides step" for how required / optional guides are read. Settle every
+matching guide before the first interview question.
 
 - **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
-  — required: settle the LWC layering (page vs child, principal state, sidecars,
-  `meta.xml` exposure, naming / event conventions) before any interview
-  question.
 - **`apex-method-resolution-guide`** (`force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md`)
-  — required: resolve which Apex method backs each event handler (existing-known,
-  existing-find, or create-new), recursively resolving any dependent
-  class/method before code is emitted.
 - **`lwc-apex-call-implementation-guide`** (`force-app/skills/development/task-skill/guide/lwc-apex-call-implementation-guide.md`)
-  — required: decide the call style (`@wire` vs imperative, with or without
-  `refreshApex`) from the method's cacheability and the visibility-urgency
-  branch.
 - **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
-  — required: every failure path (Apex `.catch`, `@wire` error / `success ===
-  false`) surfaces through `ShowToastEvent` (`variant: 'error'`), never a
-  tracked inline `errorMessage` banner.
 - **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/guide/lwc-request-loading-guide.md`)
-  — required: the `handle<Child><Event>` mutator's imperative Apex call (or its
-  `@wire`-with-function-handler, including the expand-gated / `activeObjectId`
-  wires this skill chooses between) is wired to the component's `isLoading`
-  flag, with a `.loading-overlay` spinner stacked above modals/peek-panels.
-  Reuse the existing loading flag; never add a per-handler boolean.
 - **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
-  — required: walk the state-management checklist (Rules 0–7) and fix every
-  failing row before emitting code.
 - **`apex-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/apex-path-architecture-guide.md`)
-  — required: apply it (no user question) whenever a new Apex method is
-  implemented for this event handler. It settles WHERE the method lives and HOW
-  the layers connect (Controller → APIResponse → Service → DomainCorrectness),
-  including the rule that a Service only queries/DMLs its own object and routes
-  cross-domain reads through the owning Service (e.g. `TicketService` calls
-  `SprintService.findSprintById` instead of querying `Sprint__c` itself). Skip
-  only when no new Apex method is implemented.
-- **`soql-exclude-deleted-guide`** (`force-app/skills/development/task-skill/guide/soql-exclude-deleted-guide.md`)
-  — optional: ask the user whether to apply it, and apply it only on "yes". It
-  is relevant **only when an Apex method is created** for this event handler
-  (a new `[SELECT ... FROM <Object>__c]` against a custom object that carries a
-  `RecordStatus__c` field); it adds the `RecordStatus__c != 'delete'` filter so
-  soft‑deleted rows never leak to callers. Skip the question entirely when no
-  Apex method is created.
 
-Each guide's own SKIP conditions still hold; when you skip one, state the
-reason in the iteration message. Confirm each guide's completion checklist
-passes before reporting the handler done.
+The project-wide soft-delete filter (`soql-exclude-deleted`) is **not** listed
+here: it fires automatically from CLAUDE.md whenever a new or edited `SELECT`
+touches a `RecordStatus__c` object, so no per-skill question gates it.
 
 ---
 

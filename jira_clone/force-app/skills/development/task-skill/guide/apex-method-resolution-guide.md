@@ -1,5 +1,10 @@
 ---
 name: apex-method-resolution
+activation:
+  mode: required
+  applies_when: >-
+    a new functionality or event handler must be backed by an Apex method
+    (parent skills only — children never call Apex, so this self-skips)
 description: >
   Shared interview sub-step for resolving which Apex method backs a new LWC
   functionality or event handler. Reusable across any task-skill whose

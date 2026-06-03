@@ -28,22 +28,13 @@ and silently leak business logic into the view.
 
 ### Step 0 — Mandatory guides
 
-Follow every guide below before any interview question in this skill. They are
-required and run silently — never gated on a user question:
+Apply each guide below per its own `activation:` contract — see CLAUDE.md →
+"Mandatory‑guides step" for how required / optional guides are read. Settle every
+matching guide before the first interview question; Steps 1–4 here assume them.
 
 - **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
-  — required: settle the LWC layering (page vs child, principal state, sidecars,
-  naming / event conventions) before any interview question.
 - **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
-  — required: the parent that handles the events this child dispatches must pass
-  the state-management checklist (Rules 0–7).
 - **`lwc-error-handling-guide`** ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md))
-  — required: route every failure this functionality surfaces (synchronous
-  validation, `success === false`, or error branch handled before emitting
-  upward) through `ShowToastEvent`, never a tracked inline `errorMessage` banner.
-
-Never start the per-sub-component interview without these settled — Steps 1–4
-here assume them.
 
 ---
 
