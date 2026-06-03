@@ -33,7 +33,7 @@ Before any interview question in this skill, you MUST follow these two in order:
 1. **`lwc-architecture`**
    (`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
 2. The pather state-management checklist
-   (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist.md`)
+   (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
    for the parent that handles the events this child dispatches.
 
 Only after the `lwc-architecture` handoff checklist (its Step 4) is green and
@@ -43,9 +43,15 @@ start the per-sub-component interview without those decisions settled — Steps
 
 ---
 
-### Step 0b — Mandatory LWC guard
+### Step 0b — Mandatory guides
 
-apply [guard/lwc-child-guard.md](guard/lwc-child-guard.md)
+- **`lwc-error-handling-guide`**
+  ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md)) —
+  required: route every failure this functionality surfaces (synchronous
+  validation, `success === false`, or error branch handled before emitting
+  upward) through `ShowToastEvent`, never a tracked inline `errorMessage`
+  banner.
+
 ---
 
 ### Step 1 — Detect the interview entry point

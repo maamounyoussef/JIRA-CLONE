@@ -48,27 +48,31 @@ interview without those decisions settled — Steps 1–4 here assume them.
 
 ---
 
-### Step 0b — Mandatory LWC guards for this parent (apply without being asked)
+### Step 0b — Mandatory guides
 
-This is a **pather (parent)** component, so BOTH guards below are mandatory on
+This is a **pather (parent)** component, so ALL guides below are mandatory on
 every functionality that emits JS/HTML/CSS. They run silently — never gated on
 a user question:
 
-- **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/guide/lwc-request-loading-guide.md`)
-  — every user-initiated imperative Apex call (`apexMethod(...).then(...).catch(...)`)
-  or `@wire`-with-function-handler is wired to the component's `isLoading`
-  flag, with a `.loading-overlay` spinner stacked above modals/peek-panels in
-  the HTML and CSS. Reuse the existing loading flag; never add a per-handler
-  boolean.
+- **`apex-method-resolution-guide`** (`force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md`)
+  — required: resolve which Apex method backs each new functionality / event
+  handler (existing-known, existing-find, or create-new), recursively resolving
+  any dependent class/method before code is emitted.
+- **`lwc-apex-call-implementation-guide`** (`force-app/skills/development/task-skill/guide/lwc-apex-call-implementation-guide.md`)
+  — required: decide the call style (`@wire` vs imperative, with or without
+  `refreshApex`) from the method's cacheability and the visibility-urgency
+  branch.
 - **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
-  — every failure path (Apex `.catch`, `@wire` error / `success === false`,
-  synchronous validation failure) surfaces through `ShowToastEvent`
-  (`variant: 'error'`), never a tracked inline `errorMessage` banner. Applies
-  to new error paths added to this existing component too.
+  — required: every failure path (Apex `.catch`, `@wire` error / `success ===
+  false`, synchronous validation failure) surfaces through `ShowToastEvent`
+  (`variant: 'error'`), never a tracked inline `errorMessage` banner.
+- **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
+  — required: walk the state-management checklist (Rules 0–7) and fix every
+  failing row before emitting code.
 
-Each guard's own SKIP conditions still hold; when you skip one, state the
-reason in the iteration message. Confirm both guards' completion checklists
-pass before reporting the functionality done.
+Each guide's own SKIP conditions still hold; when you skip one, state the
+reason in the iteration message. Confirm each guide's completion checklist
+passes before reporting the functionality done.
 
 ---
 

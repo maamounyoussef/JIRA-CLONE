@@ -29,9 +29,13 @@ the architecture and silently leak business logic into the view.
 run [architecture/lwc-path-architecture](architecture/lwc-path-architecture)
 ---
 
-### Step 0b — Mandatory LWC guard for this child 
+### Step 0b — Mandatory guides
 
-apply [guard/lwc-child-guard.md](guard/lwc-child-guard.md)
+- **`lwc-error-handling-guide`**
+  ([guide/lwc-error-handling-guide](guide/lwc-error-handling-guide.md)) —
+  required: route every child failure (synchronous validation, `success ===
+  false`, or error branch the child handles before emitting upward) through
+  `ShowToastEvent`, never a tracked inline `errorMessage` banner.
 
 ---
 

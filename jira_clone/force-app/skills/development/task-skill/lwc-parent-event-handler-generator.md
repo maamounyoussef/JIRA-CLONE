@@ -52,27 +52,37 @@ without those decisions settled — Steps 1–4 here assume them.
 
 ---
 
-### Step 0b — Mandatory LWC guards for this parent (apply without being asked)
+### Step 0b — Mandatory guides
 
 The handlers this skill generates live in a **pather (parent)** component, so
-BOTH guards below are mandatory on every event handler that emits JS/HTML/CSS.
+ALL guides below are mandatory on every event handler that emits JS/HTML/CSS.
 They run silently — never gated on a user question:
 
+- **`apex-method-resolution-guide`** (`force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md`)
+  — required: resolve which Apex method backs each event handler (existing-known,
+  existing-find, or create-new), recursively resolving any dependent
+  class/method before code is emitted.
+- **`lwc-apex-call-implementation-guide`** (`force-app/skills/development/task-skill/guide/lwc-apex-call-implementation-guide.md`)
+  — required: decide the call style (`@wire` vs imperative, with or without
+  `refreshApex`) from the method's cacheability and the visibility-urgency
+  branch.
+- **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
+  — required: every failure path (Apex `.catch`, `@wire` error / `success ===
+  false`) surfaces through `ShowToastEvent` (`variant: 'error'`), never a
+  tracked inline `errorMessage` banner.
 - **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/guide/lwc-request-loading-guide.md`)
-  — the `handle<Child><Event>` mutator's imperative Apex call (or its
+  — required: the `handle<Child><Event>` mutator's imperative Apex call (or its
   `@wire`-with-function-handler, including the expand-gated / `activeObjectId`
   wires this skill chooses between) is wired to the component's `isLoading`
   flag, with a `.loading-overlay` spinner stacked above modals/peek-panels.
   Reuse the existing loading flag; never add a per-handler boolean.
-- **`lwc-error-handling`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
-  — every failure path (Apex `.catch`, `@wire` error / `success === false`)
-  surfaces through `ShowToastEvent` (`variant: 'error'`), consistent with this
-  skill's existing "`ShowToastEvent` on failure" output contract; never a
-  tracked inline `errorMessage` banner.
+- **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
+  — required: walk the state-management checklist (Rules 0–7) and fix every
+  failing row before emitting code.
 
-Each guard's own SKIP conditions still hold; when you skip one, state the
-reason in the iteration message. Confirm both guards' completion checklists
-pass before reporting the handler done.
+Each guide's own SKIP conditions still hold; when you skip one, state the
+reason in the iteration message. Confirm each guide's completion checklist
+passes before reporting the handler done.
 
 ---
 
