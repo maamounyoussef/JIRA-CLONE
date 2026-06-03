@@ -78,11 +78,11 @@ and DTO/store contracts use "for apex and store"; LWC forms and
 
 ## Architecture
 
-For new LWC/Apex components, follow `force-app/skills/development/task-skill/lwc-architecture-skill.md`
-(thin `@AuraEnabled` controller → `domain/<Name>Service` → `APIResponse` envelope).
+For new LWC/Apex components, follow:
+- `force-app/skills/development/architecture/lwc-architecture.md`
+- `force-app/skills/development/architecture/apex-architecture.md`
 
-## Object field validation
 
-`OBJECT_VALIDATION_LWC_APEX.md` is the source of truth for required fields per object
-(note the separate "for apex and store" column). Set all required fields in tests and
-inserts accordingly.
+## Interview Discpline
+Apply [guard/interview-discpline](guard/interview-discpline) on all sub-skill when we have a iterations faq question .
+This should stay with us long time runing.

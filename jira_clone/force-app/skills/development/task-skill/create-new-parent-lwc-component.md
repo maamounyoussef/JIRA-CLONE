@@ -124,21 +124,7 @@ line at the top of every message in the loop so state is always visible:
 [Parent: <componentName> | Iteration: <N> | Path: <pending|A|B|C>]
 ```
 
-Loop discipline (non-negotiable):
 
-- ONE question per message. Never present two paths together. Never
-  pre-answer a downstream step.
-- The path-selection question is the ONLY question this skill asks on its
-  own. Everything after the user picks a path is owned by the chosen
-  sub-skill — re-emit its tracker line verbatim, do not summarise its
-  questions.
-- Do not invent functionalities, user stories, child events, or behaviors.
-  The user supplies them.
-- Do not emit code until the chosen sub-skill's interview for the current
-  iteration has fully resolved.
-- After an iteration finishes (code emitted and accepted, or user picks
-  "stop"), return to the top of the loop and ask the path-selection
-  question again with `Iteration: <N+1>`.
 
 #### The path-selection question
 

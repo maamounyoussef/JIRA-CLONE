@@ -25,63 +25,17 @@ the architecture and silently leak business logic into the view.
 
 ## Instructions
 
-### Step 0 — Run `lwc-architecture` first (MANDATORY)
-
-Before any interview question in this skill, you MUST follow the
-**`lwc-architecture`** skill
-(`force-app/skills/development/architecture/lwc-architecture.md`) end-to-end.
-That umbrella skill settles the architectural decisions BEFORE any UI
-behavior is implemented:
-
-- Page vs. child (or inline section) — Q1
-- Principal state shape — Q2
-- `localStorage` entry keys + load call — Q3
-- Apex methods: exist or to-create (+ Service + guards + test) — Q4
-- Event names + payloads (children) — Q5
-- Sidecar `<feature>Utils.js` / `<feature>Validator.js` needs — Step 2
-- `meta.xml` exposure + targets — Step 2
-
-Only after the `lwc-architecture` handoff checklist (its Step 4) is green do
-you proceed to Step 1 of this skill. Never start the per-sub-component
-interview without those decisions settled — Steps 1–4 here assume them.
-
+### Step 0 — Run `lwc-path-architecture` first (MANDATORY)
+run [architecture/lwc-path-architecture](architecture/lwc-path-architecture)
 ---
 
-### Step 0b — Mandatory LWC guard for this child (apply without being asked)
+### Step 0b — Mandatory LWC guard for this child 
 
-Every LWC — children included — routes failures through a toast, so
-**`lwc-error-handling`** (`force-app/skills/development/guard/lwc-error-handling-skill.md`)
-is mandatory on every iteration that emits child JS/HTML. Any synchronous
-validation failure (or `success === false` / error branch the child handles
-before emitting upward) surfaces through `ShowToastEvent` (`variant: 'error'`),
-never a tracked inline `errorMessage` banner.
-
-`lwc-apex-loading` does **not** apply here: children never call Apex (the
-contract this skill enforces), so there is no round-trip to spin on. The
-parent owns loading state.
-
-The guard's own SKIP conditions still hold; when you skip it, state the
-reason in the iteration message. Confirm its completion checklist passes
-before reporting the iteration done.
+apply [guard/lwc-child-guard.md](guard/lwc-child-guard.md)
 
 ---
 
 ### Step 1 — Detect the interview entry point
-
-Before writing any code, identify which branch of the interview applies. If
-**any** signal matches, run the per-sub-component loop in Step 2:
-
-| # | Signal | Example |
-|---|--------|---------|
-| 1 | Request to create a brand-new child | "create a child component called `ticketView`" |
-| 2 | User describes UI in a new child that dispatches a payload upward | "when the user clicks save, fire an event with the new summary" |
-| 3 | User describes draft state, edit-mode flags, or local validation in a new child | "the summary should be editable, with a confirm/cancel button" |
-
-If none match (e.g. the user wants to add to an existing child, the parent
-orchestrator that calls Apex, or a pure base wrapper with no domain), skip —
-this is not a create-new-child task.
-
-Before any Question, ask only:
 
 > "What is the new child's name, and in one line — what does it need to do?"
 
@@ -103,33 +57,16 @@ Every sub-component must pass all five before moving to the next:
    matching. If a story is not covered, reply: *"The following user story is not
    covered: `<quote>`. Please provide the behavior prompt again, including this
    part."* Never suggest the missing behavior.
-3. **Validation rules.** Ask for the validations to enforce before dispatching
-   any event. The user provides them. Validations live in a sibling
-   `<name>Validator.js` file, not inline.
+3. **Validation rules.** Run the shared step defined in
+   [shared/ask-user-for-lwc-validation.md](shared/ask-user-for-lwc-validation.md).
+   Do not inline the branches here — load that file and follow it verbatim.
+   Validations live in a sibling `<name>Validator.js` file, not inline.
 4. **Data state.** Ask which `@api` state provides the data for this
    sub-component. The user supplies the source object and field.
 5. **Reusable base component.** Ask whether an existing base LWC component
    (`c-ao-input`, `c-ao-btn`, `c-ao-combobox`, `lightning-*`) should be used
    instead of writing the UI from scratch. The user provides the name.
 
-Interview discipline (non-negotiable):
-
-```
-[Child: <name> | Sub-component: <subName> | Question <N>]
-```
-
-- Print the tracker line above at the top of **every** question. If you cannot
-  fill it in, you have lost state — reconstruct it before doing anything else.
-- ONE question per message. Never present two questions together. Never
-  pre-answer a later question. Never say "if you pick X then I'll ask Y."
-- Do not skip Questions. Move only along the branch arrows defined here.
-- No code until the interview for **all** sub-components is finished.
-- "I don't know" is valid ONLY for analysis the AI is allowed to make itself
-  (event payload shape, event name, derived tasks/sub-tasks). For user stories,
-  behavior, validations, data state, and base-component names, the user is the
-  source of truth — re-ask; do NOT invent them.
-- After finishing one sub-component (Question 1 → Question 5), return to the top
-  of the loop for the next sub-component, until the user runs `compact`.
 
 Anti-pattern to detect:
 

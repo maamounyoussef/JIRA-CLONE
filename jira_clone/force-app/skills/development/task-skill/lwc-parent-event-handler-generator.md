@@ -169,14 +169,6 @@ Sub-Loop verbatim from the shared file — do not inline them here.
 
 ### Step 3 — Place the handlers in the right layer
 
-Layering still applies (see `lwc-architecture` and `lwc-child`):
-
-- The **parent** orchestrator owns: event handlers (one per event), the
-  `@wire`/imperative Apex calls, the `_activeXxxId` data state, the
-  find/update/delete/create mutators, and the de-normalised principal state.
-- **Derived child props** are getters that read principal state — never a new
-  data state duplicated alongside it.
----
 
 ### Step 4 — Verify with the execution checklist
 respect the checklist in : [shared/pather_lwc_state_management_checklist.md](shared/pather_lwc_state_management_checklist.md)
@@ -257,25 +249,6 @@ Salesforce LWC reactivity rules these tables encode:
 ---
 
 ## Optional Logic
-
-### Compact and final output
-
-When all events have walked Step 0 → Step 10, emit the code in one pass. The
-final output must include:
-
-| # | Item |
-|---|------|
-| a | Chosen Apex call style with one-line justification |
-| b | Event handler stub per dispatched event (Rule 1) |
-| c | Wire or imperative call with Rule 0-compliant state update |
-| d | Derived getter(s) for child props (Rule 2) |
-| e | Find / update / delete / create mutators (Rule 5) |
-| f | Presentation state declarations + their getters (Rules 3, 4) |
-| g | `ShowToastEvent` on the failure branch (Rule 6) |
-| h | Spread/`_key` pattern wherever principal state is updated (Rule 7) |
-
-Do not emit code in chat during the interview — only at the end, after the full
-analysis of the rules + the user's answers.
 
 ### Integration with `lwc-child` and `lwc-architecture` skills
 

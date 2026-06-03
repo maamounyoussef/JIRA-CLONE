@@ -84,23 +84,6 @@ Before any questions, confirm BOTH conditions are true:
 If either check fails, this is not the right skill — exit silently. Otherwise
 begin the per-functionality interview in Step 2.
 
-Interview discipline (non-negotiable):
-
-```
-[Component: <parentName> | Functionality: <name> | Step 2.<N>]
-```
-
-- Print the tracker line above at the top of **every** question. If you
-  cannot fill it in, you have lost state — reconstruct it before doing
-  anything else.
-- ONE question per message. Never present two steps together. Never
-  pre-answer a later step.
-- Do not skip steps. Walk 2.1 → 2.8 in order.
-- No code emitted until every step is answered.
-- **Never invent a user story or a behavior detail.** The user writes those.
-
----
-
 ### Step 2 — Run the interview
 
 **Step 2.1 — Sub-components.** Ask the user which sub-components this new
@@ -125,10 +108,11 @@ Verify coverage by **semantic comparison**, not keyword matching:
   > Please provide the behavior prompt again, including this part."*
 - Never suggest the missing behavior. Repeat until full coverage is reached.
 
-**Step 2.4 — Validation rules.** Ask the user which validations must run
-**before any Apex call**. The user provides them. Validations live in a
-sibling `<parentName>Validator.js` file alongside the parent — never inline
-inside a handler.
+**Step 2.4 — Validation rules.** Run the shared step defined in
+[shared/ask-user-for-lwc-validation.md](shared/ask-user-for-lwc-validation.md).
+Do not inline the branches here — load that file and follow it verbatim.
+Validations live in a sibling `<parentName>Validator.js` file alongside the
+parent — never inline inside a handler.
 
 **Step 2.5 — Data state.** Ask which state provides the data for this
 functionality. The user supplies the source **object** and **field name** on
