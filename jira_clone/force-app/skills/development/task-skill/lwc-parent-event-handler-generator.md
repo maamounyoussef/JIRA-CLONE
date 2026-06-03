@@ -139,7 +139,7 @@ modify this data while this component is open?"* Yes → Step 2. No → Step 6.
 
 **Step 2 — Wire implementation (visibility urgency + auto-wire gating).** Run
 the shared sub-step defined in
-[shared/lwc-apex-call-implementation-guide.md](shared/lwc-apex-call-implementation-guide.md).
+[guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md).
 Keep this skill's step prefix (`Step 2`, covering its inlined sub-steps
 `Step 3` / `Step 4` / `Step 5`) in the tracker line, but follow the
 visibility-urgency branches (Very important / Important / Not important), the
@@ -160,7 +160,7 @@ gates the `@wire`. **→ Step 10.**
 **Step 9 — Active-object wire.** `@wire` on `activeObjectId`. **→ Step 10.**
 
 **Step 10 — Apex method resolution.** Run the shared sub-step defined in
-[shared/apex-method-resolution.md](shared/apex-method-resolution.md). Keep
+[guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Keep
 this skill's step prefix (`Step 10`, with sub-questions `Step 10.01` /
 `Step 10.02`) in the tracker line, but follow the branches and the Creation
 Sub-Loop verbatim from the shared file — do not inline them here.
@@ -171,7 +171,7 @@ Sub-Loop verbatim from the shared file — do not inline them here.
 
 
 ### Step 4 — Verify with the execution checklist
-respect the checklist in : [shared/pather_lwc_state_management_checklist.md](shared/pather_lwc_state_management_checklist.md)
+respect the checklist in : [guide/pather_lwc_state_management_checklist-guide.md](guide/pather_lwc_state_management_checklist-guide.md)
 
 ---
 

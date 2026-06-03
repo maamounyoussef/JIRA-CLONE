@@ -88,7 +88,7 @@ and
 [lwc-parent-event-handler-generator.md](../force-app/skills/development/task-skill/lwc-parent-event-handler-generator.md)
 need to resolve *"which Apex method backs this?"*. Instead of asking
 that interview manually in each file, both call
-[shared/apex-method-resolution.md](../force-app/skills/development/task-skill/guide/apex-method-resolution.md) —
+[guide/apex-method-resolution-guide.md](../force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md) —
 the three-branch interview (existing-known / existing-find /
 create-new) lives in exactly one file.
 
@@ -152,8 +152,8 @@ force-app/skills/development/
     ├── create-new-child-lwc-component.md
     ├── create-new-parent-lwc-component.md
     ├── lwc-parent-event-handler-generator.md
-    └── shared/
-        └── apex-method-resolution.md
+    └── guide/
+        └── apex-method-resolution-guide.md
         └── lwc-request-loading-guide.md
         └── lwc-error-handling-guide.md
 ```

@@ -124,11 +124,11 @@ should be used instead of writing the UI from scratch. The user provides the
 name. If they say "none", record that and continue.
 
 **Step 2.7 — Apex method resolution.** Run the shared step defined in
-[shared/apex-method-resolution.md](shared/apex-method-resolution.md). Do not
+[guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Do not
 inline the branches here — load that file and follow it verbatim.
 
 **Step 2.8 — Wire implementation.** Run the shared step defined in
-[shared/lwc-apex-call-implementation-guide.md](shared/lwc-apex-call-implementation-guide.md).
+[guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md).
 Keep this skill's tracker line (substitute `Step 2.8`) and follow the
 answer-to-action mapping in that file verbatim — the visibility-urgency
 branch, the `connectedCallback` auto-wire question, and the
@@ -166,7 +166,7 @@ Before emitting any code, walk the checklist. If any row fails, fix it first.
 | 7 | Is the every sub-component from Step 2.1 wired into the template? | Add the missing `<c-...>` tag with its props/handlers. |
 
 Then also walk the shared state-management checklist (Rules 0–7) in
-[shared/pather_lwc_state_management_checklist.md](shared/pather_lwc_state_management_checklist.md).
+[guide/pather_lwc_state_management_checklist-guide.md](guide/pather_lwc_state_management_checklist-guide.md).
 Fix any failing row there before emitting code.
 
 ---
