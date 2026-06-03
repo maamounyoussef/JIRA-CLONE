@@ -79,7 +79,7 @@ parent LWC"* all land on the same row:
 it in each one means every change has to touch every copy.
 
 **Solution.** Extract the shared sub-step into one file under
-[task-skill/shared/](../force-app/skills/development/task-skill/shared/)
+[task-skill/guide/](../force-app/skills/development/task-skill/guide/)
 and have each task-skill call it.
 
 **Example.** Both
@@ -88,7 +88,7 @@ and
 [lwc-parent-event-handler-generator.md](../force-app/skills/development/task-skill/lwc-parent-event-handler-generator.md)
 need to resolve *"which Apex method backs this?"*. Instead of asking
 that interview manually in each file, both call
-[shared/apex-method-resolution.md](../force-app/skills/development/task-skill/shared/apex-method-resolution.md) —
+[shared/apex-method-resolution.md](../force-app/skills/development/task-skill/guide/apex-method-resolution.md) —
 the three-branch interview (existing-known / existing-find /
 create-new) lives in exactly one file.
 

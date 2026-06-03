@@ -54,13 +54,13 @@ This is a **pather (parent)** component, so BOTH guards below are mandatory on
 every functionality that emits JS/HTML/CSS. They run silently — never gated on
 a user question:
 
-- **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/shared/lwc-request-loading-guide.md`)
+- **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/guide/lwc-request-loading-guide.md`)
   — every user-initiated imperative Apex call (`apexMethod(...).then(...).catch(...)`)
   or `@wire`-with-function-handler is wired to the component's `isLoading`
   flag, with a `.loading-overlay` spinner stacked above modals/peek-panels in
   the HTML and CSS. Reuse the existing loading flag; never add a per-handler
   boolean.
-- **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/shared/lwc-error-handling-guide.md`)
+- **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
   — every failure path (Apex `.catch`, `@wire` error / `success === false`,
   synchronous validation failure) surfaces through `ShowToastEvent`
   (`variant: 'error'`), never a tracked inline `errorMessage` banner. Applies

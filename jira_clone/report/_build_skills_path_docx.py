@@ -187,7 +187,7 @@ add_para(
     "and maintainability — each illustrated with a project-specific "
     "example. The orchestrator owns classification only; each downstream "
     "task-skill owns its disciplined interview and code emission, and "
-    "shared sub-steps are factored into task-skill/shared/ to avoid a "
+    "shared sub-steps are factored into task-skill/guide/ to avoid a "
     "cross-skill dependency mesh.",
     style="Abstract",  # display name matches style_id here
 )
@@ -243,7 +243,7 @@ add_code_block("B — create new functionality / parent →\nadd-interactive-wit
 # ----- 2.3 Maintainability -----
 add_heading("2.3 Maintainability — a new task can't fan out edits across every other task", 2)
 add_para("Problem. When several task-skills need the same sub-step, in-lining it in each one means every change has to touch every copy.")
-add_para("Solution. Extract the shared sub-step into one file under task-skill/shared/ and have each task-skill call it.")
+add_para("Solution. Extract the shared sub-step into one file under task-skill/guide/ and have each task-skill call it.")
 add_para("Example. Both add-interactive-with-data-persistance-functionality-in-pather.md and lwc-parent-event-handler-generator.md need to resolve \"which Apex method backs this?\". Instead of asking that interview manually in each file, both call shared/apex-method-resolution.md — the three-branch interview (existing-known / existing-find / create-new) lives in exactly one file.")
 
 # ----- 3 -----

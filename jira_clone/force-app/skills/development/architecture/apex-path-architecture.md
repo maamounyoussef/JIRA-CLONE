@@ -78,7 +78,7 @@ public static APIResponse createStatus(String name, String projectId) {
 - Use a DTO when a response is a composite/nested shape (not a single SObject),
   with `@AuraEnabled` properties matching the client shape the LWC expects.
 
-**Shared — `classes/shared/`**
+**Shared — `classes/guide/`**
 - `APIResponse` (envelope), `ServiceException` (only thrown type), plus
   enums/utils/constants. Don't duplicate these per feature.
 
@@ -130,7 +130,7 @@ Copy from these when scaffolding:
 - Controller: `classes/controller/managebacklog/ManageBacklogController.cls`
 - Service: `classes/domain/StatusService.cls`, `classes/domain/TicketService.cls`
 - Guards: `classes/domain/DomainCorrectness.cls`
-- Envelope: `classes/shared/APIResponse.cls`
+- Envelope: `classes/guide/APIResponse.cls`
 
 ### Naming & folder conventions
 

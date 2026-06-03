@@ -176,7 +176,7 @@ are still included because they shaped subsequent decisions.
 | 18 | [OBJECT_VALIDATION_LWC_APEX.md](OBJECT_VALIDATION_LWC_APEX.md) | Apply `object-required-fields` rule: ProjectMember__c required = Project__c (LWC) + User__c (Apex). |
 | 19 | `ls force-app/main/default/classes/` (bash) | Locate the `shared/` folder. |
 | 20 | `find APIResponse* ServiceException*` (bash) | Resolve the envelope + exception types. |
-| 21 | [force-app/main/default/classes/shared/APIResponse.cls](force-app/main/default/classes/shared/APIResponse.cls) | Confirm `APIResponse(success, message, data)` constructor signature. |
+| 21 | [force-app/main/default/classes/guide/APIResponse.cls](force-app/main/default/classes/guide/APIResponse.cls) | Confirm `APIResponse(success, message, data)` constructor signature. |
 | 22 | `ls force-app/main/default/lwc/manageBacklog` (bash find) | Locate manageBacklog reference files. |
 | 23 | [force-app/main/default/lwc/manageBacklog/manageBacklog.js](force-app/main/default/lwc/manageBacklog/manageBacklog.js) (lines 1–100) | Study a real parent's wire/import/state conventions. |
 | 24 | `grep "localStorage\|projectId" manageBacklog.js` (bash) | Decide whether this parent needs the localStorage projectId entry; opted for self-contained selector instead. |
