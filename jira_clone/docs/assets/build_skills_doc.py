@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Rebuild the body of Skills_Path_Architecture.docx to reflect the
-new leaf-guide skills architecture. Title page is left untouched."""
+"""Rebuild the body of Skills_Path_Architecture.docx so it matches the
+markdown report docs/skills-path-report.md verbatim. Title page is left
+untouched."""
+import os
 import docx
+from docx.shared import Inches
 from docx.oxml.ns import qn
 
-SRC = r"c:\softreatail\project\app\jira_clone_v011\jira_clone\docs\Skills_Path_Architecture.docx"
+DOCS = r"c:\softreatail\project\app\jira_clone_v011\jira_clone\docs"
+SRC = os.path.join(DOCS, "Skills_Path_Architecture.docx")
+ASSETS = os.path.join(DOCS, "assets")
 
 doc = docx.Document(SRC)
 body = doc.element.body
@@ -40,6 +45,9 @@ def h1(text):
 def h2(text):
     p = doc.add_paragraph(text, style='Heading 2'); _relocate(p._p)
 
+def h3(text):
+    p = doc.add_paragraph(text, style='Heading 3'); _relocate(p._p)
+
 def body_p(text, style='Body Text'):
     p = doc.add_paragraph(text, style=style); _relocate(p._p)
 
@@ -48,6 +56,31 @@ def lead(boldlead, rest, style='Body Text'):
     r = p.add_run(boldlead)
     r.bold = True
     p.add_run(rest)
+    _relocate(p._p)
+    return p
+
+def bullet(text):
+    try:
+        p = doc.add_paragraph(text, style='List Bullet')
+    except Exception:
+        p = doc.add_paragraph('- ' + text, style='Body Text')
+    _relocate(p._p)
+    return p
+
+def numbered(text):
+    try:
+        p = doc.add_paragraph(text, style='List Number')
+    except Exception:
+        p = doc.add_paragraph(text, style='Body Text')
+    _relocate(p._p)
+    return p
+
+def quote(text):
+    """Render a markdown blockquote (the example call-outs)."""
+    try:
+        p = doc.add_paragraph(text, style='Quote')
+    except Exception:
+        p = doc.add_paragraph(text, style='Body Text')
     _relocate(p._p)
     return p
 
@@ -77,23 +110,25 @@ def table(headers, rows):
     _relocate(t._tbl)
     return t
 
-# ---- Abstract ------------------------------------------------------------
-h1('Abstract')
+def image(filename, caption):
+    """Embed an asset image; fall back to an italic caption if it is missing."""
+    path = os.path.join(ASSETS, filename)
+    if os.path.exists(path):
+        p = doc.add_paragraph()
+        run = p.add_run()
+        run.add_picture(path, width=Inches(5.5))
+        _relocate(p._p)
+    cap = doc.add_paragraph()
+    r = cap.add_run(caption)
+    r.italic = True
+    _relocate(cap._p)
+
+# ---- Intro ---------------------------------------------------------------
 body_p(
-    "This report describes how the development skills directory in this "
-    "Salesforce/LWC project is shaped to automate the Development phase of the "
-    "Agile SDLC for the developer — to set a repeatable definition of done for "
-    "task development — while adapting to the project's architecture and rules. "
-    "It is organized around the three challenges the architecture solves — "
-    "reliability, consistency, and maintainability. The current design pushes "
-    "every reusable rule down to a leaf level of guide files under "
-    "task-skill/guide/. Each task-skill opens with a Mandatory-guides step that "
-    "names exactly which guides it depends on, tagged required or optional, so "
-    "the dependency graph is a shallow tree (orchestrator -> task-skill -> guide) "
-    "instead of a mesh. Cross-cutting performance and governor-limit guards are "
-    "not owned by any single task-skill; they are project-wide and triggered "
-    "from CLAUDE.md.",
-    style='Abstract')
+    "How force-app/skills/development/ is shaped to automate the Development "
+    "phase of the Agile SDLC for the developer while adapting to this project's "
+    "architecture and rules, and how that shape resolves three concrete "
+    "challenges: reliability, consistency, maintainability.")
 
 # ---- 1. The goal ---------------------------------------------------------
 h1('1. The goal')
@@ -104,9 +139,9 @@ table(['Question', 'Answer'], [
     ['Who uses it?', 'The developer.'],
     ['For what?', 'To implement a task (the bug flow is reserved for later).'],
     ['Constrained by what?',
-     "The project's architecture and rules — LWC layering, Apex bulkification, "
-     "soft-delete filter, required fields, and the "
-     "Controller -> APIResponse -> Service -> DomainCorrectness layering."],
+     "The project's architecture and rules — LWC architecture, Apex "
+     "bulkification, soft-delete filter, required fields, controller -> Service "
+     "-> APIResponse layering."],
 ])
 body_p("Restated:")
 body_p("Build a skill that automates the Development phase of the Agile SDLC "
@@ -116,274 +151,133 @@ body_p("Build a skill that automates the Development phase of the Agile SDLC "
 body_p("The rest of this document is the architecture that meets that goal, "
        "organized by the three challenges it has to solve.")
 
-# ---- 2. The three challenges --------------------------------------------
-h1('2. The three challenges (with examples)')
+# ---- 2. From a flat pool to an orchestrator -----------------------------
+h1('2. From a flat pool to an orchestrator')
+body_p("The current shape is the third design in a progression — each step "
+       "fixes the problem the previous one left open.")
+
+h2("Solution 1 — One flat pool of skills")
+image("solution-1-flat-pool.png", "Figure: One flat pool of skills.")
+bullet("Each circle is a single .md skill, all sitting at the same level.")
+bullet("From the prompt the model picks one file — but two skills can overlap "
+       "on a point.")
+bullet("To avoid grabbing the wrong one, the developer must stay aware of every "
+       "skill's description at once.")
+lead("Doesn't scale. ", "Being aware of every skill is impossible once the "
+     "system grows, and it costs more time on every prompt. The more skills you "
+     "add, the noisier and less reliable selection gets.")
+
+h2("Solution 2 — Group into skills & sub-skills")
+image("solution-2-group-skills-subskills.png",
+      "Figure: Group into skills and sub-skills.")
+bullet("Circles are bundled: each big shape is one skill; the small circles "
+       "become guides (sub-skills), each with its own activation point.")
+bullet("A prompt activates a sub-skill inside the right skill instead of "
+       "scanning a flat pile.")
+lead("Better, but not enough. ", "Selection still happens by meaning — a "
+     "semantic guess — so it can still pick the wrong file when two sub-skills "
+     "are close.")
+
+h2("Solution 3 — Wrap it in an orchestrator")
+image("solution-3-orchestrator.png", "Figure: Wrap it in an orchestrator.")
+bullet("The whole structure is enclosed in an orchestrator.")
+bullet("It does not select \"by meaning\", so the overlap/ambiguity problem is "
+       "eliminated.")
+bullet("It determines the exact file to load from the specific user question.")
+lead("Precise & scalable. ", "Routing points to one exact sub-skill, and it "
+     "keeps working as the number of skills grows.")
+
+# ---- 3. The three challenges --------------------------------------------
+h1('3. The three challenges (with examples)')
 
 h2("2.1 Reliability — the right skill must fire even when the user didn't name it")
-lead("Problem. ", "A skill (or guide) only fires if the model picks it. If the "
-     "user's prompt doesn't name a downstream guide, it gets silently skipped.")
-lead("Solution. ", "Make the call explicit inside the calling task-skill. Each "
-     "task-skill's Step 0 — Mandatory guides names the leaf guides it depends "
-     "on, so they fire regardless of wording.")
-lead("Example. ", "The user says \"add this functionality to my parent\" — "
-     "nothing about layering, error handling, or state rules. The task-skill's "
-     "Step 0 names those guides as mandatory, so they run silently before any "
-     "interview question:")
-code([
-    "add-interactive-with-data-persistance-functionality-in-pather.md",
-    "  Step 0 — Mandatory guides (required, no question):",
-    "    lwc-path-architecture-guide  ·  lwc-error-handling-guide  ·",
-    "    pather_lwc_state_management_checklist-guide",
-])
+lead("Problem. ", "A skill only fires if the model picks it. If the user's "
+     "prompt doesn't name a downstream skill, it gets silently skipped.")
+lead("Solution. ", "Make the call explicit inside the calling skill, so it "
+     "cannot be missed regardless of wording.")
+lead("Example. ", "The user says \"create a new parent LWC\" — nothing about "
+     "CSS. The parent task-skill itself names the CSS handoff as a fixed step:")
+quote("create-new-parent-lwc-component.md:207 — Step 4 — Optionally apply "
+      "lwc-css-design")
 
 h2("2.2 Consistency — same intent, same path, every time")
 lead("Problem. ", "With N skills directly addressable, the user's wording "
-     "decides which one fires. Same intent, different phrasings, different paths.")
-lead("Solution. ", "One entry point — the orchestrator (triggered by "
-     "\"development run\") — and an AskUserQuestion flow that turns the prompt "
-     "into a fixed set of answers, so the user's intent is captured with 100% "
-     "certainty.")
+     "decides which one fires. Same intent, different phrasings, different "
+     "paths.")
+lead("Solution. ", "One entry point — the orchestrator — and an AskUserQuestion "
+     "flow that turns the prompt into a fixed set of answers, so the user's "
+     "intent is captured with 100% certainty.")
 lead("Example. ", "Any dev request enters "
-     "agile-development-orchastrator-skill.md and answers the classification "
-     "questions: bug vs. task, then A/B/C, then parent vs. child. Three "
-     "different phrasings of \"build a feature on a parent LWC\" all land on the "
-     "same row:")
-code([
-    "B — create new functionality / parent ->",
-    "add-interactive-with-data-persistance-functionality-in-pather.md",
-])
+     "agile-development-orchastrator-skill.md and answers two AskUserQuestion "
+     "calls: bug vs. task, then A/B/C + parent/child. Three different phrasings "
+     "of \"build a feature on a parent LWC\" all land on the same row:")
+quote("B — create new functionality / parent -> "
+      "add-interactive-with-data-persistance-functionality-in-pather.md")
 
 h2("2.3 Maintainability — a new task can't fan out edits across every other task")
 lead("Problem. ", "When several task-skills need the same sub-step, in-lining "
      "it in each one means every change has to touch every copy.")
-lead("Solution. ", "Extract the shared sub-step into one leaf-level guide file "
-     "under task-skill/guide/ and have each task-skill reference it from its "
-     "Mandatory-guides step. The rule lives in exactly one file.")
+lead("Solution. ", "Extract the shared sub-step into one file under "
+     "task-skill/guide/ and have each task-skill call it.")
 lead("Example. ", "Both "
      "add-interactive-with-data-persistance-functionality-in-pather.md and "
      "lwc-parent-event-handler-generator.md need to resolve \"which Apex method "
      "backs this?\". Instead of asking that interview manually in each file, both "
-     "depend on guide/apex-method-resolution-guide.md — the three-branch "
-     "interview (existing-known / existing-find / create-new) lives in exactly "
-     "one leaf guide.")
+     "call guide/apex-method-resolution-guide.md — the three-branch interview "
+     "(existing-known / existing-find / create-new) lives in exactly one file.")
 
-# ---- 3. Adaptation -------------------------------------------------------
-h1('3. Adaptation to project architecture and rules')
-body_p("The orchestrator does not invent rules — it routes work into "
-       "task-skills, and each task-skill reaches the project's rules through "
-       "the leaf guides it depends on. Two mechanisms keep this adaptation "
-       "predictable.")
+# ---- 4. Adaptation -------------------------------------------------------
+h1('4. Adaptation to project architecture and rules')
+body_p("The orchestrator does not invent rules — it routes work into skills "
+       "that already encode the project's rules. The chain of constraints, as "
+       "they fire during a typical \"create a new parent LWC\" iteration:")
+numbered("Orchestrator — classifies as task / option A / parent.")
+numbered("create-new-parent-lwc-component — Step 0 mandates lwc-architecture "
+         "end-to-end (page vs. child, principal state shape, localStorage keys, "
+         "Apex methods, event names, sidecar utils / validator, meta.xml "
+         "exposure).")
+numbered("Per-iteration sub-skill (A -> functionality, B -> event handler) runs "
+         "its full disciplined interview, then hands off to the shared "
+         "Apex-method-resolution protocol when controller methods need to be "
+         "resolved.")
+numbered("Final Verification — the project-wide MANDATORY skills declared in "
+         "CLAUDE.md are checked: bulkified Apex (apex-bulk-soql), soft-delete "
+         "filter (soql-exclude-deleted), required fields per "
+         "OBJECT_VALIDATION_LWC_APEX.md (object-required-fields), thin "
+         "controller -> Service -> APIResponse layering (lwc-architecture).")
+numbered("Optional CSS handoff — Step 4 asks whether to apply lwc-css-design so "
+         "the new parent drops in next to manageBacklog / manageWorkflow "
+         "without visual tuning.")
+body_p("Every project-specific rule has exactly one home, and the orchestrator "
+       "guarantees the rules are reached — not left to the model to remember.")
 
-h2("3.1 The Mandatory-guides step: the activation contract lives on the guide")
-body_p("Every task-skill opens with a Step 0 — Mandatory guides, but that step "
-       "lists guide NAMES only — it does not restate when each guide fires. The "
-       "trigger lives with the guide: every file under task-skill/guide/ declares "
-       "an activation: block in its frontmatter (mode, applies_when, and — for "
-       "optional guides — question). One rule in CLAUDE.md says how to read that "
-       "block, so the activation logic is written once instead of being copied "
-       "into every task-skill that lists the guide:")
-lead("required — ", "no question. Read and apply the guide when its applies_when "
-     "matches the change scope; otherwise skip it and state the skip reason in "
-     "the iteration message.")
-lead("optional — ", "ask the guide's declared question first; apply only on "
-     "yes, never silently.")
-lead("cross-cutting — ", "the guide is project-wide and fires from CLAUDE.md, "
-     "never gated by a task-skill's Mandatory-guides question (e.g. "
-     "soql-exclude-deleted).")
-
-h2("3.2 Project-wide cross-cutting skills live in CLAUDE.md, not in a task-skill")
-body_p("The performance/ and guard/ skills encode disciplines that apply to any "
-       "Apex on the project, regardless of which task-skill produced it. They "
-       "are NOT wired into a task-skill's Mandatory-guides step; CLAUDE.md "
-       "decides when they fire. That keeps each cross-cutting rule in exactly "
-       "one place and out of the per-task dependency graph — so adding a "
-       "task-skill never multiplies edges to the guards. The bulkification "
-       "chain (governor-limit guard -> bulk-SOQL rewrite -> method monitor) and "
-       "the soft-delete filter are all triggered this way.")
-
-# ---- 4. Current file layout ---------------------------------------------
-h1('4. Current file layout (for reference)')
+# ---- 5. Current file layout ---------------------------------------------
+h1('5. Current file layout (for reference)')
 code([
     "force-app/skills/development/",
-    "├── agile-development-orchastrator-skill.md      <- single entry ('development run')",
-    "├── guard/                                        <- project-wide, triggered from CLAUDE.md",
-    "│   ├── apex-governor-limit-guard.md",
-    "│   └── interview-discpline.md",
-    "├── performance/                                  <- project-wide, triggered from CLAUDE.md",
+    "├── agile-development-orchastrator-skill.md     <- single entry",
+    "├── architecture/",
+    "│   ├── lwc-architecture.md",
+    "│   └── lwc-css-design.md",
+    "├── contract/",
+    "│   ├── object-required-fields-skill.md",
+    "│   └── soql-exclude-deleted-skill.md",
+    "├── guard/",
+    "│   └── apex-governor-limit-guard.md",
+    "├── performance/",
     "│   ├── apex-bulk-soql.md",
     "│   └── apex-method-monitor.md",
     "└── task-skill/",
-    "    ├── create-new-parent-lwc-component.md        <- pather router (no direct guides)",
-    "    ├── add-interactive-with-data-persistance-functionality-in-pather.md",
-    "    ├── lwc-parent-event-handler-generator.md",
-    "    ├── create-new-child-lwc-component.md",
     "    ├── add-functionality-in-child-lwc-component.md",
-    "    ├── shared/",
-    "    │   └── ask-user-for-lwc-validation.md",
-    "    └── guide/                                     <- leaf level (depended on, never depends)",
-    "        ├── lwc-path-architecture-guide.md",
-    "        ├── apex-path-architecture-guide.md",
+    "    ├── add-interactive-with-data-persistance-functionality-in-pather.md",
+    "    ├── create-new-child-lwc-component.md",
+    "    ├── create-new-parent-lwc-component.md",
+    "    ├── lwc-parent-event-handler-generator.md",
+    "    └── guide/",
     "        ├── apex-method-resolution-guide.md",
-    "        ├── lwc-apex-call-implementation-guide.md",
-    "        ├── lwc-error-handling-guide.md",
     "        ├── lwc-request-loading-guide.md",
-    "        ├── pather_lwc_state_management_checklist-guide.md",
-    "        ├── lwc-css-design-guide.md",
-    "        └── soql-exclude-deleted-guide.md",
+    "        └── lwc-error-handling-guide.md",
 ])
-
-# ---- 5. Task-skills and their guide dependencies ------------------------
-h1('5. Task-skills and their guide dependencies')
-body_p("For each task-skill below: its name, what it does, and the guide NAMES "
-       "its Step 0 lists. The condition that governs each guide is no longer "
-       "restated per task-skill — it lives in the guide's own activation: "
-       "contract (reproduced here for reference, but read from the guide at "
-       "runtime).")
-
-GUIDE_HEADERS = ['Guide', 'Type', 'When read / question']
-
-h2("create-new-parent-lwc-component")
-body_p("Pather (parent) router. Locks the pather's name + purpose once, then "
-       "loops offering ADD NEW FUNCTIONALITY and HANDLE CHILD EVENT, delegating "
-       "each to the matching sub-skill below. It emits no code itself, so it "
-       "declares no guides directly — every guide lives in the sub-skill it "
-       "routes to.")
-body_p("Direct guide dependencies: none.")
-
-h2("add-interactive-with-data-persistance-functionality-in-pather")
-body_p("Six-step interview (sub-components, user stories, behavior, validations, "
-       "data state, reusable base component) plus Apex-method resolution and "
-       "wire-style decision, for adding an interactive data-persisting "
-       "functionality to an existing parent LWC.")
-table(GUIDE_HEADERS, [
-    ['lwc-path-architecture-guide', 'required',
-     'Always — settle LWC layering before any interview question.'],
-    ['apex-method-resolution-guide', 'required',
-     'Always — resolve which Apex method backs the functionality (3 branches).'],
-    ['lwc-apex-call-implementation-guide', 'required',
-     'Always — decide @wire vs imperative call style from cacheability.'],
-    ['lwc-error-handling-guide', 'required',
-     'Always — route every failure through ShowToastEvent, not an inline banner.'],
-    ['pather_lwc_state_management_checklist-guide', 'required',
-     'Always — walk the state checklist (Rules 0-7) before emitting code.'],
-    ['apex-path-architecture-guide', 'required',
-     'When a new Apex method is implemented (skip if none is created).'],
-    ['lwc-css-design-guide', 'optional',
-     'Q (Step 5): "Apply the project\'s CSS design system now?"'],
-])
-body_p("Soft-delete filtering (soql-exclude-deleted) is no longer a row here: "
-       "it is cross-cutting and fires from CLAUDE.md whenever a new/edited SELECT "
-       "touches a RecordStatus__c object.")
-
-h2("lwc-parent-event-handler-generator")
-body_p("Per-event interview for wiring a parent LWC to handle CustomEvents "
-       "dispatched by a child (state identification -> Apex resolution -> "
-       "concurrent writes -> visibility urgency -> expand timing), producing "
-       "state-coherent handlers and the correct @wire/imperative call style.")
-table(GUIDE_HEADERS, [
-    ['lwc-path-architecture-guide', 'required',
-     'Always — settle LWC layering before any interview question.'],
-    ['apex-method-resolution-guide', 'required',
-     'Always — resolve which Apex method backs each event handler.'],
-    ['lwc-apex-call-implementation-guide', 'required',
-     'Always — decide @wire vs imperative + refreshApex.'],
-    ['lwc-error-handling-guide', 'required',
-     'Always — route every failure through ShowToastEvent.'],
-    ['lwc-request-loading-guide', 'required',
-     'Always — wire the handler\'s Apex call to the isLoading spinner overlay.'],
-    ['pather_lwc_state_management_checklist-guide', 'required',
-     'Always — walk the state checklist (Rules 0-7) before emitting code.'],
-    ['apex-path-architecture-guide', 'required',
-     'When a new Apex method is implemented (skip if none is created).'],
-    ['lwc-css-design-guide', 'optional',
-     'Q (Step 5): "Apply the project\'s CSS design system now?"'],
-])
-body_p("As above, soft-delete filtering is cross-cutting (CLAUDE.md), not a row "
-       "in this skill's Step 0.")
-
-h2("create-new-child-lwc-component")
-body_p("Per-sub-component interview (user stories, behavior, validations, @api "
-       "data state, reusable base component) for scaffolding a brand-new child "
-       "LWC. Children are presentation-only: no Apex, no @api mutation, draft "
-       "state with _ + @track, lowercase events dispatched upward.")
-table(GUIDE_HEADERS, [
-    ['lwc-path-architecture-guide', 'required',
-     'Always — settle LWC layering before any interview question.'],
-    ['lwc-error-handling-guide', 'required',
-     'Always — route every child failure through ShowToastEvent.'],
-    ['lwc-css-design-guide', 'optional',
-     'Q (Step 5): "Apply the project\'s CSS design system now?"'],
-])
-
-h2("add-functionality-in-child-lwc-component")
-body_p("Same per-sub-component interview, but extending an existing child LWC "
-       "in place with a new sub-component or new functionality, preserving the "
-       "existing sub-components, getters, handlers, and dispatched events.")
-table(GUIDE_HEADERS, [
-    ['lwc-path-architecture-guide', 'required',
-     'Always — settle LWC layering before any interview question.'],
-    ['pather_lwc_state_management_checklist-guide', 'required',
-     'Always — the parent handling these events must pass the state checklist.'],
-    ['lwc-error-handling-guide', 'required',
-     'Always — route every failure through ShowToastEvent.'],
-    ['lwc-css-design-guide', 'optional',
-     'Q (Step 5): "Apply the project\'s CSS design system now?"'],
-])
-
-h2("Shared sub-step")
-body_p("shared/ask-user-for-lwc-validation.md is a leaf shared sub-step (not a "
-       "guide) for the \"Validation rules\" interview question. All four "
-       "functionality/child task-skills load it verbatim instead of inlining "
-       "the validation branches, so the rule lives in one file.")
-
-h2("Project-wide cross-cutting skills (triggered from CLAUDE.md)")
-body_p("These are not listed in any task-skill's Mandatory-guides step. "
-       "CLAUDE.md decides when they fire, so they stay in one place and out of "
-       "the per-task dependency graph.")
-table(['Skill', 'When it fires'], [
-    ['guard/apex-governor-limit-guard',
-     'Detect — when a bulk query/command (SELECT or DML over >1 record) is '
-     'written or edited.'],
-    ['performance/apex-bulk-soql',
-     'Rewrite — same trigger, or when the guard flags an N+1 pattern.'],
-    ['performance/apex-method-monitor',
-     'Measure — after creating/editing an @AuraEnabled method that does '
-     'SOQL/SOSL/DML (asks first).'],
-    ['guard/interview-discpline',
-     'On every iteration that has a question step.'],
-    ['guide/soql-exclude-deleted-guide',
-     'For any new/edited SELECT on a RecordStatus__c object — fires silently, '
-     'project-wide, from CLAUDE.md. Single home: not gated by any task-skill '
-     'question (its activation: mode is cross-cutting).'],
-])
-
-# ---- 6. Resolving the spaghetti dependency ------------------------------
-h1('6. How the leaf-guide design resolves the spaghetti dependency')
-body_p("The earlier design let task-skills inline their sub-steps and reference "
-       "one another, so a single rule lived in many copies and a new task could "
-       "force edits across the others. The current design removes that with a "
-       "few invariants:")
-lead("Three layers, edges point down. ",
-     "orchestrator -> task-skill -> guide. There is no fourth hop and no "
-     "sideways edge between task-skills.")
-lead("Guides are leaves. ",
-     "A guide never imports another guide or a task-skill, so the graph has no "
-     "cycles and no mesh.")
-lead("One rule, one home. ",
-     "A shared rule lives in exactly one guide; N task-skills reference it by "
-     "listing it in their Mandatory-guides step, not by copying it — change it "
-     "once and every caller gets the change.")
-lead("Activation is declared once, on the guide. ",
-     "When a guide fires — its mode and applies_when, plus the question for "
-     "optional guides — lives in the guide's activation: frontmatter, read via a "
-     "single rule in CLAUDE.md. A task-skill's Step 0 lists guide names only, so "
-     "the trigger text is never copied across the task-skills that share a guide.")
-lead("Adding a task-skill is additive. ",
-     "A new task-skill only adds edges to existing leaf guides; it never forces "
-     "an edit in a sibling task-skill.")
-lead("Cross-cutting rules are lifted out. ",
-     "performance/ and guard/ are triggered from CLAUDE.md rather than wired "
-     "into the task graph, so they do not multiply edges across task-skills.")
 
 doc.save(SRC)
 print("saved", SRC)

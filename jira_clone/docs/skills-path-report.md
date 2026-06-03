@@ -33,7 +33,55 @@ organized by the three challenges it has to solve.
 
 ---
 
-## 2. The three challenges (with examples)
+## 2. From a flat pool to an orchestrator
+
+The current shape is the third design in a progression — each step
+fixes the problem the previous one left open.
+
+### Solution 1 — One flat pool of skills
+
+![One flat pool of skills](assets/solution-1-flat-pool.png)
+
+- Each circle is a single `.md` skill, all sitting at the same level.
+- From the prompt the model picks **one** file — but two skills can
+  overlap on a point.
+- To avoid grabbing the wrong one, the developer must stay **aware of
+  every skill's description at once**.
+
+**✗ Doesn't scale.** Being aware of every skill is impossible once the
+system grows, and it costs more time on every prompt. The more skills
+you add, the noisier and less reliable selection gets.
+
+### Solution 2 — Group into skills & sub-skills
+
+![Group into skills and sub-skills](assets/solution-2-group-skills-subskills.png)
+
+- Circles are bundled: each big shape is one **skill**; the small
+  circles become **guides** (sub-skills), each with its own activation
+  point.
+- A prompt activates a sub-skill inside the right skill instead of
+  scanning a flat pile.
+
+**~ Better, but not enough.** Selection still happens **by meaning** —
+a semantic guess — so it can still pick the wrong file when two
+sub-skills are close.
+
+### Solution 3 — Wrap it in an orchestrator
+
+![Wrap it in an orchestrator](assets/solution-3-orchestrator.png)
+
+- The whole structure is enclosed in an **orchestrator**.
+- It does **not** select "by meaning", so the overlap/ambiguity
+  problem is eliminated.
+- It determines the **exact** file to load from the specific user
+  question.
+
+**✓ Precise & scalable.** Routing points to one exact sub-skill, and it
+keeps working as the number of skills grows.
+
+---
+
+## 3. The three challenges (with examples)
 
 ### 2.1 Reliability — the right skill must fire even when the user didn't name it
 
@@ -94,7 +142,7 @@ create-new) lives in exactly one file.
 
 ---
 
-## 3. Adaptation to project architecture and rules
+## 4. Adaptation to project architecture and rules
 
 The orchestrator does not invent rules — it routes work into skills
 that already encode the project's rules. The chain of constraints, as
@@ -128,7 +176,7 @@ model to remember.
 
 ---
 
-## 4. Current file layout (for reference)
+## 5. Current file layout (for reference)
 
 ```
 force-app/skills/development/
