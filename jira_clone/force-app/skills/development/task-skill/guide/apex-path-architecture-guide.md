@@ -1,5 +1,5 @@
 ---
-name: apex-architecture
+name: apex-path-architecture-guide
 description: >
   BEFORE creating or scaffolding any new Apex that backs a Lightning Web
   Component, decide WHERE every class goes and HOW the layers connect
@@ -68,6 +68,32 @@ public static APIResponse createStatus(String name, String projectId) {
 - Throws `ServiceException` (never bare `Exception`) on failure.
 - Static methods named for the use case (`createStatus`, `loadStatuses`,
   `findStatus`). One Service per domain object.
+- **A Service only queries/DMLs its OWN object.** When it needs data from
+  another domain, it must NOT write that query in its own context — it calls
+  the other domain's Service and lets it own the query. Example: if
+  `TicketService` needs `findSprintById`, it does **not** write a
+  `[SELECT ... FROM Sprint__c]` inside `TicketService`; instead
+  `TicketService` calls `SprintService.findSprintById(id)` and uses the
+  returned `Sprint__c`. This keeps every object's SOQL/DML in exactly one
+  Service, so cross-domain reads stay routed through the owning Service.
+
+```apex
+// ❌ WRONG — TicketService reaches into another domain's object
+public with sharing class TicketService {
+    public static void linkToSprint(Id ticketId, Id sprintId) {
+        Sprint__c sprint = [SELECT Id, Name FROM Sprint__c WHERE Id = :sprintId];
+        // ...
+    }
+}
+
+// ✅ RIGHT — TicketService asks SprintService for the Sprint
+public with sharing class TicketService {
+    public static void linkToSprint(Id ticketId, Id sprintId) {
+        Sprint__c sprint = SprintService.findSprintById(sprintId);
+        // ...
+    }
+}
+```
 
 **Guards — `classes/domain/DomainCorrectness.cls`**
 - `requireXExists(id)` returns the record or throws `ServiceException`.

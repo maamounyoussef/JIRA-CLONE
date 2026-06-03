@@ -62,6 +62,14 @@ any interview question:
 - **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
   — required: walk the state-management checklist (Rules 0–7) and fix every
   failing row before emitting code.
+- **`apex-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/apex-path-architecture-guide.md`)
+  — required: apply it (no user question) whenever a new Apex method is
+  implemented for this event handler. It settles WHERE the method lives and HOW
+  the layers connect (Controller → APIResponse → Service → DomainCorrectness),
+  including the rule that a Service only queries/DMLs its own object and routes
+  cross-domain reads through the owning Service (e.g. `TicketService` calls
+  `SprintService.findSprintById` instead of querying `Sprint__c` itself). Skip
+  only when no new Apex method is implemented.
 - **`soql-exclude-deleted-guide`** (`force-app/skills/development/task-skill/guide/soql-exclude-deleted-guide.md`)
   — optional: ask the user whether to apply it, and apply it only on "yes". It
   is relevant **only when an Apex method is created** for this event handler

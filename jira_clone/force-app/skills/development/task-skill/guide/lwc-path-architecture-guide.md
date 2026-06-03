@@ -24,7 +24,7 @@ description: >
 └───────────────┬────────────────────────────────────────────────────────┘
                 │ @salesforce/apex/<Controller>.<method>
                 ▼
-            APEX LAYER  (see apex-architecture)
+            APEX LAYER  (see apex-path-architecture-guide)
 ```
 
 ### Reference implementations
