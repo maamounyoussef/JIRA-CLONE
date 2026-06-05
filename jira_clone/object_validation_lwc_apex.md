@@ -73,6 +73,19 @@ for apex and store
 
 ---
 
+## Report_Detail__c
+
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Name | Name (standard) | Text(80) | YES (standard) |
+| Description__c | Description | LongTextArea(32768) | no |
+| Image_URL__c | Image URL | Url(255) | no |
+| Salesforce_Report__c | Salesforce Report | Text(18) | no | // Id of the referenced Salesforce report
+
+> No custom required fields. Standard `Name` field only.
+
+---
+
 ## Sprint__c
 for lwc : 
 | Field API Name | Label | Type | Required |
@@ -263,6 +276,7 @@ for apex and store:
 | NameSequence__c | Project__c, SprintLastSequence__c, TicketLastSequence__c, SubtaskLastSequence__c |
 | ProjectMember__c | Project__c |
 | Project__c | Name (standard) |
+| Report_Detail__c | Name (standard) |
 | Sprint__c | Project__c |
 | Status__c | Project__c |
 | Subtask__c | Summary__c, Ticket__c |
