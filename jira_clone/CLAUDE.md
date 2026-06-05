@@ -84,6 +84,32 @@ SOQL, SOSL, or DML, to profile it against a real governor‑limit test and recor
 the result. It asks before running, via the interactive `AskUserQuestion` tool,
 so it never profiles without consent. This stays in effect long‑term.
 
+## Reports: check API version, read the matching Apex Reference (MANDATORY)
+
+Whenever you implement or edit a **report** (any work against the `Reports`
+namespace classes — e.g. `ReportManager`, `ReportResults`, `ReportInstance`,
+`ReportFactWithDetails`, etc.):
+
+1. Read the org's API version from `sourceApiVersion` in `sfdx-project.json`
+   .
+2. For each `Reports` class you are working on, fetch the Apex Reference page for
+   that class at the URL matching that API version, then implement against what it
+   documents (available methods, signatures, and behavior for that version):
+
+   ```
+   https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_reports_<classname>.htm
+   ```
+
+   where `<classname>` is the class name **lowercased**. Example for
+   `ReportManager`:
+
+   ```
+   https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_class_reports_reportmanager.htm
+   ```
+
+Do not implement report logic from memory — confirm the API surface against the
+reference for the current API version first. This stays in effect long‑term.
+
 ## Interview discipline (MANDATORY)
 
 Apply [guard/interview-discpline](guard/interview-discpline) on every sub‑skill
