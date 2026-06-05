@@ -78,7 +78,7 @@ per-event loop with the first event.
 
 ---
 
-### Step 2 — Run the per-event FAQ, then decide the call style
+### Step 2 — Run the per-event FAQ, then run the wire-implementation guide
 
 For each event identified in Step 1, run the shared FAQ
 [shared/pather-event-handler-faq.md](shared/pather-event-handler-faq.md),
@@ -88,20 +88,17 @@ array vs. single value), the resolved **Apex method** with its **cacheability**,
 the **concurrent-writes** answer, the **expand-action** answer, and the
 **load-timing** answer.
 
-From those returns, decide:
-
-- If the state is a **single/separate** value, **or** the Apex method is
-  **non-cacheable** → **imperative call** (invoke the method, update state in
-  `.then(...)`). The wire decisions below do not apply.
-- Otherwise (**cacheable**, so a `@wire` is in play):
-  - Make the wire-implementation decision with
-    [guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md)
-    from the concurrent-writes answer (visibility-urgency branch,
-    `connectedCallback` auto-wire, separate-`wired<State>` rule).
-  - Wire shape from the expand-action + load-timing answers: **not** an expand
-    action → `@wire` on `activeObjectId`; expand action + load **on expand** →
-    expand-gated `@wire` on a new state field separate from `activeObjectId`;
-    expand action + load **on create** → `@wire` on `activeObjectId`.
+Then run the shared step defined in
+[guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md),
+keeping this step's number in the tracker line. The Apex method and its
+cacheability are already known (from the FAQ): that guide's Step 0 gate uses it
+to choose imperative-vs-`@wire` automatically — do not restate that decision
+here. Follow the guide's answer-to-action mapping verbatim — the
+visibility-urgency branch (from the concurrent-writes answer), the
+`connectedCallback` auto-wire question, and the separate-`wired<State>` rule.
+For the wire's gating field on expand-driven loads, apply the wire-input mapping
+in Resources from the expand-action + load-timing answers. Do not invent a
+fourth option.
 
 When the event is decided, run Steps 3–4 for it, then return here for the next
 event until every event is handled.
