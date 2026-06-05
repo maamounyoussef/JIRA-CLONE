@@ -35,6 +35,26 @@ declared `mode`:
 - **cross-cutting** → the guide is project‑wide and fires from this CLAUDE.md (not
   from any task‑skill's list). It is never gated by a Mandatory‑guides question.
 
+## Shared FAQ responsibility (MANDATORY)
+
+A **shared FAQ** (any file under `force-app/skills/development/task-skill/shared/**`
+that drives an interview — e.g. `pather-add-functionality-faq.md`,
+`pather-event-handler-faq.md`, `apex-method-resolution.md`,
+`ask-user-for-lwc-validation.md`) is responsible for **asking questions and
+recording the user's answers — nothing else**:
+
+- It only gathers input. It never decides **what to do** with an answer (e.g.
+  `@wire` vs imperative call style, layering, which code to emit). Deciding from
+  the answers is the **calling task‑skill's (pather's) job**.
+- A shared FAQ never references a `guide/` file — guides encode the
+  answer‑driven decisions, so they are referenced only by the skills directly
+  under `task-skill/`, never from a `shared/` FAQ. A shared FAQ may reference
+  other `shared/**` question sub‑steps.
+- A shared FAQ is step‑number‑agnostic: the caller passes the step number it
+  reached as a `<prefix>`, and the FAQ's questions read as `<prefix>.1 …`. The
+  FAQ does not know whether the parent LWC already exists — that is the caller's
+  entry‑point concern.
+
 ## Apex bulkification (MANDATORY — applies automatically)
 
 Whenever you write or edit Apex that retrieves or updates **more than one record**,

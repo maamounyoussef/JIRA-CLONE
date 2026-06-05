@@ -1,16 +1,17 @@
 ---
 name: lwc-parent-event-handler-generator
 description: >
-  Contains the per-event interview (Steps 0–10, run in the order state
-  identification → Apex resolution → concurrent writes → visibility urgency →
-  expand-timing) used
-  when wiring a parent LWC to handle `CustomEvent`s dispatched by a child.
-  Also contains the Apex call-style decision tables (`@wire` vs imperative,
-  with or without `refreshApex`, expand-gated vs `activeObjectId` wires), the
-  output contract (one `handle<Child><Event>` per event, derived child props
-  as getters, find/update/delete/create mutators with the spread + `_key`
-  pattern, `ShowToastEvent` on failure, `onxxx={handler}` wiring), and the
-  optional `lwc-css-design-guide` handoff.
+  Entry point + analysis for wiring a parent LWC to handle `CustomEvent`s
+  dispatched by a child. Owns the entry detection (which child + which events)
+  and then runs the shared per-event question iteration in
+  shared/pather-event-handler-faq.md; it does not contain the interview
+  questions itself. Also contains the analysis the FAQ answers feed: the Apex
+  call-style decision tables (`@wire` vs imperative, with or without
+  `refreshApex`, expand-gated vs `activeObjectId` wires), the output contract
+  (one `handle<Child><Event>` per event, derived child props as getters,
+  find/update/delete/create mutators with the spread + `_key` pattern,
+  `ShowToastEvent` on failure, `onxxx={handler}` wiring), and the optional
+  `lwc-css-design-guide` handoff.
 ---
 
 # LWC Parent Event Handler Generator
@@ -39,7 +40,6 @@ each guide below per its own `activation:` contract — see CLAUDE.md →
 matching guide before the first interview question.
 
 - **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
-- **`apex-method-resolution-guide`** (`force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md`)
 - **`lwc-apex-call-implementation-guide`** (`force-app/skills/development/task-skill/guide/lwc-apex-call-implementation-guide.md`)
 - **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
 - **`lwc-request-loading-guide`** (`force-app/skills/development/task-skill/guide/lwc-request-loading-guide.md`)
@@ -78,77 +78,33 @@ per-event loop with the first event.
 
 ---
 
-### Step 2 — Run the per-event interview
+### Step 2 — Run the per-event FAQ, then decide the call style
 
-Apply the **eleven steps**, one question per message, for every dispatched
-event, following the branch arrows below. The traversal order is
-`0 → 10 → 1 → 2 → 6 → 7 → 8 → 9`: **Apex method resolution (Step 10) runs
-before the wire-implementation question (Step 2)** so the call style (`@wire`
-vs imperative) and its `refreshApex` follow-ups are only asked once the method
-— and its cacheability — is known. Every event must walk the full flow before
-code is emitted.
+For each event identified in Step 1, run the shared FAQ
+[shared/pather-event-handler-faq.md](shared/pather-event-handler-faq.md),
+passing this step's number as the FAQ's prefix. It returns these answers, per
+event (by name): the **state** the parent works on (UPDATE / LOAD / SEARCH;
+array vs. single value), the resolved **Apex method** with its **cacheability**,
+the **concurrent-writes** answer, the **expand-action** answer, and the
+**load-timing** answer.
 
-Interview discipline (non-negotiable):
+From those returns, decide:
 
-```
-[Child: <name> | Event: <eventName> | Step <N>]
-```
+- If the state is a **single/separate** value, **or** the Apex method is
+  **non-cacheable** → **imperative call** (invoke the method, update state in
+  `.then(...)`). The wire decisions below do not apply.
+- Otherwise (**cacheable**, so a `@wire` is in play):
+  - Make the wire-implementation decision with
+    [guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md)
+    from the concurrent-writes answer (visibility-urgency branch,
+    `connectedCallback` auto-wire, separate-`wired<State>` rule).
+  - Wire shape from the expand-action + load-timing answers: **not** an expand
+    action → `@wire` on `activeObjectId`; expand action + load **on expand** →
+    expand-gated `@wire` on a new state field separate from `activeObjectId`;
+    expand action + load **on create** → `@wire` on `activeObjectId`.
 
-- Print the tracker line above at the top of **every** question. If you cannot
-  fill it in, you have lost state — reconstruct it before doing anything else.
-- ONE question per message. Never present two steps together. Never pre-answer
-  a later step. Never say "if you pick X then I'll ask Y."
-- Do not skip steps. Move only along the branch arrows defined in the flow.
-- No code until the interview for the current event is finished (after Step
-  10).
-- "I don't know" is a valid answer — the AI analyses the available info
-  (dispatched event name, RULES, state shape) and makes the best decision, then
-  proceeds. Do not stall.
-- After finishing one event, return to the top of the loop for the next event.
-
-**Step 0 — State identification.** Ask which state the parent is working on
-(UPDATE / LOAD / SEARCH). Check whether it is stored in an **array** or as a
-**single (separate)** value.
-- *Separate* → imperative Apex call, update state with the response. **→ Step 10.**
-- *No specific state* → `@wire` with its own state to remember values if
-  needed. **→ Step 10.**
-- *Otherwise* → **→ Step 10.**
-
-**Step 10 — Apex method resolution.** Run the shared sub-step defined in
-[guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Keep
-this skill's step prefix (`Step 10`, with sub-questions `Step 10.01` /
-`Step 10.02`) in the tracker line, but follow the branches and the Creation
-Sub-Loop verbatim from the shared file — do not inline them here. **Resolve the
-method first** — including whether it is cacheable (the cacheable sub-question in
-the Creation Sub-Loop) — so the wire question in Step 2 is meaningful: a method
-that does not exist yet and is created **non-cacheable** is an imperative call,
-and the `@wire` / `refreshApex` branches never arise for it.
-- If Step 0 was *separate* (single value), **or** the method is created/resolved
-  **non-cacheable** → the call is imperative; you now have the method, and the
-  `@wire` / `refreshApex` / expand-gating branches (Steps 1–2, 6–9) never arise.
-  **The interview for the current event ends here — return to the top of the loop
-  for the next event.**
-- Otherwise (the method is **cacheable**, so a `@wire` is in play) → **Step 1.**
-
-**Step 1 — Concurrent writes.** *"Can other users or other browser sessions
-modify this data while this component is open?"* Yes → Step 2. No → finish.
-
-**Step 2 — Wire implementation (visibility urgency + auto-wire gating).** Run
-the shared sub-step defined in
-[guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md).
-The Apex method is already resolved (Step 10), so its `cacheable`. **→ Step 6.**
-
-**Step 6 — Expand action check.** *"Was this dispatch caused by an expand
-action?"* (Yes / No / Do your own check from the event name.) Yes → Step 7. No
-→ Step 9.
-
-**Step 7 — Load timing.** *"Load on child *creation* or on *expand*?"* Expanded
-→ Step 8. Created → Step 9.
-
-**Step 8 — Expand-gated wire.** New state field separate from `activeObjectId`
-gates the `@wire`. **→ done.**
-
-**Step 9 — Active-object wire.** `@wire` on `activeObjectId`. **→ done.**
+When the event is decided, run Steps 3–4 for it, then return here for the next
+event until every event is handled.
 
 ---
 
@@ -193,9 +149,8 @@ applied to the Manage Backlog screen handling every event dispatched by
 `c-ticket-view` (`ticketsummaryupdate`, `ticketstatuschange`,
 `ticketdescriptionupdate`, `ticketsearch`, `ticketlinkcreate`,
 `ticketlinkedtoexpand`, `closeticketview`). Demonstrates the wired-function
-form of Rule 0, the `_linkedToTargetTicketId` expand-gated wire from Step 8,
-and the `_patchTicketEverywhere` / `_deleteTicketsFromSprints` mutators from
-Rule 5.
+form of Rule 0, the `_linkedToTargetTicketId` expand-gated wire, and the
+`_patchTicketEverywhere` / `_deleteTicketsFromSprints` mutators from Rule 5.
 
 ### Reference state-update mutators
 

@@ -1,13 +1,16 @@
 ---
 name: create-new-parent-lwc-component.md
 description: >
-  Contains the pather (parent LWC) routing flow: Iteration 1 captures the
-  pather's name + purpose, then an Iteration 2 loop offers two options —
-  ADD NEW FUNCTIONALITY (delegates to
-  add-interactive-with-data-persistance-functionality-in-pather.md) and
-  HANDLE CHILD EVENT (delegates to lwc-parent-event-handler-generator.md).
-  Also contains the loop-back rule so each iteration runs a single sub-skill
-  end-to-end before returning to the option menu.
+  Contains the pather (parent LWC) routing flow for a brand-new pather:
+  Iteration 1 captures the pather's name + purpose (this skill's own entry
+  point — the pather is created here), then an Iteration 2 loop offers two
+  options — ADD NEW FUNCTIONALITY (runs the shared FAQ
+  shared/pather-add-functionality-faq.md) and HANDLE CHILD EVENT (runs the
+  shared FAQ shared/pather-event-handler-faq.md). It references only shared FAQs
+  and guides, never sibling task-skills, and because the pather was just created
+  here the "must already exist" entry gate that guards the standalone
+  task-skills never applies. Also contains the loop-back rule so each iteration
+  runs one FAQ end-to-end before returning to the option menu.
 ---
 
 # Pather Skill
@@ -64,33 +67,47 @@ Ask the user via `AskUserQuestion`:
 > (1) Add new functionality
 > (2) Handle child event"*
 
+The pather was just created in Iteration 1, so the "must already exist" entry
+gate that guards the standalone task-skills does **not** apply here — route
+straight to the matching shared FAQ. Pass this iteration's number as the FAQ
+prefix; the FAQ's first question captures the parent LWC (it does not assume
+existence), which is the pather named in Iteration 1.
+
 Then branch:
 
-| Option | Iteration | Delegate to |
+| Option | Iteration | Run |
 |---|---|---|
-| Add new functionality | 2.1.1 | [add-interactive-with-data-persistance-functionality-in-pather.md](./add-interactive-with-data-persistance-functionality-in-pather.md) |
-| Handle child event | 2.2.1 | [lwc-parent-event-handler-generator.md](./lwc-parent-event-handler-generator.md) |
+| Add new functionality | 2.1.1 | [shared/pather-add-functionality-faq.md](./shared/pather-add-functionality-faq.md) |
+| Handle child event | 2.2.1 | [shared/pather-event-handler-faq.md](./shared/pather-event-handler-faq.md) |
 
 **Iteration 2.1.1 — Add new functionality.** Run
-[add-interactive-with-data-persistance-functionality-in-pather.md](./add-interactive-with-data-persistance-functionality-in-pather.md)
-end-to-end. That sub-skill owns its own Mandatory-guides step, its own
-interview, its own checklist, and its own code emission — this skill does not
-interleave them.
+[shared/pather-add-functionality-faq.md](./shared/pather-add-functionality-faq.md)
+end-to-end (one question per message). When it hands the answers back, apply
+the standard pather analysis on those named answers — the parent Mandatory
+guides (per CLAUDE.md), the behavior-coverage check, the layering map, the
+[guide/pather_lwc_state_management_checklist-guide.md](./guide/pather_lwc_state_management_checklist-guide.md),
+and the optional [guide/lwc-css-design-guide.md](./guide/lwc-css-design-guide.md) —
+then emit the code. This skill never interleaves the FAQ's questions with the
+analysis.
 
-**Iteration 2.2.1 — Handle child event.** Run
-[lwc-parent-event-handler-generator.md](./lwc-parent-event-handler-generator.md)
-end-to-end. That sub-skill owns its own Mandatory-guides step, its own
-per-event interview, its own checklist, and its own code emission — this skill
-does not interleave them.
+**Iteration 2.2.1 — Handle child event.** Identify the child and the events it
+dispatches, then run
+[shared/pather-event-handler-faq.md](./shared/pather-event-handler-faq.md)
+end-to-end for each event (one question per message). When it hands each event's
+answers back, apply the standard pather analysis — the parent Mandatory guides
+(per CLAUDE.md), handler placement, the
+[guide/pather_lwc_state_management_checklist-guide.md](./guide/pather_lwc_state_management_checklist-guide.md),
+and the optional [guide/lwc-css-design-guide.md](./guide/lwc-css-design-guide.md) —
+then emit the code.
 
 ---
 
 ### Iteration 3 — Loop back
 
-When the chosen sub-skill finishes (code emitted and accepted, or the sub-skill
-exits cleanly), return to Iteration 2 and ask the option question again as the
-next iteration. The pather name + purpose from Iteration 1 carry over unchanged
-— never re-ask them. Continue until the user says they are done.
+When the chosen FAQ and its analysis finish (code emitted and accepted, or the
+flow exits cleanly), return to Iteration 2 and ask the option question again as
+the next iteration. The pather name + purpose from Iteration 1 carry over
+unchanged — never re-ask them. Continue until the user says they are done.
 
 ---
 
@@ -105,5 +122,6 @@ state is always visible:
 [Pather: <name> | Purpose: <purpose> | Iteration: <N> | Option: <pending|1|2>]
 ```
 
-Once a sub-skill is running, switch to that sub-skill's tracker line for the
-duration of the iteration, then switch back here when looping.
+Once a FAQ is running, switch to that FAQ's tracker line for the duration of
+the iteration (it carries this iteration's number as its prefix), then switch
+back here when looping.

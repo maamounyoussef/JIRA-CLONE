@@ -1,14 +1,16 @@
 ---
 name: add-interactive-with-data-persistance-functionality-in-pather
 description: >
-  Contains the six-step interview (sub-components, user stories, behavior
-  prompt, validation rules, backing data state, reusable base component) plus
-  the Apex method resolution sub-step used when adding an interactive
-  data-persisting functionality to an existing parent LWC. Also contains the
-  layering map (handler → parent `.js`, validations → sibling
-  `<name>Validator.js`, UI primitives → chosen base component, wiring →
-  parent `.html`, Apex method → existing controller) and the optional
-  `lwc-css-design-guide` handoff.
+  Entry point + analysis for adding an interactive, data-persisting
+  functionality to an **existing** parent LWC. Owns the entry gate (existing
+  parent that already uses Apex) and then runs the shared question iteration in
+  shared/pather-add-functionality-faq.md; it does not contain the interview
+  questions itself. From the returned answers it produces the implementation:
+  the behavior-coverage check, the `@wire`-vs-imperative call-style decision
+  (via lwc-apex-call-implementation-guide), the layering map (handler → parent
+  `.js`, validations → sibling `<name>Validator.js`, UI primitives → chosen base
+  component, wiring → parent `.html`, Apex method → existing controller), the
+  execution checklist, and the optional `lwc-css-design-guide` handoff.
 ---
 
 # Add Interactive-with-Data-Persistence Functionality in Parent
@@ -34,7 +36,6 @@ required / optional guides are read. Settle every matching guide before the
 first interview question.
 
 - **`lwc-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/lwc-path-architecture-guide.md`)
-- **`apex-method-resolution-guide`** (`force-app/skills/development/task-skill/guide/apex-method-resolution-guide.md`)
 - **`lwc-apex-call-implementation-guide`** (`force-app/skills/development/task-skill/guide/lwc-apex-call-implementation-guide.md`)
 - **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
 - **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
@@ -55,98 +56,75 @@ Before any questions, confirm BOTH conditions are true:
    `@salesforce/apex/<Class>.<method>` symbol, OR declares a `@wire` adapter.
    One occurrence is enough; stop searching after the first match.
 
-If either check fails, this is not the right skill — exit silently. Otherwise
+If either check fails, this is not the right skill — exit . Otherwise
 begin the per-functionality interview in Step 2.
 
-### Step 2 — Run the interview
+### Step 2 — Run the interview FAQ
 
-**Step 2.1 — Sub-components.** Ask the user which sub-components this new
-functionality applies to. The user names them; do not infer from the
-template.
+Run the shared question iteration in
+[shared/pather-add-functionality-faq.md](shared/pather-add-functionality-faq.md),
+passing this step's number as the FAQ's prefix. That file owns its own
+questions and order — do not inline, reorder, or reference its internal steps
+here. Ask one question per message and follow it verbatim. When it hands the
+collected answers back, continue to Step 3.
 
-**Step 2.2 — User stories.** Ask the user for the user stories that apply to
-this new functionality. Each operation (Load / Update / Create / Delete — or
-any combination) must have its **own** user story. The user writes the
-stories — never invent them.
+The FAQ returns these answers (by name): the **parent LWC**, the
+**sub-components**, the **user stories**, the **behavior prompt**, the
+**validation rules**, the **data state** (object + field), the **reusable
+base component**, and the resolved **Apex method** with its **cacheability**.
 
-**Step 2.3 — Behavior prompt.** Ask:
+**Behavior coverage check.** Verify by **semantic comparison**, not keyword
+matching, that the behavior prompt covers every user story returned by the FAQ:
 
-> *"Give me the functionality behavior prompt. It must cover every user
-> story."*
-
-Verify coverage by **semantic comparison**, not keyword matching:
-
-- If every user story from Step 2.2 is covered → proceed to Step 2.4.
+- If every user story is covered → proceed to Step 3.
 - If a story is **not** covered, reply with this exact template:
   > *"The following user story is not covered: `<quote the story verbatim>`.
   > Please provide the behavior prompt again, including this part."*
 - Never suggest the missing behavior. Repeat until full coverage is reached.
 
-**Step 2.4 — Validation rules.** Run the shared step defined in
-[shared/ask-user-for-lwc-validation.md](shared/ask-user-for-lwc-validation.md).
-Do not inline the branches here — load that file and follow it verbatim.
-Validations live in a sibling `<parentName>Validator.js` file alongside the
-parent — never inline inside a handler.
+---
 
-**Step 2.5 — Data state.** Ask which state provides the data for this
-functionality. The user supplies the source **object** and **field name** on
-that object.
+### Step 3 — Wire implementation
 
-**Step 2.6 — Reusable base component.** Ask whether an existing base LWC
-component (`c-ao-input`, `c-ao-btn`, `c-ao-combobox`, any `lightning-*`)
-should be used instead of writing the UI from scratch. The user provides the
-name. If they say "none", record that and continue.
-
-**Step 2.7 — Apex method resolution.** Run the shared step defined in
-[guide/apex-method-resolution-guide.md](guide/apex-method-resolution-guide.md). Do not
-inline the branches here — load that file and follow it verbatim. **Resolve the
-method first — including whether it is cacheable** (the cacheable sub-question
-`.3` in the Creation Sub-Loop, asked for every method created during the
-recursion) — so the wire question in Step 2.8 is meaningful: a method created
-**non-cacheable** is an imperative call, and the `@wire` / `refreshApex` branches
-never arise for it. Record the choice so the emitted controller method carries
-the correct `@AuraEnabled` / `@AuraEnabled(cacheable=true)` annotation.
-
-**Step 2.8 — Wire implementation.** Run the shared step defined in
-[guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md).
-The Apex method is already resolved (Step 2.7), so its **cacheability is known**:
-that guide's Step 0 gate uses it — **not cacheable → imperative call, skip the
-visibility-urgency question and the `@wire` branches entirely; cacheable → `@wire`
-is available**, proceed to the branch. Keep this skill's tracker line (substitute
-`Step 2.8`) and follow the answer-to-action mapping in that file verbatim — the
+Run the shared step defined in
+[guide/lwc-apex-call-implementation-guide.md](guide/lwc-apex-call-implementation-guide.md),
+keeping this step's number in the tracker line. The Apex method and its
+cacheability are already known (from the FAQ): that guide's Step 0 gate uses it
+— **not cacheable → imperative call, skip the visibility-urgency question and
+the `@wire` branches entirely; cacheable → `@wire` is available**, proceed to
+the branch. Follow the answer-to-action mapping in that file verbatim — the
 visibility-urgency branch, the `connectedCallback` auto-wire question, and the
-separate-`wired<State>` rule. Do not inline the branches here or invent a
-fourth option.
+separate-`wired<State>` rule. Do not invent a fourth option.
 
 ---
 
-### Step 3 — Place the new code in the right layer
+### Step 4 — Place the new code in the right layer
 
 After the interview, the resulting code must split across layers as follows:
 
 | Concern | File |
 |---|---|
 | Functionality handler (event handler, Apex call, state update) | The existing parent `.js` |
-| Validations (Step 2.4) | Sibling `<parentName>Validator.js` — create the file if it does not yet exist |
-| UI primitives | The base component chosen in Step 2.6; do not re-implement |
-| Sub-component wiring (Step 2.1) | The existing parent `.html` template |
+| The validation rules | Sibling `<parentName>Validator.js` — create the file if it does not yet exist |
+| UI primitives | The chosen reusable base component; do not re-implement |
+| Sub-component wiring | The existing parent `.html` template |
 | Apex method | Existing controller method if it fits; otherwise a new method in the existing controller |
 
 ---
 
-### Step 4 — Verify with the execution checklist
+### Step 5 — Verify with the execution checklist
 
 Before emitting any code, walk the checklist. If any row fails, fix it first.
 
 | # | Check | Fix if it fails |
 |---|---|---|
-| 1 | Does every user story from Step 2.2 have at least one handler or path in the generated code? | Add the missing handler / path. |
-| 2 | Is every validation from Step 2.4 in `<parentName>Validator.js`, not inline in the parent? | Move it to the sibling validator file. |
-| 3 | Is the data loaded from the exact `<object>.<field>` named in Step 2.5? | Re-point the read to that field. |
-| 4 | If a base component was named in Step 2.6, is it the one used in the template? | Replace any hand-rolled markup with that base component. |
+| 1 | Does every user story returned by the FAQ have at least one handler or path in the generated code? | Add the missing handler / path. |
+| 2 | Is every validation rule in `<parentName>Validator.js`, not inline in the parent? | Move it to the sibling validator file. |
+| 3 | Is the data loaded from the exact `<object>.<field>` named in the data-state answer? | Re-point the read to that field. |
+| 4 | If a reusable base component was named, is it the one used in the template? | Replace any hand-rolled markup with that base component. |
 | 5 | Is every Apex call gated by the validator (no validator pass → no Apex call)? | Add `if (!Validator.<rule>(...)) return;` (or equivalent) before the call. |
 | 6 | Is parent state updated from the Apex **response data**, never optimistically? | Move the state mutation inside `.then()` / the wired-function body. |
-| 7 | Is the every sub-component from Step 2.1 wired into the template? | Add the missing `<c-...>` tag with its props/handlers. |
+| 7 | Is every sub-component wired into the template? | Add the missing `<c-...>` tag with its props/handlers. |
 
 Then also walk the shared state-management checklist (Rules 0–7) in
 [guide/pather_lwc_state_management_checklist-guide.md](guide/pather_lwc_state_management_checklist-guide.md).
@@ -154,7 +132,7 @@ Fix any failing row there before emitting code.
 
 ---
 
-### Step 5 — Optionally apply `lwc-css-design-guide`
+### Step 6 — Optionally apply `lwc-css-design-guide`
 
 After the code is emitted and accepted, ASK the user via the interactive
 `AskUserQuestion` tool (NOT plain text) whether to also apply the
@@ -178,99 +156,16 @@ project's visual language so a new functionality blends with the rest of
 
 ## Resources
 
-### Prompt template example
-
-
-```
-─── [Step 1 — Entry point: existing parent LWC] ───────────────────────────
-add interactive-with data persistance in pather
-lwc pather : @force-app/main/default/lwc/manageBacklog/
-
-─── [Step 2.1 — Sub-components] ───────────────────────────────────────────
-sub components : [ Backlog in that start in line 192 in manageBacklog.html ,
-                   WORK (Sprints) in line 63 in manageBacklog.html ].
-
-─── [Step 2.2 — User stories: one per operation] ──────────────────────────
-user stories :
-As a user I need to move a ticket below another ticket in backlog so it
-  should be shown before it.
-As a user I need to move a ticket below another ticket in the same sprint
-  so it should be shown before it.
-
-─── [Step 2.3 — Behavior prompt: must cover every user story above] ───────
-Behaviors (apply to both Backlog and Sprint containers):
-1. Drag & Drop — Move After Another Ticket
-   - A user can drag any ticket and drop it onto another ticket in the same
-     container.
-   - On drop, the dragged ticket is repositioned immediately below the
-     target ticket.
-2. Drag & Drop — Move to First Position
-   - A user can drag a ticket and drop it at the top of the container.
-   - The ticket becomes the first item in the list.
-
-Before:             After (drag 4 → drop on 1):
-ticket 1            ticket 1
-ticket 2            ticket 4   ← landed below ticket 1
-ticket 3            ticket 2
-ticket 4            ticket 3
-
-Visual Feedback During Drag:
-- Ghost/preview element follows the cursor.
-- A highlighted drop indicator line appears below the hovered ticket
-  showing where the ticket will land.
-- Top drop zone becomes visually active when dragging near the top of the
-  container.
-
-Acceptance Criteria:
-| # | Scenario                                  | Expected Result            |
-|---|-------------------------------------------|----------------------------|
-| 1 | Drag ticket 4, drop on ticket 1 (sprint)  | Order becomes: 1, 4, 2, 3  |
-| 2 | Drag ticket A to top drop zone (sprint)   | A becomes first in sprint  |
-| 3 | Drag ticket 4, drop on ticket 1 (backlog) | Order becomes: 1, 4, 2, 3  |
-| 4 | Drag ticket A to top drop zone (backlog)  | A becomes first in backlog |
-
-─── [Step 2.4 — Validation rules: derived from Constraints & Notes] ───────
-Constraints & Notes:
-- Reordering is within the same container only.
-- Order changes must persist (reflect in backend/store, not just UI state).
-
-─── [Step 2.5 — Data state: NOT in prompt → still ASK] ────────────────────
-(the prompt does not name the state object + field that backs ordering;
- ask the user before continuing)
-
-─── [Step 2.6 — Reusable base component: NOT in prompt → still ASK] ───────
-(the prompt does not name a base component to reuse for the drop wrapper /
- indicator / top zone; ask the user before continuing)
-
-─── [Step 2.7 — Apex method resolution: Branch A (class + method given)] ──
-Apex method to call :
-ManageBacklogController.moveTicketPosition for both
-```
-
-How to parse a prompt like this:
-
-1. Walk the prompt top-to-bottom and assign each block to its interview step.
-2. For every step that is **present**, record the answer and move on — do
-   not re-ask.
-3. For every step that is **missing**, ask that one question (and only that
-   one) using the tracker line, then continue.
-4. Do not invent answers for missing steps, and do not skip them — code may
-   only be emitted once all six steps (2.1 → 2.6) plus 2.7 and 2.8 are
-   resolved.
-
-### Interview tracker template
-
-```
-[Component: manageBacklog | Functionality: <name> | Step 2.<N>]
-```
-
-Drop this at the top of every interview question so the loop state is always
-visible to both the user and to any agent that resumes the conversation.
+The interview mechanics — the worked combined-prompt example, the rule for
+skipping questions already answered in a prompt, and the interview tracker —
+live with the FAQ that owns them:
+[shared/pather-add-functionality-faq.md](shared/pather-add-functionality-faq.md).
+This skill stays out of the FAQ's step structure.
 
 ### Validator file shape
 
 The sibling `<parentName>Validator.js` should export pure functions, one per
-validation rule from Step 2.4. The parent imports them by name and calls them
+validation rule the FAQ returned. The parent imports them by name and calls them
 before any Apex invocation — no Apex import or state mutation lives in the
 validator.
 

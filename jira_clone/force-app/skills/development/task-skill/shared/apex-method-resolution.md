@@ -1,26 +1,22 @@
 ---
 name: apex-method-resolution
-activation:
-  mode: required
-  applies_when: >-
-    a new functionality or event handler must be backed by an Apex method
-    (parent skills only — children never call Apex, so this self-skips)
 description: >
-  Shared interview sub-step for resolving which Apex method backs a new LWC
-  functionality or event handler. Reusable across any task-skill whose
-  interview reaches "which controller method handles this?" — captures the
-  method via one of three branches (existing-known, existing-find,
-  create-new) and recursively resolves any dependent class/method that does
-  not yet exist before code is emitted. Step-number-agnostic: the calling
-  skill substitutes its own step prefix when printing the tracker line.
+  Shared question iteration for resolving which Apex method backs a new LWC
+  functionality or event handler. Reusable from any FAQ that reaches "which
+  controller method handles this?" — captures the method via one of three
+  branches (existing-known, existing-find, create-new) and recursively resolves
+  any dependent class/method that does not yet exist. Questions only: it gathers
+  the method, where a new one lives, and whether it is cacheable — it does not
+  decide `@wire` vs imperative (that is the pather's job). Step-number-agnostic:
+  the calling FAQ substitutes its own step prefix when printing the tracker line.
 ---
 
-# Apex Method Resolution (shared interview sub-step)
+# Apex Method Resolution (shared question iteration)
 
-Use this protocol at the point in any parent-interview where the Apex
-backing a new functionality or event handler must be identified. The
-calling skill keeps its own step number (e.g. `Step 2.7`, `Step 10`) and
-substitutes it into the tracker line — the protocol itself is the same.
+Use this protocol at the point in any FAQ where the Apex method backing a new
+functionality or event handler must be identified. The calling FAQ keeps its own
+step number (e.g. `.8`, `.10`) and substitutes it into the tracker line — the
+protocol itself is the same.
 
 ## Question
 
@@ -31,9 +27,9 @@ substitutes it into the tracker line — the protocol itself is the same.
 ## Branches
 
 - **Branch A — user supplied the line.** Record `<ApexClass>.<method>` and
-  skip verification entirely. **→ Final Output.**
+  skip verification entirely. **→ Final answer.**
 - **Branch B — user points to a folder/class.** Search the named location,
-  identify the method, confirm with the user. **→ Final Output.**
+  identify the method, confirm with the user. **→ Final answer.**
 - **Branch C — method doesn't exist.** Run the **Creation Sub-Loop** below.
 
 ## Creation Sub-Loop (Branch C)
@@ -49,7 +45,7 @@ Continue until no description references an unresolved class/method. Track
 depth in the tracker line, e.g.:
 
 ```
-[... | Step <N>.1 | depth 2: FooSvc.bar]
+[... | <prefix>.1 | depth 2: FooSvc.bar]
 ```
 
 Then ask sub-question **.2** (*"Where should the controller live?"*) for
@@ -61,3 +57,7 @@ the recursion. A method that only reads data and never performs DML can be
 cacheable; any method that performs DML or must always return fresh data must
 not be cacheable. Record the choice so the emitted controller method carries
 the correct `@AuraEnabled` / `@AuraEnabled(cacheable=true)` annotation.
+
+Recording cacheability here is gathering, not deciding — the calling pather
+skill is what later turns "cacheable" into an actual `@wire`-vs-imperative
+choice.
