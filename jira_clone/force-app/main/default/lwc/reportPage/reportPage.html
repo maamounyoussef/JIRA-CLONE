@@ -1,0 +1,43 @@
+<template>
+
+    <!-- Choose-project fallback (no project in localStorage) -->
+    <template if:true={showChooseProject}>
+        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
+    </template>
+
+    <!-- Loading overlay -->
+    <template if:true={isLoading}>
+        <div class="loading-overlay">
+            <lightning-spinner alternative-text="Loading reports" size="medium"></lightning-spinner>
+        </div>
+    </template>
+
+    <!-- Report gallery: clicking a card navigates to the report run page -->
+    <template if:true={showGallery}>
+        <section class="report-page">
+            <header class="report-page__header">
+                <h1 class="report-page__title">Reports</h1>
+            </header>
+
+            <template if:true={hasReportDetails}>
+                <div class="report-gallery">
+                    <template for:each={reportDetails} for:item="detail">
+                        <c-ao-card-button
+                            key={detail.Id}
+                            value={detail.Id}
+                            heading={detail.Name}
+                            description={detail.Description__c}
+                            image-url={detail.Image_URL__c}
+                            onselect={handleCardButtonSelect}>
+                        </c-ao-card-button>
+                    </template>
+                </div>
+            </template>
+
+            <template if:true={isGalleryEmpty}>
+                <p class="report-page__empty">No reports available for this project yet.</p>
+            </template>
+        </section>
+    </template>
+
+</template>

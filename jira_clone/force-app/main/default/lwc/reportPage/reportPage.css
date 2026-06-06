@@ -1,0 +1,40 @@
+.report-page {
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.report-page__header {
+    margin-bottom: 1.25rem;
+}
+
+.report-page__title {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #181818;
+}
+
+.report-page__empty {
+    margin-top: 2rem;
+    color: #5e5e5e;
+    font-size: 0.875rem;
+}
+
+/* Responsive gallery grid */
+.report-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Loading overlay sits above the gallery */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+}
