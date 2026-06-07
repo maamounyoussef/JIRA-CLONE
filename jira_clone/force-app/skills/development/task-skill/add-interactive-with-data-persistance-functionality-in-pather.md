@@ -40,6 +40,7 @@ first interview question.
 - **`lwc-error-handling-guide`** (`force-app/skills/development/task-skill/guide/lwc-error-handling-guide.md`)
 - **`pather_lwc_state_management_checklist-guide`** (`force-app/skills/development/task-skill/guide/pather_lwc_state_management_checklist-guide.md`)
 - **`apex-path-architecture-guide`** (`force-app/skills/development/task-skill/guide/apex-path-architecture-guide.md`)
+- **`apex-input-architecture-guide`** (`force-app/skills/development/task-skill/guide/apex-input-architecture-guide.md`)
 
 The project-wide soft-delete filter (`soql-exclude-deleted`) is **not** listed
 here: it fires automatically from CLAUDE.md whenever a new or edited `SELECT`
