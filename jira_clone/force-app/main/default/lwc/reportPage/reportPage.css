@@ -1,40 +1,102 @@
-.report-page {
-    padding: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
+.report {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.report-page__header {
-    margin-bottom: 1.25rem;
+.report__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.report-page__title {
-    margin: 0;
-    font-size: 1.375rem;
+.report__title {
+    font-size: 1.25rem;
     font-weight: 700;
-    color: #181818;
+    color: #16325c;
+    margin: 0;
 }
 
-.report-page__empty {
-    margin-top: 2rem;
-    color: #5e5e5e;
-    font-size: 0.875rem;
+.report__subtitle {
+    font-size: 0.85rem;
+    color: #5e6c84;
+    margin: 0;
 }
 
-/* Responsive gallery grid */
-.report-gallery {
+.report__cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
 }
 
-/* Loading overlay sits above the gallery */
-.loading-overlay {
-    position: fixed;
+/* Wrapper around each c-ao-card-button; marks the selected view. */
+.report__card {
+    border-radius: 3px;
+    transition: box-shadow 0.1s ease;
+}
+
+.report__card--active {
+    box-shadow: 0 0 0 2px #4C9AFF;
+    border-radius: 4px;
+}
+
+.report__body {
+    position: relative;
+    min-height: 360px;
+}
+
+.report__charts {
+    display: block;
+}
+
+.report__chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Inactive view: hidden but the canvas stays in the DOM for Chart.js. */
+.report__chart--hidden {
+    display: none;
+}
+
+.report__chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #16325c;
+    margin: 0;
+}
+
+.report__canvas-wrap {
+    position: relative;
+    height: 360px;
+    width: 100%;
+}
+
+.report__overlay {
+    position: absolute;
     inset: 0;
-    background: rgba(255, 255, 255, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9000;
+    background: rgba(255, 255, 255, 0.6);
+    z-index: 2;
+}
+
+.report__error {
+    color: #c23934;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.report__empty {
+    color: #5e6c84;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem 0;
 }

@@ -1,43 +1,67 @@
 <template>
+    <section class="report">
+        <header class="report__header">
+            <h1 class="report__title">Sprint Report</h1>
+            <template if:true={hasModel}>
+                <p class="report__subtitle">
+                    Committed {committedTotal} pts · {dayCount} days
+                </p>
+            </template>
+        </header>
 
-    <!-- Choose-project fallback (no project in localStorage) -->
-    <template if:true={showChooseProject}>
-        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
-    </template>
-
-    <!-- Loading overlay -->
-    <template if:true={isLoading}>
-        <div class="loading-overlay">
-            <lightning-spinner alternative-text="Loading reports" size="medium"></lightning-spinner>
+        <!-- View switcher: principal (burndown) and secondary (burn-up) -->
+        <div class="report__cards">
+            <div class={burndownCardClass}>
+                <c-ao-card-button
+                    value="burndown"
+                    heading="Burndown"
+                    description="Principal page — remaining work vs. the ideal line."
+                    onselect={handleSelectView}>
+                </c-ao-card-button>
+            </div>
+            <div class={burnupCardClass}>
+                <c-ao-card-button
+                    value="burnup"
+                    heading="Burn-up"
+                    description="Secondary page — committed scope vs. completed work."
+                    onselect={handleSelectView}>
+                </c-ao-card-button>
+            </div>
         </div>
-    </template>
 
-    <!-- Report gallery: clicking a card navigates to the report run page -->
-    <template if:true={showGallery}>
-        <section class="report-page">
-            <header class="report-page__header">
-                <h1 class="report-page__title">Reports</h1>
-            </header>
-
-            <template if:true={hasReportDetails}>
-                <div class="report-gallery">
-                    <template for:each={reportDetails} for:item="detail">
-                        <c-ao-card-button
-                            key={detail.Id}
-                            value={detail.Id}
-                            heading={detail.Name}
-                            description={detail.Description__c}
-                            image-url={detail.Image_URL__c}
-                            onselect={handleCardButtonSelect}>
-                        </c-ao-card-button>
-                    </template>
+        <div class="report__body">
+            <!-- Spinner overlays the charts while loading -->
+            <template if:true={isLoading}>
+                <div class="report__overlay">
+                    <lightning-spinner alternative-text="Loading report" size="medium"></lightning-spinner>
                 </div>
             </template>
 
-            <template if:true={isGalleryEmpty}>
-                <p class="report-page__empty">No reports available for this project yet.</p>
+            <template if:true={hasError}>
+                <p class="report__error">{errorMessage}</p>
             </template>
-        </section>
-    </template>
 
+            <template if:true={isEmpty}>
+                <p class="report__empty">No report data available for this sprint yet.</p>
+            </template>
+
+            <!-- Canvases stay mounted so Chart.js keeps its attachment; the
+                 inactive panel is hidden with CSS rather than removed. -->
+            <div class="report__charts">
+                <div class={burndownPanelClass}>
+                    <h2 class="report__chart-title">Burndown</h2>
+                    <div class="report__canvas-wrap">
+                        <canvas class="burndown-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class={burnupPanelClass}>
+                    <h2 class="report__chart-title">Burn-up</h2>
+                    <div class="report__canvas-wrap">
+                        <canvas class="burnup-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </template>
