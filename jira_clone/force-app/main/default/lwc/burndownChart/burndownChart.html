@@ -1,0 +1,34 @@
+<template>
+    <section class="burndown">
+        <header class="burndown__header">
+            <h1 class="burndown__title">Sprint Burndown</h1>
+            <template if:true={hasModel}>
+                <p class="burndown__subtitle">
+                    Committed {committedTotal} pts · {dayCount} days
+                </p>
+            </template>
+        </header>
+
+        <div class="burndown__body">
+            <!-- Spinner overlays the canvas while loading -->
+            <template if:true={isLoading}>
+                <div class="burndown__overlay">
+                    <lightning-spinner alternative-text="Loading burndown" size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:true={hasError}>
+                <p class="burndown__error">{errorMessage}</p>
+            </template>
+
+            <template if:true={isEmpty}>
+                <p class="burndown__empty">No burndown data available for this sprint yet.</p>
+            </template>
+
+            <!-- Canvas is always in the DOM so Chart.js can attach to it -->
+            <div class="burndown__canvas-wrap">
+                <canvas class="burndown-canvas"></canvas>
+            </div>
+        </div>
+    </section>
+</template>

@@ -1,0 +1,63 @@
+.burndown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.burndown__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.burndown__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #16325c;
+    margin: 0;
+}
+
+.burndown__subtitle {
+    font-size: 0.85rem;
+    color: #5e6c84;
+    margin: 0;
+}
+
+.burndown__body {
+    position: relative;
+    min-height: 360px;
+}
+
+.burndown__canvas-wrap {
+    position: relative;
+    height: 360px;
+    width: 100%;
+}
+
+.burndown__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.6);
+    z-index: 2;
+}
+
+.burndown__error {
+    color: #c23934;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.burndown__empty {
+    color: #5e6c84;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem 0;
+}
