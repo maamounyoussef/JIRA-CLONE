@@ -88,19 +88,6 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // VALIDATION RULE — state machine
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Only pending validation rules can be activated.
-     */
-    public static void requireValidationRuleIsPending(ValidationRule__c rule) {
-        if (rule.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
-            throw new ServiceException('Validation Rule can only be activated from pending status');
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
     // TICKET TYPE — business rules
     // ═══════════════════════════════════════════════════════════════
 

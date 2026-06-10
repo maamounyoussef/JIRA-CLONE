@@ -215,17 +215,7 @@ public with sharing class WorkflowService {
         }
     }
 
-    // Use case methods
-    public static void activateValidationRule(ValidationRule__c rule) {
-        try {
-            DomainCompleteValidator.requireValidationRuleIsPending(rule);
-            rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE;
-            updateRecord(rule);
-        } catch (Exception ex) {
-            throw new ServiceException('Error activating validation rule: ' + ex.getMessage());
-        }
-    }
-
+    
     public static void activateWorkflowTransition(WorkflowTransition__c transition) {
         try {
             DomainCompleteValidator.requireTransitionIsPending(transition);
@@ -236,19 +226,6 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static ValidationRule__c addValidationRule(WorkflowTransition__c transition, String ticketField, String validationType) {
-        try {
-            ValidationRule__c newRule = new ValidationRule__c();
-            newRule.WorkflowTransition__c = transition.Id;
-            newRule.TicketField__c = ticketField;
-            newRule.Type__c = validationType;
-            newRule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING;
-
-            return insertValidationRule(newRule);
-        } catch (Exception ex) {
-            throw new ServiceException('Error adding validation rule: ' + ex.getMessage());
-        }
-    }
 
     public static WorkflowTransition__c addWorkflowTransition(Workflow__c workflow, String name, Status__c fromStatus, Status__c toStatus) {
         try {
@@ -284,15 +261,6 @@ public with sharing class WorkflowService {
             return createWorkflow(name, projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow: ' + ex.getMessage());
-        }
-    }
-
-    public static void deleteValidationRule(ValidationRule__c rule) {
-        try {
-            rule.RecordStatus__c = WorkflowConstants.RECORD_STATUS_DELETED;
-            updateRecord(rule);
-        } catch (Exception ex) {
-            throw new ServiceException('Error deleting validation rule: ' + ex.getMessage());
         }
     }
 

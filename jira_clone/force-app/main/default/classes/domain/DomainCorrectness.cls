@@ -227,18 +227,5 @@ public with sharing class DomainCorrectness {
         return rows[0];
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // VALIDATION RULE
-    // ═══════════════════════════════════════════════════════════════
 
-    public static ValidationRule__c requireValidationRuleExists(String ruleId) {
-        List<ValidationRule__c> rows = [
-            SELECT Id, RecordStatus__c, WorkflowTransition__c, TicketField__c, Type__c
-            FROM ValidationRule__c
-            WHERE Id = :ruleId
-            LIMIT 1
-        ];
-        if (rows.isEmpty()) throw new ServiceException('Validation Rule not found');
-        return rows[0];
-    }
 }

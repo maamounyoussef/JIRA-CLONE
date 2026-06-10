@@ -1,4 +1,5 @@
 import { LightningElement, track } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getWorkflow              from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
 import createStatus             from '@salesforce/apex/ManageWorkflowPageController.createStatus';
 import addWorkflowTransition    from '@salesforce/apex/ManageWorkflowPageController.addWorkflowTransition';
@@ -8,8 +9,15 @@ import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageControl
 import loadWorkflowsByProject   from '@salesforce/apex/ManageWorkflowPageController.loadWorkflowsByProject';
 import createWorkflow           from '@salesforce/apex/ManageWorkflowPageController.createWorkflow';
 import updateFullWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.updateFullWorkflowTransition';
+import addValidationRule          from '@salesforce/apex/ManageWorkflowPageController.addValidationRule';
 
-import { validateStatusName, validateTransition, validateTransitionName } from './workflowValidator';
+import {
+    validateStatusName,
+    validateTransition,
+    validateTransitionName,
+    validateValidationType,
+    validateTicketField
+} from './workflowValidator';
 import {
     VISUALIZATION_CONFIG,
     getResponsiveConfig,
@@ -650,5 +658,87 @@ export default class ManageWorkflow extends LightningElement {
         this.transitionSuccessMessage = '';
         this.transitionIsActivating = false;
         this.transitionIsDeleting = false;
+        this.closeValidationRuleModal();
+    }
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                  VALIDATION RULE SECTION                                  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+    // ─── PRESENTATION STATE ────────────────────────────────────────────────
+    @track showValidationRuleModal   = false;
+    @track newValidationType         = '';
+    @track newValidationTicketField  = '';
+    @track isCreatingValidationRule  = false;
+
+    // ─── GETTERS ───────────────────────────────────────────────────────────
+    // Type__c is a picklist on ValidationRule__c; its allowed values come from
+    // the object schema (object_validation_lwc_apex.md → "Type__c picklist
+    // values").
+    get validationTypeOptions() {
+        return [{ label: 'Not Equals', value: 'Not Equals' }];
+    }
+
+    // ─── EVENT HANDLERS ────────────────────────────────────────────────────
+    openValidationRuleModal() {
+        this.showValidationRuleModal = true;
+        this.newValidationType = '';
+        this.newValidationTicketField = '';
+        this.isCreatingValidationRule = false;
+    }
+
+    handleValidationTypeChange(event) {
+        this.newValidationType = event.detail.value;
+    }
+
+    handleValidationTicketFieldChange(event) {
+        this.newValidationTicketField = event.detail.value;
+    }
+
+    handleCreateValidationRuleSubmit() {
+        const typeError = validateValidationType(this.newValidationType);
+        if (typeError) { this._toast('Error', typeError, 'error'); return; }
+
+        const fieldError = validateTicketField(this.newValidationTicketField);
+        if (fieldError) { this._toast('Error', fieldError, 'error'); return; }
+
+        if (!this.transitionData || !this.transitionData.id) {
+            this._toast('Error', 'Cannot add validation rule: transition not loaded', 'error');
+            return;
+        }
+
+        this.isCreatingValidationRule = true;
+
+        addValidationRule({
+            workflowTransitionId: this.transitionData.id,
+            ticketField: this.newValidationTicketField,
+            validationType: this.newValidationType
+        })
+            .then(res => {
+                if (!res || !res.success) {
+                    throw new Error(res?.message || 'Failed to create validation rule');
+                }
+                this._toast('Success', 'Validation rule created successfully', 'success');
+                this.closeValidationRuleModal();
+            })
+            .catch(err => {
+                // Failure: surface the error but keep the modal open so the user
+                // can correct and retry without re-entering the fields.
+                this._toast('Error', err?.body?.message || err?.message || 'An error occurred while creating the validation rule', 'error');
+            })
+            .finally(() => { this.isCreatingValidationRule = false; });
+    }
+
+    closeValidationRuleModal() {
+        this.showValidationRuleModal = false;
+        this.newValidationType = '';
+        this.newValidationTicketField = '';
+        this.isCreatingValidationRule = false;
+    }
+
+    // ─── HELPERS ───────────────────────────────────────────────────────────
+    _toast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 }

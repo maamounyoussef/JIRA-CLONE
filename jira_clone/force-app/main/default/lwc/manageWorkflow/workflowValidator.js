@@ -22,3 +22,13 @@ export function validateTransitionName(name) {
     if (!(name || '').trim()) return 'Transition name is required';
     return null;
 }
+
+export function validateValidationType(type) {
+    if (!(type || '').trim()) return 'Validation type is required';
+    return null;
+}
+
+export function validateTicketField(field) {
+    if (!(field || '').trim()) return 'Ticket field is required';
+    return null;
+}
