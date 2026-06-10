@@ -440,6 +440,52 @@
     align-items: center;
 }
 
+/* Action row inside the detail container — aligns with .detail-field padding
+   so the button sits on the panel's 24px gutter instead of stretching flush. */
+.detail-actions {
+    display: flex;
+    gap: 8px;
+    padding: 18px 24px;
+}
+
+/* ── Add Validation Rule — inline section inside the detail body ─── */
+.validation-rule-section {
+    border-top: 1px solid var(--border-light);
+    background: var(--surface-secondary);
+}
+
+.validation-rule-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 24px 0;
+}
+
+.validation-rule-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.validation-rule-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 24px;
+}
+
+.validation-rule-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 24px 20px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MODALS — consistent overlay + card pattern
    ═══════════════════════════════════════════════════════════════════ */
