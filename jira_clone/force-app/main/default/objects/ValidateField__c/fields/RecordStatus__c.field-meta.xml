@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RecordStatus__c</fullName>
+    <description>Record status indicator</description>
+    <label>Record Status</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>active</fullName>
+                <default>true</default>
+                <label>active</label>
+            </value>
+            <value>
+                <fullName>delete</fullName>
+                <default>false</default>
+                <label>delete</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
