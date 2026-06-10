@@ -13,17 +13,18 @@ public with sharing class ValidateFieldService {
      * @param type - The validation type (Type__c)
      * @return The inserted ValidateField__c record
      */
-    public static ValidateField__c createValidateField(String fieldName, String type) {
+    public static ValidateField__c createValidateField(String workflowTransitionId , String fieldName, String type) {
         try {
             DomainCompleteValidator.requireValidateFieldUnique(
-                getMatchingValidateFields(fieldName, type)
+                getMatchingValidateFields(workflowTransitionId ,fieldName , type)
             );
 
             ValidateField__c rule = new ValidateField__c(
                 FieldName__c    = fieldName,
                 Type__c         = type,
                 ErrorMessage__c = buildErrorMessage(fieldName, type),
-                RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE
+                RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE,
+                workflowTransition__c = workflowTransitionId
             );
             insert rule;
             return rule;
@@ -37,11 +38,12 @@ public with sharing class ValidateFieldService {
      * asserts the same field + validation type, so the caller can enforce the
      * (FieldName__c, Type__c) uniqueness invariant before inserting.
      */
-    private static List<ValidateField__c> getMatchingValidateFields(String fieldName, String type) {
+    private static List<ValidateField__c> getMatchingValidateFields(String workflowTransitionId, String fieldName, String type) {
         return [
             SELECT Id
             FROM ValidateField__c
-            WHERE FieldName__c = :fieldName
+            WHERE WorkflowTransition__c  = : workflowTransitionId
+              AND FieldName__c = :fieldName
               AND Type__c = :type
               AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
         ];

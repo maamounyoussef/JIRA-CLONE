@@ -442,7 +442,7 @@
                     </template>
 
                     <!-- Detail Fields -->
-                    <template if:true={transitionData}>
+                    <template if:true={activeTransition}>
                         <div class="transition-detail-container">
                             <!-- Transition Name -->
                             <div class="detail-field">
@@ -451,7 +451,7 @@
                                     <span>Name</span>
                                 </dt>
                                 <dd class="detail-value">
-                                    <strong>{transitionData.name}</strong>
+                                    <strong>{activeTransition.name}</strong>
                                 </dd>
                             </div>
 
@@ -462,7 +462,7 @@
                                     <span>ID</span>
                                 </dt>
                                 <dd class="detail-value">
-                                    <code class="id-value">{transitionData.id}</code>
+                                    <code class="id-value">{activeTransition.id}</code>
                                 </dd>
                             </div>
 

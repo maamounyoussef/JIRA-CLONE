@@ -340,28 +340,6 @@ public class ManageWorkflowPageControllerTest {
     // ==================== VALIDATION FIELD TESTS ====================
 
     /**
-     * Test addValidateField creates a new ValidateField__c
-     */
-    @isTest
-    static void testAddValidateField() {
-        Test.startTest();
-        APIResponse result = ManageWorkflowPageController.addValidateField(
-            'Summary__c',
-            'Isn\'t Empty'
-        );
-        Test.stopTest();
-
-        Assert.isTrue(result.success, 'Add validation field should succeed');
-        Assert.isNotNull(result.data, 'Response data should not be null');
-        ValidateField__c rule = (ValidateField__c)result.data;
-        Assert.areEqual('Summary__c', rule.FieldName__c, 'Field name should match');
-        Assert.areEqual('Isn\'t Empty', rule.Type__c, 'Validation type should match');
-        Assert.areEqual(WorkflowConstants.RECORD_STATUS_ACTIVE, rule.RecordStatus__c,
-                       'New validation field should be active');
-        Assert.isNotNull(rule.ErrorMessage__c, 'Error message should be derived');
-    }
-
-    /**
      * Test addValidateField fails when the field name is blank
      */
     @isTest

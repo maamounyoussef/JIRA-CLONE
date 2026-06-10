@@ -346,12 +346,12 @@ public with sharing class ManageWorkflowPageController {
      * @return APIResponse containing the created ValidateField__c in data attribute
      */
     @AuraEnabled
-    public static APIResponse addValidateField(String fieldName, String type) {
+    public static APIResponse addValidateField(String workflowTransitionId ,String fieldName, String type) {
         try {
             if (String.isBlank(fieldName)) return new APIResponse(false, 'fieldName is required');
             if (String.isBlank(type)) return new APIResponse(false, 'type is required');
 
-            ValidateField__c rule = ValidateFieldService.createValidateField(fieldName, type);
+            ValidateField__c rule = ValidateFieldService.createValidateField(workflowTransitionId, fieldName, type);
             return new APIResponse(true, 'Validation field created successfully', rule);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating validation field: ' + ex.getMessage());

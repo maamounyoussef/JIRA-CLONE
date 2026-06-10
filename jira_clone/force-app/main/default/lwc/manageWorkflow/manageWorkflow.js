@@ -321,6 +321,11 @@ export default class ManageWorkflow extends LightningElement {
     _removeTransition(id) {
         this._writeTransitions(this._transitions.filter(t => !this._matchesId(t, id)));
     }
+    _patchTransition(id, partial) {
+        this._writeTransitions(this._transitions.map(t =>
+            this._matchesId(t, id) ? { ...t, ...partial } : t
+        ));
+    }
     _writeTransitions(transitions) {
         if (!this.workflowData) return;
         this.workflowData = {
@@ -540,7 +545,6 @@ export default class ManageWorkflow extends LightningElement {
     // ─── PRESENTATION STATE ────────────────────────────────────────────────
     @track showTransitionDetail     = false;
     @track selectedTransitionId     = null;
-    @track transitionData           = null;
     @track transitionIsLoading      = false;
     @track transitionErrorMessage   = '';
     @track transitionSuccessMessage = '';
@@ -557,29 +561,38 @@ export default class ManageWorkflow extends LightningElement {
     get validationFieldOptions() { return VALIDATION_FIELD_OPTIONS; }
     get validationTypeOptions()  { return VALIDATION_TYPE_OPTIONS; }
 
+    // The viewed transition is derived from principal state, not stored twice:
+    // `selectedTransitionId` is the only state, and the row is found in
+    // `_transitions`. Detail-only fields (createdDate / status names) are merged
+    // into that same entry by `loadTransitionDetail`, so there is one copy.
+    get activeTransition() {
+        if (!this.selectedTransitionId) return null;
+        return this._transitions.find(t => this._matchesId(t, this.selectedTransitionId)) || null;
+    }
+
     get transitionCanActivate() {
-        return this.transitionData && this.transitionData.recordStatus === 'pending';
+        return this.activeTransition?.recordStatus === 'pending';
     }
 
     get formattedTransitionCreatedDate() {
-        if (!this.transitionData || !this.transitionData.createdDate) return '';
-        const date = new Date(this.transitionData.createdDate);
+        const createdDate = this.activeTransition?.createdDate;
+        if (!createdDate) return '';
+        const date = new Date(createdDate);
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
     get fromTransitionStatusName() {
-        if (!this.transitionData) return '';
-        return this.transitionData.fromStatusName || this.transitionData.fromStatus || '';
+        const t = this.activeTransition;
+        return t ? (t.fromStatusName || t.fromStatus || '') : '';
     }
 
     get toTransitionStatusName() {
-        if (!this.transitionData) return '';
-        return this.transitionData.toStatusName || this.transitionData.toStatus || '';
+        const t = this.activeTransition;
+        return t ? (t.toStatusName || t.toStatus || '') : '';
     }
 
     get transitionRecordStatus() {
-        if (!this.transitionData) return '';
-        return this.transitionData.recordStatus || '';
+        return this.activeTransition?.recordStatus || '';
     }
 
     // ─── EVENT HANDLERS ────────────────────────────────────────────────────
@@ -598,13 +611,18 @@ export default class ManageWorkflow extends LightningElement {
         getWorkflowTransitionById({ transitionId: this.selectedTransitionId })
             .then(res => {
                 if (res && res.success && res.data) {
-                    this.transitionData = transitionFromApex(res.data);
-                    // Prefer the locally-known recordStatus (e.g. just activated).
-                    const local = this._transitions.find(t => this._matchesId(t, this.selectedTransitionId));
-                    const localRecordStatus = local && (local.recordStatus || local.RecordStatus__c || local.RecordStatus);
-                    if (localRecordStatus && localRecordStatus !== this.transitionData.recordStatus) {
-                        this.transitionData = { ...this.transitionData, recordStatus: localRecordStatus };
-                    }
+                    // Merge the loaded detail INTO the principal-state row. We omit
+                    // recordStatus on purpose so the locally-known value (e.g. just
+                    // activated) stays authoritative — no parallel copy to reconcile.
+                    const detail = transitionFromApex(res.data);
+                    this._patchTransition(this.selectedTransitionId, {
+                        name: detail.name,
+                        fromStatus: detail.fromStatus,
+                        toStatus: detail.toStatus,
+                        createdDate: detail.createdDate,
+                        fromStatusName: detail.fromStatusName,
+                        toStatusName: detail.toStatusName
+                    });
                 } else {
                     this.transitionErrorMessage = res?.message || 'Failed to load transition';
                 }
@@ -616,7 +634,8 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleActivateTransition() {
-        if (!this.transitionData || !this.transitionData.id) {
+        const transition = this.activeTransition;
+        if (!transition || !transition.id) {
             this.transitionErrorMessage = 'Cannot activate: Transition data not loaded';
             return;
         }
@@ -625,14 +644,13 @@ export default class ManageWorkflow extends LightningElement {
         this.transitionErrorMessage = '';
         this.transitionSuccessMessage = '';
 
-        activateWorkflowTransition({ workflowTransitionId: this.transitionData.id })
+        activateWorkflowTransition({ workflowTransitionId: transition.id })
             .then(res => {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to activate transition');
                 }
                 this.transitionSuccessMessage = 'Transition activated successfully!';
-                this.transitionData = { ...this.transitionData, recordStatus: 'active' };
-                this._setTransitionRecordStatus(this.transitionData.id, 'active');
+                this._setTransitionRecordStatus(transition.id, 'active');
                 this.handleCloseTransitionDetail();
             })
             .catch(err => {
@@ -642,13 +660,14 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleDeleteTransition() {
-        if (!this.transitionData || !this.transitionData.id) {
+        const transition = this.activeTransition;
+        if (!transition || !transition.id) {
             this.transitionErrorMessage = 'Cannot delete: Transition data not loaded';
             return;
         }
 
         // eslint-disable-next-line no-alert
-        if (!confirm(`Are you sure you want to delete the transition "${this.transitionData.name || ''}"?`)) {
+        if (!confirm(`Are you sure you want to delete the transition "${transition.name || ''}"?`)) {
             return;
         }
 
@@ -656,13 +675,13 @@ export default class ManageWorkflow extends LightningElement {
         this.transitionErrorMessage = '';
         this.transitionSuccessMessage = '';
 
-        deleteWorkflowTransition({ workflowTransitionId: this.transitionData.id })
+        deleteWorkflowTransition({ workflowTransitionId: transition.id })
             .then(res => {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to delete transition');
                 }
                 this.transitionSuccessMessage = 'Transition deleted successfully!';
-                this._removeTransition(this.transitionData.id);
+                this._removeTransition(transition.id);
                 this.handleCloseTransitionDetail();
             })
             .catch(err => {
@@ -674,7 +693,6 @@ export default class ManageWorkflow extends LightningElement {
     handleCloseTransitionDetail() {
         this.showTransitionDetail = false;
         this.selectedTransitionId = null;
-        this.transitionData = null;
         this.transitionIsLoading = false;
         this.transitionErrorMessage = '';
         this.transitionSuccessMessage = '';
@@ -714,7 +732,7 @@ export default class ManageWorkflow extends LightningElement {
 
         this.isCreatingValidationRule = true;
 
-        addValidateField({ fieldName: this.validationFieldName, type: this.validationType })
+        addValidateField({workflowTransitionId: this.activeTransition?.id ,fieldName: this.validationFieldName, type: this.validationType })
             .then(res => {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to create validation rule');
