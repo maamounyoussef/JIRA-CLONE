@@ -116,30 +116,17 @@ public class ManageWorkflowPageControllerTest {
     static void testUpdateWorkflow() {
         Workflow__c workflow = [SELECT Id FROM Workflow__c LIMIT 1];
         WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
-        
-        // Create a pending validation rule
-        ValidationRule__c rule = new ValidationRule__c(
-            WorkflowTransition__c = transition.Id,
-            TicketField__c = 'Summary__c',
-            Type__c = WorkflowConstants.VALIDATION_TYPE_NOT_EQUALS,
-            RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING
-        );
-        insert rule;
-        
+
         Test.startTest();
         APIResponse result = ManageWorkflowPageController.updateWorkflow(workflow.Id);
         Test.stopTest();
-        
+
         Assert.isTrue(result.success, 'Update workflow should succeed');
-        
+
         // Verify all pending records are now active
         WorkflowTransition__c updatedTransition = [SELECT RecordStatus__c FROM WorkflowTransition__c WHERE Id = :transition.Id];
-        Assert.areEqual(WorkflowConstants.RECORD_STATUS_ACTIVE, updatedTransition.RecordStatus__c, 
+        Assert.areEqual(WorkflowConstants.RECORD_STATUS_ACTIVE, updatedTransition.RecordStatus__c,
                        'Transition should be active after workflow update');
-        
-        ValidationRule__c updatedRule = [SELECT RecordStatus__c FROM ValidationRule__c WHERE Id = :rule.Id];
-        Assert.areEqual(WorkflowConstants.RECORD_STATUS_ACTIVE, updatedRule.RecordStatus__c, 
-                       'Rule should be active after workflow update');
     }
     
     /**
@@ -350,107 +337,43 @@ public class ManageWorkflowPageControllerTest {
         Assert.isTrue(result.message.contains('not found'), 'Error message should indicate not found');
     }
     
-    // ==================== VALIDATION RULE TESTS ====================
-    
+    // ==================== VALIDATION FIELD TESTS ====================
+
     /**
-     * Test addValidationRule method
+     * Test addValidateField creates a new ValidateField__c
      */
     @isTest
-    static void testAddValidationRule() {
-        WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
-        
+    static void testAddValidateField() {
         Test.startTest();
-        APIResponse result = ManageWorkflowPageController.addValidationRule(
-            transition.Id,
+        APIResponse result = ManageWorkflowPageController.addValidateField(
             'Summary__c',
-            WorkflowConstants.VALIDATION_TYPE_NOT_EQUALS
+            'Isn\'t Empty'
         );
         Test.stopTest();
-        
-        Assert.isTrue(result.success, 'Add validation rule should succeed');
+
+        Assert.isTrue(result.success, 'Add validation field should succeed');
         Assert.isNotNull(result.data, 'Response data should not be null');
-        ValidationRule__c rule = (ValidationRule__c)result.data;
-        Assert.areEqual(WorkflowConstants.RECORD_STATUS_PENDING, rule.RecordStatus__c, 
-                       'New rule should have pending status');
-        Assert.areEqual('Summary__c', rule.TicketField__c, 'Ticket field should match');
+        ValidateField__c rule = (ValidateField__c)result.data;
+        Assert.areEqual('Summary__c', rule.FieldName__c, 'Field name should match');
+        Assert.areEqual('Isn\'t Empty', rule.Type__c, 'Validation type should match');
+        Assert.areEqual(WorkflowConstants.RECORD_STATUS_ACTIVE, rule.RecordStatus__c,
+                       'New validation field should be active');
+        Assert.isNotNull(rule.ErrorMessage__c, 'Error message should be derived');
     }
 
     /**
-     * Test deleteValidationRule method (soft delete)
+     * Test addValidateField fails when the field name is blank
      */
     @isTest
-    static void testDeleteValidationRule() {
-        WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
-        
-        ValidationRule__c rule = new ValidationRule__c(
-            WorkflowTransition__c = transition.Id,
-            TicketField__c = 'Summary__c',
-            Type__c = WorkflowConstants.VALIDATION_TYPE_NOT_EQUALS,
-            RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING
-        );
-        insert rule;
-        
+    static void testAddValidateFieldMissingField() {
         Test.startTest();
-        APIResponse result = ManageWorkflowPageController.deleteValidationRule(rule.Id);
+        APIResponse result = ManageWorkflowPageController.addValidateField('', 'Isn\'t Empty');
         Test.stopTest();
-        
-        Assert.isTrue(result.success, 'Delete validation rule should succeed');
-        
-        // Verify soft delete
-        ValidationRule__c deletedRule = [SELECT RecordStatus__c FROM ValidationRule__c WHERE Id = :rule.Id];
-        Assert.areEqual(WorkflowConstants.RECORD_STATUS_DELETED, deletedRule.RecordStatus__c, 
-                       'Rule status should be deleted');
+
+        Assert.isFalse(result.success, 'Should fail when fieldName is blank');
+        Assert.isTrue(result.message.contains('fieldName is required'), 'Error message should mention fieldName');
     }
-    
-    /**
-     * Test activateValidationRule method
-     */
-    @isTest
-    static void testActivateValidationRule() {
-        WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
-        
-        ValidationRule__c rule = new ValidationRule__c(
-            WorkflowTransition__c = transition.Id,
-            TicketField__c = 'Summary__c',
-            Type__c = WorkflowConstants.VALIDATION_TYPE_NOT_EQUALS,
-            RecordStatus__c = WorkflowConstants.RECORD_STATUS_PENDING
-        );
-        insert rule;
-        
-        Test.startTest();
-        APIResponse result = ManageWorkflowPageController.activateValidationRule(rule.Id);
-        Test.stopTest();
-        
-        Assert.isTrue(result.success, 'Activate validation rule should succeed');
-        
-        ValidationRule__c activatedRule = [SELECT RecordStatus__c FROM ValidationRule__c WHERE Id = :rule.Id];
-        Assert.areEqual(WorkflowConstants.RECORD_STATUS_ACTIVE, activatedRule.RecordStatus__c, 
-                       'Rule status should be active');
-    }
-    
-    /**
-     * Test error handling - activating already active validation rule
-     */
-    @isTest
-    static void testActivateAlreadyActiveRule() {
-        WorkflowTransition__c transition = [SELECT Id FROM WorkflowTransition__c LIMIT 1];
-        
-        ValidationRule__c rule = new ValidationRule__c(
-            WorkflowTransition__c = transition.Id,
-            TicketField__c = 'Summary__c',
-            Type__c = WorkflowConstants.VALIDATION_TYPE_NOT_EQUALS,
-            RecordStatus__c = WorkflowConstants.RECORD_STATUS_ACTIVE
-        );
-        insert rule;
-        
-        Test.startTest();
-        APIResponse result = ManageWorkflowPageController.activateValidationRule(rule.Id);
-        Test.stopTest();
-        
-        Assert.isFalse(result.success, 'Should fail when trying to activate non-pending rule');
-        Assert.isTrue(result.message.contains('pending'), 'Error message should mention pending status');
-    }
-    
+
     /**
      * Test error handling - activating already active workflow transition
      */

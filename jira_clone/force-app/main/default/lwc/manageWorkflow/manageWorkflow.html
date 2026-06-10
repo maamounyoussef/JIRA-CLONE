@@ -391,6 +391,12 @@
                         Transition Detail
                     </h2>
                     <div class="panel-header-actions">
+                        <c-ao-btn
+                            variant="secondary"
+                            label="Add Validation Rule"
+                            onclick={openValidationRuleModal}
+                            icon-name="utility:add"
+                        ></c-ao-btn>
                         <template if:true={transitionCanActivate}>
                             <c-ao-btn
                                 variant="primary"
@@ -514,6 +520,44 @@
                     </template>
                 </div>
             </div>
+
+            <!-- Add Validation Rule Modal -->
+            <template if:true={showValidationRuleModal}>
+                <div class="modal-backdrop" onclick={closeValidationRuleModal}></div>
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Add Validation Rule</h2>
+                        <c-ao-btn icon-name="utility:close" variant="bare" title="Close" class="close-button" onclick={closeValidationRuleModal}></c-ao-btn>
+                    </div>
+
+                    <div class="modal-body">
+                        <c-ao-combobox
+                            label="Field API Name"
+                            placeholder="Choose a field"
+                            value={validationFieldName}
+                            options={validationFieldOptions}
+                            onchange={handleValidationFieldChange}
+                            class="modal-input"
+                            disabled={isCreatingValidationRule}
+                        ></c-ao-combobox>
+
+                        <c-ao-combobox
+                            label="Validation Type"
+                            placeholder="Choose a type"
+                            value={validationType}
+                            options={validationTypeOptions}
+                            onchange={handleValidationTypeChange}
+                            class="modal-input"
+                            disabled={isCreatingValidationRule}
+                        ></c-ao-combobox>
+                    </div>
+
+                    <div class="modal-footer">
+                        <c-ao-btn variant="ghost" label="Cancel" onclick={closeValidationRuleModal} disabled={isCreatingValidationRule}></c-ao-btn>
+                        <c-ao-btn variant="primary" label="Create" onclick={handleCreateValidationRuleSubmit} disabled={isCreatingValidationRule}></c-ao-btn>
+                    </div>
+                </div>
+            </template>
         </template>
     </div>
     </template>

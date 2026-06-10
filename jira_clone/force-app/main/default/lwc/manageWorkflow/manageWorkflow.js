@@ -9,7 +9,7 @@ import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageControl
 import loadWorkflowsByProject   from '@salesforce/apex/ManageWorkflowPageController.loadWorkflowsByProject';
 import createWorkflow           from '@salesforce/apex/ManageWorkflowPageController.createWorkflow';
 import updateFullWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.updateFullWorkflowTransition';
-import addValidationRule          from '@salesforce/apex/ManageWorkflowPageController.addValidationRule';
+import addValidateField          from '@salesforce/apex/ManageWorkflowPageController.addValidateField';
 
 import {
     validateStatusName,
@@ -31,6 +31,19 @@ import {
     toggleClick,
     clearClicks
 } from './workflowUtils';
+
+// Option lists for the "Add validation rule" combo boxes. These mirror the
+// ValidateField__c restricted picklists (FieldName__c / Type__c); label === value
+// so the combo emits the exact picklist API value the Apex insert expects.
+const VALIDATION_FIELD_OPTIONS = [
+    'AssignedTo__c', 'CurrentState__c', 'Creator__c', 'Description__c',
+    'EndDate__c', 'Epic__c', 'Priority__c', 'Score__c', 'Sprint__c',
+    'StartDate__c', 'StoryPoint__c', 'Summary__c', 'Ticket_Type__c'
+].map(v => ({ label: v, value: v }));
+
+const VALIDATION_TYPE_OPTIONS = [
+    { label: "Isn't Empty", value: "Isn't Empty" }
+];
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                           PAGE SECTION                                    ║
@@ -534,7 +547,16 @@ export default class ManageWorkflow extends LightningElement {
     @track transitionIsActivating   = false;
     @track transitionIsDeleting     = false;
 
+    // Add-validation-rule modal (create a ValidateField__c for the open transition)
+    @track showValidationRuleModal   = false;
+    @track validationFieldName        = '';
+    @track validationType             = '';
+    @track isCreatingValidationRule   = false;
+
     // ─── GETTERS ───────────────────────────────────────────────────────────
+    get validationFieldOptions() { return VALIDATION_FIELD_OPTIONS; }
+    get validationTypeOptions()  { return VALIDATION_TYPE_OPTIONS; }
+
     get transitionCanActivate() {
         return this.transitionData && this.transitionData.recordStatus === 'pending';
     }
@@ -659,6 +681,51 @@ export default class ManageWorkflow extends LightningElement {
         this.transitionIsActivating = false;
         this.transitionIsDeleting = false;
         this.closeValidationRuleModal();
+    }
+
+    // ─── ADD VALIDATION RULE ───────────────────────────────────────────────
+    openValidationRuleModal() {
+        this.showValidationRuleModal = true;
+        this.validationFieldName = '';
+        this.validationType = '';
+    }
+
+    closeValidationRuleModal() {
+        this.showValidationRuleModal = false;
+        this.validationFieldName = '';
+        this.validationType = '';
+        this.isCreatingValidationRule = false;
+    }
+
+    handleValidationFieldChange(event) {
+        this.validationFieldName = event.detail.value;
+    }
+
+    handleValidationTypeChange(event) {
+        this.validationType = event.detail.value;
+    }
+
+    handleCreateValidationRuleSubmit() {
+        const fieldError = validateTicketField(this.validationFieldName);
+        if (fieldError) { this._toast('Validation', fieldError, 'error'); return; }
+
+        const typeError = validateValidationType(this.validationType);
+        if (typeError) { this._toast('Validation', typeError, 'error'); return; }
+
+        this.isCreatingValidationRule = true;
+
+        addValidateField({ fieldName: this.validationFieldName, type: this.validationType })
+            .then(res => {
+                if (!res || !res.success) {
+                    throw new Error(res?.message || 'Failed to create validation rule');
+                }
+                this._toast('Success', 'Validation rule created successfully', 'success');
+                this.closeValidationRuleModal();
+            })
+            .catch(err => {
+                this._toast('Error', err?.body?.message || err?.message || 'An error occurred', 'error');
+            })
+            .finally(() => { this.isCreatingValidationRule = false; });
     }
 
     // ─── HELPERS ───────────────────────────────────────────────────────────
