@@ -6,13 +6,21 @@ Use this as the source of truth for client-side (LWC) and server-side (Apex) val
 ---
 
 ## EpicLink__c
-
+for lwc:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Epic__c | Epic | Lookup → Epic__c | YES |
 | Ticket__c | Ticket | Lookup → Ticket__c | YES |
 | IsActive__c | Is Active | Checkbox | no |
-| Type__c | Type | Text(50) | true |
+| Type__c | Type | Text(50) | yes |
+
+for apex and store:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Epic__c | Epic | Lookup → Epic__c | YES |
+| Ticket__c | Ticket | Lookup → Ticket__c | YES |
+| IsActive__c | Is Active | Checkbox | no |
+| Type__c | Type | Text(50) | yes |
 
 ---
 
@@ -40,7 +48,15 @@ for apex and store
 ---
 
 ## NameSequence__c
+for lwc:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Project__c | Project | Lookup → Project__c | no |
+| SprintLastSequence__c | Sprint Last Sequence | Number(18, 0) | no |
+| TicketLastSequence__c | Ticket Last Sequence | Number(18, 0) | no |
+| SubtaskLastSequence__c | Subtask Last Sequence | Number(18, 0) | no |
 
+for apex and store:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Project__c | Project | Lookup → Project__c | YES |
@@ -53,17 +69,30 @@ for apex and store
 ---
 
 ## ProjectMember__c
-
+for lwc:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Project__c | Project | Lookup → Project__c | YES |
 | RecordStatus__c | Record Status | Text(100) | no |
-| User__c | User | Lookup → User | yes | // just required for apex
+| User__c | User | Lookup → User | no |
+
+for apex and store:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Project__c | Project | Lookup → Project__c | YES |
+| RecordStatus__c | Record Status | Text(100) | yes |
+| User__c | User | Lookup → User | yes |
 
 ---
 
 ## Project__c
+for lwc:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Name | Name (standard) | Text | YES (standard) |
+| BacklogMaxScore__c | Backlog Max Score | Text(6) | no | // server-managed; tracks highest Score__c assigned to a backlog ticket in this project (Sprint__c = null)
 
+for apex and store:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Name | Name (standard) | Text | YES (standard) |
@@ -71,18 +100,6 @@ for apex and store
 
 > No custom required fields. Standard `Name` field only. `BacklogMaxScore__c` is set by Apex (TicketService) only.
 
----
-
-## Report_Detail__c
-
-| Field API Name | Label | Type | Required |
-|---|---|---|---|
-| Name | Name (standard) | Text(80) | YES (standard) |
-| Description__c | Description | LongTextArea(32768) | no |
-| Image_URL__c | Image URL | Url(255) | no |
-| Salesforce_Report__c | Salesforce Report | Text(18) | no | // Id of the referenced Salesforce report
-
-> No custom required fields. Standard `Name` field only.
 
 ---
 
@@ -108,7 +125,12 @@ for apex and store :
 ---
 
 ## Status__c
+for lwc:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Project__c | Project | Lookup → Project__c | YES |
 
+for apex and store:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Project__c | Project | Lookup → Project__c | YES |
@@ -118,7 +140,7 @@ for apex and store :
 ---
 
 ## Subtask__c
-
+for lwc:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Summary__c | Summary | Text(255) | YES |
@@ -127,6 +149,18 @@ for apex and store :
 | CurrentState__c | Current State | Lookup → Status__c | no |
 | Description__c | Description | TextArea | no |
 | RecordStatus__c | Record Status | Text(100) | no |
+| StartDate__c | Start Date | DateTime | no |
+| StoryPoint__c | Story Point | Number(2, 0) | no |
+
+for apex and store:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Summary__c | Summary | Text(255) | YES |
+| Ticket__c | Ticket | Lookup → Ticket__c | YES |
+| Assignee__c | Assignee | Lookup → ProjectMember__c | no |
+| CurrentState__c | Current State | Lookup → Status__c | no |
+| Description__c | Description | TextArea | no |
+| RecordStatus__c | Record Status | Text(100) | yes |
 | StartDate__c | Start Date | DateTime | no |
 | StoryPoint__c | Story Point | Number(2, 0) | no |
 
@@ -258,7 +292,12 @@ for apex and store:
 ---
 
 ## Workflow__c
+for lwc:
+| Field API Name | Label | Type | Required |
+|---|---|---|---|
+| Project__c | Project | Lookup → Project__c | YES |
 
+for apex and store:
 | Field API Name | Label | Type | Required |
 |---|---|---|---|
 | Project__c | Project | Lookup → Project__c | YES |
