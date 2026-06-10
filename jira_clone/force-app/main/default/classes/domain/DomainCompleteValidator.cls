@@ -88,6 +88,21 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // VALIDATE FIELD — invariants
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * A ValidateField__c must be unique on (FieldName__c, Type__c) — the same
+     * Ticket field cannot carry the same validation type twice. Caller queries
+     * the matching (non-deleted) rules and passes the result.
+     */
+    public static void requireValidateFieldUnique(List<ValidateField__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A validation field with the same field and type already exists');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // TICKET TYPE — business rules
     // ═══════════════════════════════════════════════════════════════
 

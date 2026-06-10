@@ -15,6 +15,10 @@ public with sharing class ValidateFieldService {
      */
     public static ValidateField__c createValidateField(String fieldName, String type) {
         try {
+            DomainCompleteValidator.requireValidateFieldUnique(
+                getMatchingValidateFields(fieldName, type)
+            );
+
             ValidateField__c rule = new ValidateField__c(
                 FieldName__c    = fieldName,
                 Type__c         = type,
@@ -26,6 +30,21 @@ public with sharing class ValidateFieldService {
         } catch (DmlException ex) {
             throw new ServiceException('Error creating validation field: ' + ex.getMessage());
         }
+    }
+
+    /**
+     * @description Fetch any existing (non-deleted) ValidateField__c that already
+     * asserts the same field + validation type, so the caller can enforce the
+     * (FieldName__c, Type__c) uniqueness invariant before inserting.
+     */
+    private static List<ValidateField__c> getMatchingValidateFields(String fieldName, String type) {
+        return [
+            SELECT Id
+            FROM ValidateField__c
+            WHERE FieldName__c = :fieldName
+              AND Type__c = :type
+              AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
+        ];
     }
 
     /**
