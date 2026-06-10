@@ -712,9 +712,12 @@ export default class ManageWorkflow extends LightningElement {
         const typeError = validateValidationType(this.validationType);
         if (typeError) { this._toast('Validation', typeError, 'error'); return; }
 
+        const transitionId = this.transitionData?.id;
+        if (!transitionId) { this._toast('Validation', 'No transition selected', 'error'); return; }
+
         this.isCreatingValidationRule = true;
 
-        addValidateField({ fieldName: this.validationFieldName, type: this.validationType })
+        addValidateField({ transitionId, fieldName: this.validationFieldName, type: this.validationType })
             .then(res => {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to create validation rule');

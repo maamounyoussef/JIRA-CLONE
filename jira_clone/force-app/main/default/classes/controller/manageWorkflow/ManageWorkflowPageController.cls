@@ -341,17 +341,21 @@ public with sharing class ManageWorkflowPageController {
 
     /**
      * @description Create a new ValidateField__c (a Ticket-field validation rule)
+     * @param transitionId - The WorkflowTransition__c record Id the rule applies to
      * @param fieldName - The Ticket field API name to validate (FieldName__c)
      * @param type - The validation type (Type__c)
      * @return APIResponse containing the created ValidateField__c in data attribute
      */
     @AuraEnabled
-    public static APIResponse addValidateField(String fieldName, String type) {
+    public static APIResponse addValidateField(String transitionId, String fieldName, String type) {
         try {
+            if (String.isBlank(transitionId)) return new APIResponse(false, 'transitionId is required');
             if (String.isBlank(fieldName)) return new APIResponse(false, 'fieldName is required');
             if (String.isBlank(type)) return new APIResponse(false, 'type is required');
 
-            ValidateField__c rule = ValidateFieldService.createValidateField(fieldName, type);
+            WorkflowTransition__c transition = DomainCorrectness.requireTransitionExists(transitionId);
+
+            ValidateField__c rule = ValidateFieldService.createValidateField(transition, fieldName, type);
             return new APIResponse(true, 'Validation field created successfully', rule);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating validation field: ' + ex.getMessage());
