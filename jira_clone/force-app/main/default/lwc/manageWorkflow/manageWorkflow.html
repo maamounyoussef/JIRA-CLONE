@@ -511,54 +511,7 @@
                             </div>
                         </div>
 
-                        <!-- Add Validation Rule — full-width trigger -->
-                        <div class="validation-rule-trigger slds-var-p-around_medium">
-                            <c-ao-btn
-                                variant="primary"
-                                label="Add Validation Rule"
-                                icon-name="utility:add"
-                                onclick={openValidationRuleModal}
-                            ></c-ao-btn>
-                        </div>
                     </template>
-                </div>
-            </div>
-        </template>
-
-        <!-- Create Validation Rule Modal -->
-        <template if:true={showValidationRuleModal}>
-            <div class="modal-backdrop" onclick={closeValidationRuleModal}></div>
-            <div class="modal-container">
-                <div class="modal-header">
-                    <h2 class="modal-title">Add Validation Rule</h2>
-                    <c-ao-btn icon-name="utility:close" variant="bare" title="Close" class="close-button" onclick={closeValidationRuleModal}></c-ao-btn>
-                </div>
-
-                <div class="modal-body">
-                    <c-ao-combobox
-                        label="Validation Type"
-                        placeholder="Select a validation type"
-                        value={newValidationType}
-                        options={validationTypeOptions}
-                        onchange={handleValidationTypeChange}
-                        class="modal-input"
-                        disabled={isCreatingValidationRule}
-                    ></c-ao-combobox>
-
-                    <c-ao-input
-                        type="text"
-                        label="Ticket Field"
-                        value={newValidationTicketField}
-                        onchange={handleValidationTicketFieldChange}
-                        class="modal-input"
-                        disabled={isCreatingValidationRule}
-                        placeholder="Enter the ticket field to apply this to"
-                    ></c-ao-input>
-                </div>
-
-                <div class="modal-footer">
-                    <c-ao-btn variant="ghost" label="Cancel" onclick={closeValidationRuleModal} disabled={isCreatingValidationRule}></c-ao-btn>
-                    <c-ao-btn variant="primary" label="Create" onclick={handleCreateValidationRuleSubmit} disabled={isCreatingValidationRule}></c-ao-btn>
                 </div>
             </div>
         </template>
