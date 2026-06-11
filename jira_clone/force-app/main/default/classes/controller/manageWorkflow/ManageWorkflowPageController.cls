@@ -1,18 +1,9 @@
-/**
- * @description Controller for managing Workflow operations from the Manage Workflow Page
- * Consolidates all workflow and workflow transition operations
- * Handles workflow transitions, validation rules, and status management
- * Uses individual Use Cases for each business action
- */
+
 public with sharing class ManageWorkflowPageController {
 
     // ==================== WORKFLOW METHODS ====================
 
-    /**
-     * @description Get workflow with all transitions and validation rules
-     * @param workflowId - The Workflow record Id
-     * @return APIResponse containing WorkflowConfigDTO in data attribute
-     */
+
     @AuraEnabled(cacheable=false)
     public static APIResponse getWorkflow(String workflowId) {
         try {
@@ -25,11 +16,6 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Get all statuses for a project
-     * @param projectId - The Project record Id
-     * @return APIResponse containing List of Status__c objects in data attribute
-     */
     @AuraEnabled(cacheable=true)
     public static APIResponse getProjectStatuses(String projectId) {
         try {
@@ -42,10 +28,6 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Load all workflows
-     * @return APIResponse containing List<Workflow__c> in data attribute
-     */
     @AuraEnabled(cacheable=true)
     public static APIResponse loadWorkflows() {
         try {
@@ -56,14 +38,6 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Load every (non-deleted) Workflow that belongs to a given
-     * Project, with the basic info the manage-workflow list UI needs (name, id,
-     * record status, audit fields). Drives the project → workflow list step
-     * after a user picks a project on the manage workflow page.
-     * @param projectId - The Project__c record Id
-     * @return APIResponse containing List<Workflow__c> in data attribute
-     */
     @AuraEnabled(cacheable=true)
     public static APIResponse loadWorkflowsByProject(String projectId) {
         try {
@@ -76,12 +50,7 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Create a new workflow
-     * @param name - The workflow name
-     * @param projectId - The Project__c record Id
-     * @return APIResponse containing created Workflow__c in data attribute
-     */
+
     @AuraEnabled
     public static APIResponse createWorkflow(String name, String projectId) {
         try {
@@ -97,13 +66,7 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Final update workflow: activate all pending transitions and validation rules
-     * This is called when the user clicks the Update Workflow button
-     * Precondition: At least one new transition or validation rule must have been added
-     * @param workflowId - The Workflow__c record Id
-     * @return APIResponse with success status
-     */
+
     @AuraEnabled
     public static APIResponse updateWorkflow(String workflowId) {
         try {
@@ -121,13 +84,6 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Activate every pending WorkflowTransition for the given
-     * Workflow. Triggered by the Update Workflow button in step 3 of the
-     * manage workflow page.
-     * @param workflowId - The Workflow__c record Id
-     * @return APIResponse with the number of activated transitions in data
-     */
     @AuraEnabled
     public static APIResponse updateFullWorkflowTransition(String workflowId) {
         try {
@@ -148,11 +104,7 @@ public with sharing class ManageWorkflowPageController {
 
     // ==================== TICKET TYPE METHODS ====================
 
-    /**
-     * @description Get ticket type by Id
-     * @param ticketTypeId - The TicketType__c record Id
-     * @return APIResponse containing TicketType__c in data attribute
-     */
+
     @AuraEnabled(cacheable=true)
     public static APIResponse getTicketTypeById(String ticketTypeId) {
         try {
@@ -166,11 +118,7 @@ public with sharing class ManageWorkflowPageController {
 
     // ==================== STATUS METHODS ====================
 
-    /**
-     * @description Load all statuses for a project
-     * @param projectId - The Project__c record Id
-     * @return APIResponse containing List<Status__c> in data attribute
-     */
+
     @AuraEnabled(cacheable=true)
     public static APIResponse loadStatuses(String projectId) {
         try {
@@ -183,12 +131,7 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Create a new status
-     * @param name - The status name
-     * @param projectId - The Project__c record Id
-     * @return APIResponse containing created Status__c in data attribute
-     */
+
     @AuraEnabled
     public static APIResponse createStatus(String name, String projectId) {
         try {
@@ -206,11 +149,6 @@ public with sharing class ManageWorkflowPageController {
 
     // ==================== WORKFLOW TRANSITION METHODS ====================
 
-    /**
-     * @description Load all transitions for a workflow
-     * @param workflowId - The Workflow__c record Id
-     * @return APIResponse containing List<WorkflowTransition__c> in data attribute
-     */
     @AuraEnabled(cacheable=true)
     public static APIResponse loadTransitions(String workflowId) {
         try {
@@ -223,11 +161,6 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Get workflow transition by ID
-     * @param transitionId - The WorkflowTransition__c record Id
-     * @return APIResponse containing WorkflowTransition__c in data attribute
-     */
     @AuraEnabled(cacheable=true)
     public static APIResponse getWorkflowTransitionById(String transitionId) {
         try {
@@ -241,14 +174,6 @@ public with sharing class ManageWorkflowPageController {
 
 
 
-    /**
-     * @description Add a new Workflow Transition to an existing Workflow
-     * @param workflowId - The Workflow__c record Id
-     * @param name - The name of the transition
-     * @param fromStatusId - The Id of the from status
-     * @param toStatusId - The Id of the to status
-     * @return APIResponse with success status and created WorkflowTransition__c object
-     */
     @AuraEnabled
     public static APIResponse addWorkflowTransition(
         String workflowId,
@@ -313,19 +238,6 @@ public with sharing class ManageWorkflowPageController {
 
     // ==================== VALIDATION FIELD METHODS ====================
 
-    /**
-     * @description Create a new ValidateField__c (a Ticket-field validation rule)
-     * @param fieldName - The Ticket field API name to validate (FieldName__c)
-     * @param type - The validation type (Type__c)
-     * @return APIResponse containing the created ValidateField__c in data attribute
-     */
-    /**
-     * @description Load all (non-deleted) ValidateField__c for a workflow
-     * transition, so the manage-workflow transition detail panel can expand and
-     * list them. Read-only, so cacheable for @wire.
-     * @param transitionId - The WorkflowTransition__c record Id
-     * @return APIResponse containing List<ValidateField__c> in data attribute
-     */
     @AuraEnabled(cacheable=true)
     public static APIResponse loadValidateFields(String transitionId) {
         try {
