@@ -8,8 +8,9 @@ public class WorkflowConstants {
     public static final String RECORD_STATUS_ACTIVE = 'active';
     public static final String RECORD_STATUS_DELETED = 'deleted';
     
-    // Validation Rule Types
+    // Validation Rule Types — must match the ValidateField__c.Type__c picklist
     public static final String VALIDATION_TYPE_NOT_EQUALS = 'not equals';
+    public static final String VALIDATION_TYPE_ISNT_EMPTY = 'Isn\'t Empty';
     
     // Ticket Field Names Map
     public static final Map<String, String> TICKET_FIELD_API_NAMES = new Map<String, String>{

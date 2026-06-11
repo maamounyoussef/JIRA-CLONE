@@ -139,7 +139,6 @@ export default class ManageTicketTracking extends LightningElement {
     _projectId      = null;
     @track _showChooseProject = false;
     isLoading       = false;
-    errorMessage    = null;
 
     @track memberOptions   = [];
     @track statusOptions   = [];
@@ -279,7 +278,7 @@ export default class ManageTicketTracking extends LightningElement {
         this.isLoading = true;
         loadManageTicketTrackingPage({ projectId: this._projectId })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
+                if (!res.success) { this._showError(res.message); return; }
                 const response = res.data;
                 this._statuses       = response.status         || [];
                 this.epics           = response.epics          || [];
@@ -304,14 +303,14 @@ export default class ManageTicketTracking extends LightningElement {
                       }
                     : null;
             })
-            .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error loading page'; })
+            .catch(err => this._showError(this._errMsg(err, 'Error loading page')))
             .finally(() => { this.isLoading = false; });
     }
 
     _callChangeTicketState(ticketId, fromStatusId, toStatusId) {
         changeTicketState({ ticketId, fromStatusId, toStatusId })
             .then(res => {
-                if (!res.success) { this.errorMessage = res.message; return; }
+                if (!res.success) { this._showError(res.message); return; }
                 const isEndStatus   = res.data && res.data.isEndStatus;
                 const updatedSprint = res.data && res.data.updatedSprint;
 
@@ -323,12 +322,10 @@ export default class ManageTicketTracking extends LightningElement {
                     newSprint.TotalEndedStoryPoint__c = updatedSprint.TotalEndedStoryPoint__c;
                 }
                 this._sprint = newSprint;
+                this._showSuccess(res.message);
             })
-            .catch(err => { this.errorMessage = (err.body && err.body.message) || 'Error changing ticket state'; })
+            .catch(err => this._showError(this._errMsg(err, 'Error changing ticket state')))
     }
-
-    // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
-    clearError() { this.errorMessage = null; }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║                          TICKET SECTION                                   ║
@@ -357,25 +354,15 @@ export default class ManageTicketTracking extends LightningElement {
         this._dragToStatusId = toStatusId;
 
         const error = validateChangeTicketState(ticketId, toStatusId);
-        if (error) { this.errorMessage = error; return; }
+        if (error) { this._showError(error); return; }
 
         const transitionId = findTransitionId(ticketType, fromStatusId, toStatusId);
-        if (!transitionId) { this.errorMessage = 'This transition is not allowed by the workflow.'; return; }
+        if (!transitionId) { this._showError('This transition is not allowed by the workflow.'); return; }
 
         this._callChangeTicketState(ticketId, fromStatusId, toStatusId);
     }
 
     handleTicketDragEnd(evt) {
-        const { ticketId }         = evt.detail;
-        const newCurrentStatusId   = this._dragToStatusId;
-        if (ticketId && newCurrentStatusId) {
-            this._sprint = {
-                ...this._sprint,
-                tickets: this.tickets.map(t =>
-                    t.Id === ticketId ? { ...t, key: newTicketKey(), CurrentState__c: newCurrentStatusId } : t
-                )
-            };
-        }
         this._clearDragState();
     }
 
@@ -408,6 +395,7 @@ export default class ManageTicketTracking extends LightningElement {
                 if (!res.success) { this._showError(res.message); return; }
                 const updated = res.data || {};
                 this._patchTicket(ticketId, { Summary__c: updated.Summary__c });
+                this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error updating ticket summary')));
     }
@@ -428,6 +416,7 @@ export default class ManageTicketTracking extends LightningElement {
                 if (!res.success) { this._showError(res.message); return; }
                 const updated = res.data || {};
                 this._patchTicket(ticketId, { Description__c: updated.Description__c });
+                this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error updating ticket description')));
     }
@@ -456,6 +445,7 @@ export default class ManageTicketTracking extends LightningElement {
                 const ticket   = this._findTicketById(fromTicketId);
                 const existing = (ticket && Array.isArray(ticket.linkedTo)) ? ticket.linkedTo : [];
                 this._patchTicket(fromTicketId, { linkedTo: [...existing, link] });
+                this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error linking ticket')));
     }
@@ -480,6 +470,7 @@ export default class ManageTicketTracking extends LightningElement {
                 const ticket   = this._findTicketById(ticketId);
                 const existing = (ticket && Array.isArray(ticket.subtasks)) ? ticket.subtasks : [];
                 this._patchTicket(ticketId, { subtasks: [...existing, created] });
+                this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error creating subtask')));
     }
@@ -514,6 +505,15 @@ export default class ManageTicketTracking extends LightningElement {
             title  : 'Error',
             message: message || 'Something went wrong',
             variant: 'error'
+        }));
+    }
+
+    // R6: surface successful actions through a toast.
+    _showSuccess(message) {
+        this.dispatchEvent(new ShowToastEvent({
+            title  : 'Success',
+            message: message || 'Done',
+            variant: 'success'
         }));
     }
 

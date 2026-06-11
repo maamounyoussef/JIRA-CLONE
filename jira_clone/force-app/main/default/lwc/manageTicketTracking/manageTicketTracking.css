@@ -40,19 +40,6 @@
     to   { opacity: 1; transform: translate(-50%, -50%); }
 }
 
-.error-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: #FFEBE6;
-    border-left: 4px solid #DE350B;
-    border-radius: 3px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    color: #BF2600;
-    font-size: 0.875rem;
-}
-
 .page-spinner {
     display: flex;
     justify-content: center;

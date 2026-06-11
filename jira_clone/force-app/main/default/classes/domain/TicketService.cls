@@ -922,7 +922,13 @@ public with sharing class TicketService {
 
     public static ChangeTicketStateDto changeTicketState(Ticket__c ticket, Status__c fromStatus, Status__c toStatus, List<WorkflowTransition__c> transitions) {
         try {
-            DomainCompleteValidator.requireTransitionAllowed(fromStatus.Id, toStatus.Id, transitions);
+            // The allowed transition for this fromStatus → toStatus carries the
+            // validation fields that must pass before the change is applied.
+            WorkflowTransition__c transition = DomainCompleteValidator.requireTransitionAllowed(fromStatus.Id, toStatus.Id, transitions);
+
+            List<ValidateField__c> validateFields = ValidateFieldService.loadValidateFieldsByTransition(transition.Id);
+            DomainCompleteValidator.requireValidateFieldsPass(ticket, validateFields);
+
             ticket.CurrentState__c = toStatus.Id;
             updateTicket(ticket);
 

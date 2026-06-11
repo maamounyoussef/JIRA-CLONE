@@ -102,6 +102,37 @@ public with sharing class DomainCompleteValidator {
         }
     }
 
+    /**
+     * Every ValidateField__c configured on the transition must pass before the
+     * state change is applied. Each rule asserts that a Ticket field
+     * (FieldName__c) satisfies a validation Type__c. Several rules may share the
+     * same Type__c (e.g. two different fields both "Isn't Empty"); the first
+     * rule that fails throws, with a message combining the rule's
+     * ErrorMessage__c, field, and type.
+     */
+    public static void requireValidateFieldsPass(Ticket__c ticket, List<ValidateField__c> validateFields) {
+        for (ValidateField__c vf : validateFields) {
+            if (!passesValidateField(ticket, vf)) {
+                throw new ServiceException(
+                    vf.ErrorMessage__c + ' [field: ' + vf.FieldName__c + ', type: ' + vf.Type__c + ']'
+                );
+            }
+        }
+    }
+
+    /**
+     * Evaluate a single validation rule against the ticket. Unknown types are
+     * treated as passing so a new picklist value never silently blocks a
+     * transition before its check is implemented here.
+     */
+    private static Boolean passesValidateField(Ticket__c ticket, ValidateField__c vf) {
+        Object value = ticket.get(vf.FieldName__c);
+        if (vf.Type__c == WorkflowConstants.VALIDATION_TYPE_ISNT_EMPTY) {
+            return value != null && String.isNotBlank(String.valueOf(value));
+        }
+        return true;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // TICKET TYPE — business rules
     // ═══════════════════════════════════════════════════════════════
