@@ -230,6 +230,19 @@ public with sharing class WorkflowService {
     public static WorkflowTransition__c addWorkflowTransition(Workflow__c workflow, String name, Status__c fromStatus, Status__c toStatus) {
         try {
             DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatus.Id, toStatus.Id);
+            DomainCompleteValidator.requireFromStatusNotEnd(fromStatus);
+            DomainCompleteValidator.requireToStatusNotStart(toStatus);
+
+            List<WorkflowTransition__c> duplicateTransitions = [
+                SELECT Id
+                FROM WorkflowTransition__c
+                WHERE Workflow__c = :workflow.Id
+                  AND FromStatus__c = :fromStatus.Id
+                  AND ToStatus__c = :toStatus.Id
+                  AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
+                LIMIT 1
+            ];
+            DomainCompleteValidator.requireTransitionStatusPairUnique(duplicateTransitions);
 
             WorkflowTransition__c newTransition = new WorkflowTransition__c();
             newTransition.Workflow__c = workflow.Id;
@@ -244,17 +257,6 @@ public with sharing class WorkflowService {
         }
     }
 
-    public static WorkflowTransition__c createWorkflowTransition(String name, Workflow__c workflow, Status__c fromStatus, Status__c toStatus, String recordStatus) {
-        try {
-            DomainCompleteValidator.requireTransitionStatusesDifferent(fromStatus.Id, toStatus.Id);
-            DomainCompleteValidator.requireFromStatusNotEnd(fromStatus);
-            DomainCompleteValidator.requireToStatusNotStart(toStatus);
-
-            return createTransition(name, workflow.Id, fromStatus.Id, toStatus.Id, recordStatus);
-        } catch (Exception ex) {
-            throw new ServiceException('Error creating workflow transition: ' + ex.getMessage());
-        }
-    }
 
     public static Workflow__c createWorkflowWithValidation(String name, String projectId) {
         try {

@@ -239,33 +239,7 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    /**
-     * @description Create a new workflow transition
-     * @param name - The transition name
-     * @param workflowId - The Workflow__c record Id
-     * @param fromStatusId - The from Status__c record Id
-     * @param toStatusId - The to Status__c record Id
-     * @param recordStatus - The record status indicator (optional)
-     * @return APIResponse containing created WorkflowTransition__c in data attribute
-     */
-    @AuraEnabled
-    public static APIResponse createTransition(String name, String workflowId, String fromStatusId, String toStatusId, String recordStatus) {
-        try {
-            if (String.isBlank(name)) return new APIResponse(false, 'name is required');
-            if (String.isBlank(workflowId)) return new APIResponse(false, 'workflowId is required');
-            if (String.isBlank(fromStatusId)) return new APIResponse(false, 'fromStatusId is required');
-            if (String.isBlank(toStatusId)) return new APIResponse(false, 'toStatusId is required');
 
-            Workflow__c workflow = DomainCorrectness.requireWorkflowExists(workflowId);
-            Status__c fromStatus = DomainCorrectness.requireStatusExists(fromStatusId);
-            Status__c toStatus = DomainCorrectness.requireStatusExists(toStatusId);
-
-            WorkflowTransition__c transition = WorkflowService.createWorkflowTransition(name, workflow, fromStatus, toStatus, recordStatus);
-            return new APIResponse(true, 'Workflow Transition created successfully', transition);
-        } catch (Exception ex) {
-            return new APIResponse(false, 'Error creating workflow transition: ' + ex.getMessage());
-        }
-    }
 
     /**
      * @description Add a new Workflow Transition to an existing Workflow

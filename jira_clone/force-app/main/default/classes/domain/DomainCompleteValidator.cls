@@ -79,6 +79,13 @@ public with sharing class DomainCompleteValidator {
     }
 
     /**
+     * A transition from one status to another can only exist once — duplicate from/to pairs are invalid.
+     */
+    public static void requireTransitionStatusPairUnique(List<WorkflowTransition__c> duplicates) {
+        if (!duplicates.isEmpty()) throw new ServiceException('A transition with the same from and to status already exists in this workflow');
+    }
+
+    /**
      * Only pending transitions can be activated.
      */
     public static void requireTransitionIsPending(WorkflowTransition__c transition) {
