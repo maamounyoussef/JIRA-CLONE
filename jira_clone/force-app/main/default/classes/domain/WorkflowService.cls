@@ -260,6 +260,15 @@ public with sharing class WorkflowService {
 
     public static Workflow__c createWorkflowWithValidation(String name, String projectId) {
         try {
+            List<Workflow__c> duplicates = [
+                SELECT Id
+                FROM Workflow__c
+                WHERE Name = :name
+                AND Project__c = :projectId
+                AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
+                LIMIT 1
+            ];
+            DomainCompleteValidator.requireWorkflowNameUniquePerProject(duplicates);
             return createWorkflow(name, projectId);
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow: ' + ex.getMessage());

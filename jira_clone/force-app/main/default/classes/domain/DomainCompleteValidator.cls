@@ -186,6 +186,16 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW — creation and naming
+    // ═══════════════════════════════════════════════════════════════
+
+    public static void requireWorkflowNameUniquePerProject(List<Workflow__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A workflow with this name already exists in this project');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // WORKFLOW — transition availability
     // ═══════════════════════════════════════════════════════════════
 
