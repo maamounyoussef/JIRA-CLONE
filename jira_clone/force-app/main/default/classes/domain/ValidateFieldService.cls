@@ -34,6 +34,24 @@ public with sharing class ValidateFieldService {
     }
 
     /**
+     * @description Load every (non-deleted) ValidateField__c attached to a given
+     * workflow transition, so the manage-workflow detail panel can expand and
+     * list the validation rules for that transition. Sorted in the query
+     * (ORDER BY) so the list arrives display-ready.
+     * @param workflowTransitionId - The WorkflowTransition__c record Id
+     * @return List of non-deleted ValidateField__c for that transition
+     */
+    public static List<ValidateField__c> loadValidateFieldsByTransition(String workflowTransitionId) {
+        return [
+            SELECT Id, FieldName__c, Type__c, ErrorMessage__c, RecordStatus__c
+            FROM ValidateField__c
+            WHERE WorkflowTransition__c = :workflowTransitionId
+              AND RecordStatus__c != :WorkflowConstants.RECORD_STATUS_DELETED
+            ORDER BY FieldName__c
+        ];
+    }
+
+    /**
      * @description Fetch any existing (non-deleted) ValidateField__c that already
      * asserts the same field + validation type, so the caller can enforce the
      * (FieldName__c, Type__c) uniqueness invariant before inserting.

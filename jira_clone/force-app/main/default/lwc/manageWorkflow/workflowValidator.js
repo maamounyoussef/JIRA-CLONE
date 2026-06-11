@@ -32,3 +32,8 @@ export function validateTicketField(field) {
     if (!(field || '').trim()) return 'Ticket field is required';
     return null;
 }
+
+export function validateTransitionId(transitionId) {
+    if (!(transitionId || '').trim()) return 'A transition must be selected before loading its validation details';
+    return null;
+}

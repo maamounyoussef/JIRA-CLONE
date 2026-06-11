@@ -517,7 +517,33 @@
                                     onclick={openValidationRuleModal}
                                     icon-name="utility:add"
                                 ></c-ao-btn>
+                                <c-ao-btn
+                                    variant="secondary"
+                                    label={expandValidationLabel}
+                                    onclick={handleToggleValidationDetail}
+                                    icon-name={validationToggleIcon}
+                                ></c-ao-btn>
                             </div>
+
+                            <!-- Validation details (loaded on expand) -->
+                            <template if:true={isValidationDetailExpanded}>
+                                <div class="validation-detail-list">
+                                    <template if:true={hasValidationFields}>
+                                        <template for:each={validationFields} for:item="vf">
+                                            <div key={vf._key} class="validation-detail-row">
+                                                <span class="validation-detail-field">{vf.fieldName}</span>
+                                                <span class="validation-detail-type">{vf.type}</span>
+                                                <span class="validation-detail-message">{vf.errorMessage}</span>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:false={hasValidationFields}>
+                                        <div class="slds-text-color_weak slds-var-p-around_small">
+                                            No validation details for this transition.
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
 
                         <!-- Add Validation Rule — inline section -->

@@ -30,6 +30,55 @@ it before emitting code:
 | 8 | On Apex failure, is a `ShowToastEvent` dispatched? (Rule 6) | Add the toast in the `.then()` failure branch. |
 | 9 | When updating, are all levels on the path to the leaf spread, and is `_key` regenerated to flag the change? (Rule 7) | Apply the spread pattern; use `Id` to find, `_key` to flag. |
 | 10 | Does every dispatched event from the child have a handler wired via `onxxx={handler}` in the template? | Add the missing `on<event>={handle<Child><Event>}` attribute. |
+| 11 | Is every "panel/section open" flag a getter derived from the active-object id, not a parallel `@track` boolean? (Rule 3) | Delete the `@track showXxx` + its manual `= true/false` writes; replace with `get showXxx() { return this._activeXxxId != null; }`. |
+
+## Rule 8 — Shaping principal state on first load
+
+On the **first page load**, build the principal state from BOTH axes at once:
+
+- **UI display** decides how many TOP-LEVEL principal states exist — one per
+  independent panel the UI shows side-by-side.
+- **Entity (DB) hierarchy** decides the NESTING inside each principal state — a
+  child record lives under its parent, exactly as the schema relates them.
+
+When the two axes agree, keep one principal state. When the UI splits something
+the schema keeps together (or vice-versa), the UI split wins at the top level —
+but each split still nests by entity underneath, because that never contradicts
+the UI. Never flatten the entity hierarchy and never duplicate a child across
+levels.
+
+### Case A — one principal state (UI and entity agree)
+
+`manageWorkflow`: the UI shows statuses and transitions **all under one
+workflow**, and the entity nests them under `Workflow__c`. → a single
+`workflowData = { id, projectStatus:[…], workflow:{ transitions:[…] } }`.
+Everything (`_statuses`, `_transitions`, `activeTransition`,
+`showTransitionDetail`) is a getter off that one object.
+
+### Case B — two principal states, still nested by entity
+
+`manageBacklog`: the UI shows **Sprints** and the **Backlog** as two separate
+panels, so two top-level states — `@track sprints = []` and
+`@track backlogTickets = []`. But a sprint's tickets nest **under the sprint**
+(`sprint.tickets`), mirroring the `Sprint__c → Ticket__c` relation, because that
+nesting does not contradict the UI. Moving a ticket is one immutable rewrite of
+both states; no ticket is stored in two places.
+
+### Derived-flag example (Rule 3, row 11)
+
+```javascript
+// ❌ Parallel boolean kept in sync by hand with the selection.
+@track showTransitionDetail = false;
+@track selectedTransitionId  = null;
+handleTransitionClick(e){ this.selectedTransitionId = e...; this.showTransitionDetail = true; }
+handleClose(){ this.selectedTransitionId = null; this.showTransitionDetail = false; }
+
+// ✅ Visibility derived from the principal selection — one source of truth.
+@track selectedTransitionId = null;
+get showTransitionDetail() { return this.selectedTransitionId != null; }
+handleTransitionClick(e){ this.selectedTransitionId = e...; }
+handleClose(){ this.selectedTransitionId = null; }
+```
 
 ## Example
 

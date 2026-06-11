@@ -1,28 +1,28 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getWorkflow              from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
 import createStatus             from '@salesforce/apex/ManageWorkflowPageController.createStatus';
 import addWorkflowTransition    from '@salesforce/apex/ManageWorkflowPageController.addWorkflowTransition';
-import getWorkflowTransitionById from '@salesforce/apex/ManageWorkflowPageController.getWorkflowTransitionById';
 import activateWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.activateWorkflowTransition';
 import deleteWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.deleteWorkflowTransition';
 import loadWorkflowsByProject   from '@salesforce/apex/ManageWorkflowPageController.loadWorkflowsByProject';
 import createWorkflow           from '@salesforce/apex/ManageWorkflowPageController.createWorkflow';
 import updateFullWorkflowTransition from '@salesforce/apex/ManageWorkflowPageController.updateFullWorkflowTransition';
 import addValidateField          from '@salesforce/apex/ManageWorkflowPageController.addValidateField';
+import loadValidateFields        from '@salesforce/apex/ManageWorkflowPageController.loadValidateFields';
 
 import {
     validateStatusName,
     validateTransition,
     validateTransitionName,
     validateValidationType,
-    validateTicketField
+    validateTicketField,
+    validateTransitionId
 } from './workflowValidator';
 import {
     VISUALIZATION_CONFIG,
     getResponsiveConfig,
     gatherSortedStatuses,
-    transitionFromApex,
     calculatePositions,
     calculateTransitionLines,
     getSvgViewBox,
@@ -321,9 +321,18 @@ export default class ManageWorkflow extends LightningElement {
     _removeTransition(id) {
         this._writeTransitions(this._transitions.filter(t => !this._matchesId(t, id)));
     }
-    _patchTransition(id, partial) {
+    // The validateFields owned by a transition live ON that transition inside the
+    // denormalized state — set when its detail loads, appended when one is created.
+    _setTransitionValidateFields(id, validateFields) {
         this._writeTransitions(this._transitions.map(t =>
-            this._matchesId(t, id) ? { ...t, ...partial } : t
+            this._matchesId(t, id) ? { ...t, validateFields } : t
+        ));
+    }
+    _addTransitionValidateField(id, validateField) {
+        this._writeTransitions(this._transitions.map(t =>
+            this._matchesId(t, id)
+                ? { ...t, validateFields: [...(t.validateFields || []), validateField] }
+                : t
         ));
     }
     _writeTransitions(transitions) {
@@ -543,7 +552,6 @@ export default class ManageWorkflow extends LightningElement {
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
     // ─── PRESENTATION STATE ────────────────────────────────────────────────
-    @track showTransitionDetail     = false;
     @track selectedTransitionId     = null;
     @track transitionIsLoading      = false;
     @track transitionErrorMessage   = '';
@@ -557,14 +565,63 @@ export default class ManageWorkflow extends LightningElement {
     @track validationType             = '';
     @track isCreatingValidationRule   = false;
 
+    // Expand-to-show-validation-details state. `selectedTransitionId` is the
+    // principal UI selection; `_wiredTransitionId` is a SEPARATE wire gate that
+    // stays undefined (wire dormant) until the user actually expands the detail,
+    // so the load fires only on expand — not on every transition selection.
+    @track _isValidationDetailExpanded = false;
+    _wiredTransitionId;
+
+    // ─── WIRE ──────────────────────────────────────────────────────────────
+    // Loads the validation details for the expanded transition and folds them
+    // INTO that transition inside the denormalized state — no parallel copy.
+    // Re-fires only when `_wiredTransitionId` changes (Not-important freshness).
+    @wire(loadValidateFields, { transitionId: '$_wiredTransitionId' })
+    wiredValidateFields(result) {
+        if (result.data && result.data.success) {
+            const fields = (result.data.data || []).map(vf => this._mapValidateField(vf));
+            this._setTransitionValidateFields(this._wiredTransitionId, fields);
+        } else if (result.data && !result.data.success) {
+            this._toast('Error', result.data.message || 'Failed to load validation details', 'error');
+        } else if (result.error) {
+            this._toast('Error', 'Failed to load validation details', 'error');
+        }
+    }
+
+    _mapValidateField(vf) {
+        return {
+            id: vf.Id,
+            fieldName: vf.FieldName__c,
+            type: vf.Type__c,
+            errorMessage: vf.ErrorMessage__c,
+            _key: vf.Id
+        };
+    }
+
     // ─── GETTERS ───────────────────────────────────────────────────────────
     get validationFieldOptions() { return VALIDATION_FIELD_OPTIONS; }
     get validationTypeOptions()  { return VALIDATION_TYPE_OPTIONS; }
 
+    get isValidationDetailExpanded() { return this._isValidationDetailExpanded; }
+    get validationFields()           { return this.activeTransition?.validateFields || []; }
+    get hasValidationFields()        { return (this.activeTransition?.validateFields?.length || 0) > 0; }
+    get expandValidationLabel() {
+        return this._isValidationDetailExpanded ? 'Hide Validation Details' : 'Show Validation Details';
+    }
+    get validationToggleIcon() {
+        return this._isValidationDetailExpanded ? 'utility:chevronup' : 'utility:chevrondown';
+    }
+
+    // The detail panel is shown whenever a transition is selected — derived from
+    // the principal state, never tracked in parallel: null id → hidden, else shown.
+    get showTransitionDetail() {
+        return this.selectedTransitionId != null;
+    }
+
     // The viewed transition is derived from principal state, not stored twice:
-    // `selectedTransitionId` is the only state, and the row is found in
-    // `_transitions`. Detail-only fields (createdDate / status names) are merged
-    // into that same entry by `loadTransitionDetail`, so there is one copy.
+    // `selectedTransitionId` is the only state, and the row is FOUND in
+    // `_transitions` — which already carries every attribute loaded by getWorkflow
+    // (plus its validateFields). No separate per-transition fetch.
     get activeTransition() {
         if (!this.selectedTransitionId) return null;
         return this._transitions.find(t => this._matchesId(t, this.selectedTransitionId)) || null;
@@ -599,38 +656,36 @@ export default class ManageWorkflow extends LightningElement {
     handleTransitionClick(event) {
         const lineId = event.currentTarget.dataset.lineId;
         this.selectedTransitionId = lineId;
-        this.showTransitionDetail = true;
-        this.loadTransitionDetail();
+        // The detail is already in the denormalized state — `activeTransition`
+        // finds it by id. Just collapse any panel left open on the previously
+        // viewed transition so its rules aren't shown; the wire re-loads on expand.
+        this._collapseValidationDetail();
     }
 
-    loadTransitionDetail() {
-        if (!this.selectedTransitionId) return;
-        this.transitionIsLoading = true;
-        this.transitionErrorMessage = '';
+    // ─── VALIDATION DETAIL (expand to load) ────────────────────────────────
+    handleToggleValidationDetail() {
+        // Collapsing needs no load.
+        if (this._isValidationDetailExpanded) {
+            this._collapseValidationDetail();
+            return;
+        }
+        // Expanding: gate the load behind the transition-id validation. No pass,
+        // no wire fire (the wire only runs once _wiredTransitionId is set).
+        const error = validateTransitionId(this.selectedTransitionId);
+        if (error) { this._toast('Validation', error, 'error'); return; }
 
-        getWorkflowTransitionById({ transitionId: this.selectedTransitionId })
-            .then(res => {
-                if (res && res.success && res.data) {
-                    // Merge the loaded detail INTO the principal-state row. We omit
-                    // recordStatus on purpose so the locally-known value (e.g. just
-                    // activated) stays authoritative — no parallel copy to reconcile.
-                    const detail = transitionFromApex(res.data);
-                    this._patchTransition(this.selectedTransitionId, {
-                        name: detail.name,
-                        fromStatus: detail.fromStatus,
-                        toStatus: detail.toStatus,
-                        createdDate: detail.createdDate,
-                        fromStatusName: detail.fromStatusName,
-                        toStatusName: detail.toStatusName
-                    });
-                } else {
-                    this.transitionErrorMessage = res?.message || 'Failed to load transition';
-                }
-            })
-            .catch(err => {
-                this.transitionErrorMessage = 'Error loading transition: ' + (err?.body?.message || err?.message);
-            })
-            .finally(() => { this.transitionIsLoading = false; });
+        this._isValidationDetailExpanded = true;
+        // Separate wire gate — set here (the method that needs the data), never
+        // in the wired callback and never reusing the principal selection id.
+        this._wiredTransitionId = this.selectedTransitionId;
+    }
+
+    _collapseValidationDetail() {
+        this._isValidationDetailExpanded = false;
+        // Drop the wire gate so the load re-fires on next expand. The already
+        // loaded validateFields stay on the transition in state — they are part
+        // of the denormalized record, not a throwaway panel buffer.
+        this._wiredTransitionId = undefined;
     }
 
     handleActivateTransition() {
@@ -691,13 +746,13 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleCloseTransitionDetail() {
-        this.showTransitionDetail = false;
         this.selectedTransitionId = null;
         this.transitionIsLoading = false;
         this.transitionErrorMessage = '';
         this.transitionSuccessMessage = '';
         this.transitionIsActivating = false;
         this.transitionIsDeleting = false;
+        this._collapseValidationDetail();
         this.closeValidationRuleModal();
     }
 
@@ -731,11 +786,17 @@ export default class ManageWorkflow extends LightningElement {
         if (typeError) { this._toast('Validation', typeError, 'error'); return; }
 
         this.isCreatingValidationRule = true;
+        const transitionId = this.activeTransition?.id;
 
-        addValidateField({workflowTransitionId: this.activeTransition?.id ,fieldName: this.validationFieldName, type: this.validationType })
+        addValidateField({workflowTransitionId: transitionId ,fieldName: this.validationFieldName, type: this.validationType })
             .then(res => {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to create validation rule');
+                }
+                // Fold the created record (from the backend response) onto the
+                // owning transition in the denormalized state — no re-fetch.
+                if (res.data) {
+                    this._addTransitionValidateField(transitionId, this._mapValidateField(res.data));
                 }
                 this._toast('Success', 'Validation rule created successfully', 'success');
                 this.closeValidationRuleModal();

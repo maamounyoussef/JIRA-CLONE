@@ -4,6 +4,12 @@ These instructions say **which** discipline applies and **when**. The **how** li
 in the referenced skill / guide `.md` files — read those for the rules, checklists,
 and examples. Do not duplicate implementation detail here.
 
+## `run` trigger → orchestrator (MANDATORY)
+
+When the developer types **`run`**, invoke the `agile-development-orchastrator`
+skill and follow its `.md` iteration exactly. Do not run the app, deploy, or take
+any other action — `run` always means start the orchestrator.
+
 ## Skill iteration discipline (MANDATORY — applies to every development skill)
 
 When running any development skill or task‑skill (the `agile-development-orchastrator`

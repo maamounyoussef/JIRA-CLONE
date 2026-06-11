@@ -486,6 +486,53 @@
     padding: 0 24px 20px;
 }
 
+/* ── Validation Details — expandable list inside the detail body ─── */
+.validation-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 24px 18px;
+    border-top: 1px solid var(--border-light);
+    background: var(--surface-secondary);
+}
+
+.validation-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.1s ease, background-color 0.1s ease;
+}
+
+.validation-detail-row:hover {
+    border-color: var(--border);
+    background: var(--surface-secondary);
+}
+
+.validation-detail-field {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13px;
+    min-width: 150px;
+}
+
+.validation-detail-type {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.validation-detail-message {
+    flex: 1;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: right;
+    word-break: break-word;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MODALS — consistent overlay + card pattern
    ═══════════════════════════════════════════════════════════════════ */

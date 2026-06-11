@@ -345,6 +345,25 @@ public with sharing class ManageWorkflowPageController {
      * @param type - The validation type (Type__c)
      * @return APIResponse containing the created ValidateField__c in data attribute
      */
+    /**
+     * @description Load all (non-deleted) ValidateField__c for a workflow
+     * transition, so the manage-workflow transition detail panel can expand and
+     * list them. Read-only, so cacheable for @wire.
+     * @param transitionId - The WorkflowTransition__c record Id
+     * @return APIResponse containing List<ValidateField__c> in data attribute
+     */
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadValidateFields(String transitionId) {
+        try {
+            if (String.isBlank(transitionId)) return new APIResponse(false, 'transitionId is required');
+            DomainCorrectness.requireTransitionExists(transitionId);
+            List<ValidateField__c> rules = ValidateFieldService.loadValidateFieldsByTransition(transitionId);
+            return new APIResponse(true, 'Validation fields loaded successfully', rules);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading validation fields: ' + ex.getMessage());
+        }
+    }
+
     @AuraEnabled
     public static APIResponse addValidateField(String workflowTransitionId ,String fieldName, String type) {
         try {
