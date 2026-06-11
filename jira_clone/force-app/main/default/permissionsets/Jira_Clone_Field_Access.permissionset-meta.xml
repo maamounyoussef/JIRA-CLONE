@@ -3,11 +3,6 @@
     <description>Grants object and field access for Sprint, Subtask, ProjectMember and Ticket custom objects used by the Jira clone app.</description>
     <fieldPermissions>
         <editable>true</editable>
-        <field>ProjectMember__c.RecordStatus__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>ProjectMember__c.User__c</field>
         <readable>true</readable>
     </fieldPermissions>

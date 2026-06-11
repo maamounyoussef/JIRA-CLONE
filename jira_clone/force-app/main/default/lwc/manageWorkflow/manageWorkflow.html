@@ -7,6 +7,17 @@
     <!-- Step 2 — Workflow list for the chosen project (no workflowId yet) -->
     <template if:true={showWorkflowList}>
         <div class="workflow-list-container slds-var-m-around_medium">
+
+            <!-- Content (hidden if loading or error) -->
+            <template if:true={workflowListShouldShowContent}>
+
+            <!-- Loading Spinner -->
+            <template if:true={_workflowsLoading}>
+                <div class="slds-var-m-around_medium slds-align_absolute-center">
+                    <lightning-spinner alternative-text="Loading workflows..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
             <div class="workflow-list-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-var-m-bottom_medium">
                 <h2 class="slds-text-heading_medium">Workflows</h2>
                 <c-ao-btn
@@ -16,14 +27,6 @@
                     onclick={openCreateWorkflowModal}
                 ></c-ao-btn>
             </div>
-
-            <template if:true={_workflowsLoading}>
-                <lightning-spinner alternative-text="Loading workflows..." class="slds-var-m-around_medium"></lightning-spinner>
-            </template>
-
-            <template if:true={_workflowsErrorMessage}>
-                <lightning-alert variant="error" title="Error">{_workflowsErrorMessage}</lightning-alert>
-            </template>
 
             <template if:true={hasWorkflows}>
                 <ul class="workflow-list slds-has-dividers_bottom-space">
@@ -53,6 +56,8 @@
                         No workflows for this project yet — create one to get started.
                     </div>
                 </template>
+            </template>
+
             </template>
         </div>
 

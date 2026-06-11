@@ -139,6 +139,7 @@ export default class ManageTicketTracking extends LightningElement {
     _projectId      = null;
     @track _showChooseProject = false;
     isLoading       = false;
+    @track errorMessage = null;
 
     @track memberOptions   = [];
     @track statusOptions   = [];
@@ -269,16 +270,25 @@ export default class ManageTicketTracking extends LightningElement {
         if (!projectId) return;
         this._projectId         = projectId;
         this._showChooseProject = false;
+        this.errorMessage = null;
         this._loadData();
     }
 
     get showChooseProject() { return this._showChooseProject; }
+    get hasError() { return !!this.errorMessage; }
+    get shouldShowContent() { return !this.isLoading && !this.hasError; }
 
     _loadData() {
         this.isLoading = true;
+        this.errorMessage = null;
         loadManageTicketTrackingPage({ projectId: this._projectId })
             .then(res => {
-                if (!res.success) { this._showError(res.message); return; }
+                if (!res.success) {
+                    const msg = res.message || 'Failed to load ticket tracking page';
+                    this.errorMessage = msg;
+                    this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
+                    return;
+                }
                 const response = res.data;
                 this._statuses       = response.status         || [];
                 this.epics           = response.epics          || [];
@@ -291,7 +301,11 @@ export default class ManageTicketTracking extends LightningElement {
 
                 this._setSprintFromResponse(response);
             })
-            .catch(err => this._showError(this._errMsg(err, 'Error loading page')))
+            .catch(err => {
+                const msg = this._errMsg(err, 'Error loading page');
+                this.errorMessage = msg;
+                this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
+            })
             .finally(() => { this.isLoading = false; });
     }
 

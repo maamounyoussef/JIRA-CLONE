@@ -7,12 +7,14 @@
 
     <template if:false={showChooseProject}>
 
-    <!-- Loading -->
-    <template if:true={isLoading}>
-        <lightning-spinner alternative-text="Loading" size="medium" class="page-spinner"></lightning-spinner>
-    </template>
-
-    <template if:false={isLoading}>
+    <!-- Content (hidden if loading or error) -->
+    <template if:true={shouldShowContent}>
+        <!-- Loading -->
+        <template if:true={isLoading}>
+            <div class="mtk-loading">
+                <lightning-spinner alternative-text="Loading..." size="large"></lightning-spinner>
+            </div>
+        </template>
 
         <template if:true={sprint}>
             <header class="sprint-header">
@@ -93,8 +95,6 @@
             ></c-ticket-view>
             </section>
         </template>
-
-    </template>
 
     </template>
 

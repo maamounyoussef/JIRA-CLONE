@@ -107,6 +107,8 @@ export default class ManageWorkflow extends LightningElement {
     get hasWorkflow() { return !!this._workflowId; }
     get showWorkflowList() { return this.hasProject && !this.hasWorkflow; }
     get hasWorkflows() { return Array.isArray(this._workflows) && this._workflows.length > 0; }
+    get workflowListHasError() { return !!this._workflowsErrorMessage; }
+    get workflowListShouldShowContent() { return !this._workflowsLoading && !this.workflowListHasError; }
 
     handleProjectChosen(event) {
         this._projectId = event.detail?.projectId || localStorage.getItem('projectId');
@@ -134,11 +136,14 @@ export default class ManageWorkflow extends LightningElement {
                 }));
             })
             .catch(err => {
-                this._workflowsErrorMessage = 'Error loading workflows: ' + (err?.body?.message || err?.message || err);
+                const errorMsg = err?.body?.message || err?.message || 'Failed to load workflows';
+                this._workflowsErrorMessage = errorMsg;
                 this._workflows = [];
+                this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: errorMsg, variant: 'error' }));
             })
             .finally(() => { this._workflowsLoading = false; });
     }
+
 
     handleEditWorkflow(event) {
         const workflowId = event.currentTarget.dataset.workflowId;
@@ -180,7 +185,9 @@ export default class ManageWorkflow extends LightningElement {
         console.log('Current workflow id:', this._workflowId);
 
         if (!this._workflowId) {
-            this.errorMessage = 'Workflow ID not found';
+            const errorMsg = 'Workflow ID not found';
+            this.errorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
 
@@ -192,11 +199,14 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to update workflow');
                 }
+                this._toast('Success', res.message || 'Workflow updated successfully', 'success');
                 this._activatePendingTransitions();
                 this.handleBackToWorkflowList();
             })
             .catch(err => {
-                this.errorMessage = 'Error updating workflow: ' + (err?.body?.message || err?.message || err);
+                const errorMsg = err?.body?.message || err?.message || 'Failed to update workflow';
+                this.errorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.isLoading = false; });
     }
@@ -223,11 +233,15 @@ export default class ManageWorkflow extends LightningElement {
     handleCreateWorkflowSubmit() {
         const name = (this.newWorkflowName || '').trim();
         if (!name) {
-            this.createWorkflowErrorMessage = 'Workflow name is required';
+            const errorMsg = 'Workflow name is required';
+            this.createWorkflowErrorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
         if (!this._projectId) {
-            this.createWorkflowErrorMessage = 'Project ID not found. Please select a project first.';
+            const errorMsg = 'Project ID not found. Please select a project first.';
+            this.createWorkflowErrorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
 
@@ -239,13 +253,16 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res || !res.success || !res.data) {
                     throw new Error(res?.message || 'Failed to create workflow');
                 }
+                this._toast('Success', 'Workflow created successfully', 'success');
                 const newId = res.data.Id;
                 this.showCreateWorkflowModal = false;
                 this.newWorkflowName = '';
                 this._enterWorkflowEditor(newId);
             })
             .catch(err => {
-                this.createWorkflowErrorMessage = err?.body?.message || err?.message || 'An error occurred while creating the workflow';
+                const errorMsg = err?.body?.message || err?.message || 'Failed to create workflow';
+                this.createWorkflowErrorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.isCreatingWorkflow = false; });
     }
@@ -286,7 +303,9 @@ export default class ManageWorkflow extends LightningElement {
                 this.workflowData = res.data;
             })
             .catch(err => {
-                this.errorMessage = 'Error loading workflow: ' + (err?.body?.message || err?.message || err);
+                const errorMsg = err?.body?.message || err?.message || 'Failed to load workflow';
+                this.errorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.isLoading = false; });
     }
@@ -442,10 +461,16 @@ export default class ManageWorkflow extends LightningElement {
 
     handleCreateSubmit() {
         const error = validateStatusName(this.newStatusName);
-        if (error) { this.createStatusErrorMessage = error; return; }
+        if (error) {
+            this.createStatusErrorMessage = error;
+            this._toast('Error', error, 'error');
+            return;
+        }
 
         if (!this._projectId) {
-            this.createStatusErrorMessage = 'Project ID not found. Please select a project first.';
+            const errorMsg = 'Project ID not found. Please select a project first.';
+            this.createStatusErrorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
 
@@ -457,12 +482,15 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res.success || !res.data) {
                     throw new Error(res.message || 'Failed to create status');
                 }
+                this._toast('Success', 'Status created successfully', 'success');
                 this._addStatus({ id: res.data.Id, name: res.data.Name });
                 this.clickedStatusIds = clearClicks();
                 this.showCreateModal = false;
             })
             .catch(err => {
-                this.createStatusErrorMessage = err?.body?.message || err?.message || 'An error occurred while creating the status';
+                const errorMsg = err?.body?.message || err?.message || 'Failed to create status';
+                this.createStatusErrorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.isCreatingStatus = false; });
     }
@@ -495,13 +523,23 @@ export default class ManageWorkflow extends LightningElement {
             fromStatus: this.selectedFromStatus?.id,
             toStatus: this.selectedToStatus?.id
         });
-        if (transitionError) { this.createTransitionErrorMessage = transitionError; return; }
+        if (transitionError) {
+            this.createTransitionErrorMessage = transitionError;
+            this._toast('Error', transitionError, 'error');
+            return;
+        }
 
         const nameError = validateTransitionName(this.newTransitionName);
-        if (nameError) { this.createTransitionErrorMessage = nameError; return; }
+        if (nameError) {
+            this.createTransitionErrorMessage = nameError;
+            this._toast('Error', nameError, 'error');
+            return;
+        }
 
         if (!this._workflowId) {
-            this.createTransitionErrorMessage = 'Workflow ID not found';
+            const errorMsg = 'Workflow ID not found';
+            this.createTransitionErrorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
 
@@ -518,6 +556,7 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res.success || !res.data) {
                     throw new Error(res.message || 'Failed to create transition');
                 }
+                this._toast('Success', 'Transition created successfully', 'success');
                 this._addPendingTransition({
                     id: res.data.Id,
                     name: this.newTransitionName,
@@ -528,7 +567,9 @@ export default class ManageWorkflow extends LightningElement {
                 this.closeCreateTransitionModal();
             })
             .catch(err => {
-                this.createTransitionErrorMessage = err?.body?.message || err?.message || 'An error occurred';
+                const errorMsg = err?.body?.message || err?.message || 'Failed to create transition';
+                this.createTransitionErrorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.isCreatingTransition = false; });
     }
@@ -691,7 +732,9 @@ export default class ManageWorkflow extends LightningElement {
     handleActivateTransition() {
         const transition = this.activeTransition;
         if (!transition || !transition.id) {
-            this.transitionErrorMessage = 'Cannot activate: Transition data not loaded';
+            const errorMsg = 'Cannot activate: Transition data not loaded';
+            this.transitionErrorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
 
@@ -704,12 +747,15 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to activate transition');
                 }
+                this._toast('Success', 'Transition activated successfully', 'success');
                 this.transitionSuccessMessage = 'Transition activated successfully!';
                 this._setTransitionRecordStatus(transition.id, 'active');
                 this.handleCloseTransitionDetail();
             })
             .catch(err => {
-                this.transitionErrorMessage = 'Error activating transition: ' + (err?.body?.message || err?.message);
+                const errorMsg = err?.body?.message || err?.message || 'Failed to activate transition';
+                this.transitionErrorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.transitionIsActivating = false; });
     }
@@ -717,7 +763,9 @@ export default class ManageWorkflow extends LightningElement {
     handleDeleteTransition() {
         const transition = this.activeTransition;
         if (!transition || !transition.id) {
-            this.transitionErrorMessage = 'Cannot delete: Transition data not loaded';
+            const errorMsg = 'Cannot delete: Transition data not loaded';
+            this.transitionErrorMessage = errorMsg;
+            this._toast('Error', errorMsg, 'error');
             return;
         }
 
@@ -735,12 +783,15 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to delete transition');
                 }
+                this._toast('Success', 'Transition deleted successfully', 'success');
                 this.transitionSuccessMessage = 'Transition deleted successfully!';
                 this._removeTransition(transition.id);
                 this.handleCloseTransitionDetail();
             })
             .catch(err => {
-                this.transitionErrorMessage = 'Error deleting transition: ' + (err?.body?.message || err?.message);
+                const errorMsg = err?.body?.message || err?.message || 'Failed to delete transition';
+                this.transitionErrorMessage = errorMsg;
+                this._toast('Error', errorMsg, 'error');
             })
             .finally(() => { this.transitionIsDeleting = false; });
     }

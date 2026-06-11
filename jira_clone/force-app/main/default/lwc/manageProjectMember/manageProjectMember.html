@@ -1,6 +1,15 @@
 <template>
     <section class="mpm-page">
 
+        <!-- Content (hidden if loading or error) -->
+        <template if:true={shouldShowContent}>
+            <!-- Loading Spinner -->
+            <template if:true={_isLoading}>
+                <div class="mpm-loading">
+                    <lightning-spinner alternative-text="Loading..." size="large"></lightning-spinner>
+                </div>
+            </template>
+
         <!-- ── Header ─────────────────────────────────────────────────── -->
         <header class="mpm-header">
             <h1 class="mpm-header__title">Project Members</h1>
@@ -157,6 +166,8 @@
         <!-- ── Toast ──────────────────────────────────────────────────── -->
         <template lwc:if={_toast}>
             <div class={toastClass} role="status">{_toast.message}</div>
+        </template>
+
         </template>
 
     </section>

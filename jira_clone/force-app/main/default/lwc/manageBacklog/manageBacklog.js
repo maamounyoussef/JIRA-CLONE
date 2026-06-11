@@ -252,7 +252,6 @@ export default class ManageBacklog extends LightningElement {
     }
 
     // ─── EVENT HANDLERS ───────────────────────────────────────────────────────
-    clearError() { this.errorMessage = null; }
 
     // ─── TICKET VIEW HANDLERS ─────────────────────────────────────────────────
     handleOpenTicketView(event) {
@@ -715,6 +714,8 @@ export default class ManageBacklog extends LightningElement {
     get selectedCount()      { return this._selectedTicketIds.size; }
     get hasBacklogTickets()  { return this.backlogTickets.length > 0; }
     get ticketVariant()      { return this._isSmallScreen ? 'full-ticket-card' : 'row'; }
+    get hasError()           { return !!this.errorMessage; }
+    get shouldShowContent()  { return !this.isLoading && !this.hasError; }
 
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -1155,6 +1156,7 @@ export default class ManageBacklog extends LightningElement {
 
     _loadData() {
         this.isLoading = true;
+        this.errorMessage = null;
         loadBacklogData({ projectId: this._projectId })
             .then(res => {
                 if (!res.success) throw new Error(res.message || 'Failed to load backlog data');
@@ -1172,7 +1174,11 @@ export default class ManageBacklog extends LightningElement {
                 this.backlogHasMore    = backlogTickets.length === PAGE_SIZE;
                 this.backlogTickets    = enrichTickets(backlogTickets, epics, this.ticketTypeOptions, this.memberOptions);
             })
-            .catch(err => this._showError(err.body?.message || err.message || 'Failed to load backlog data'))
+            .catch(err => {
+                const errorMsg = err.body?.message || err.message || 'Failed to load backlog data';
+                this.errorMessage = errorMsg;
+                this._showError(errorMsg);
+            })
             .finally(() => { this.isLoading = false; });
     }
 

@@ -1,4 +1,5 @@
 import { LightningElement, track } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import loadAllProjects   from '@salesforce/apex/ManageProjectMemberController.loadAllProjects';
 import loadMembers       from '@salesforce/apex/ManageProjectMemberController.loadMembers';
 import searchUsersByTerm from '@salesforce/apex/ManageProjectMemberController.searchUsersByTerm';
@@ -28,6 +29,9 @@ export default class ManageProjectMember extends LightningElement {
     _searchTimer       = null;
     _showDropdown      = false;
 
+    @track _isLoading = false;
+    @track _errorMessage = null;
+
     @track _editingMember   = null;
     @track _editingRole     = null;
     @track _deletingMember  = null;
@@ -44,31 +48,50 @@ export default class ManageProjectMember extends LightningElement {
     }
 
     _loadProjectsAndMembers() {
+        this._isLoading = true;
+        this._errorMessage = null;
         loadAllProjects()
             .then(res => {
                 if (!res || !res.success) {
-                    this._showToast('error', (res && res.message) || 'Failed to load projects');
+                    const msg = (res && res.message) || 'Failed to load projects';
+                    this._errorMessage = msg;
+                    this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
+                    this._isLoading = false;
                     return;
                 }
                 this._projects = res.data || [];
                 if (this._projects.length > 0) {
                     this._selectedProjectId = this._projects[0].Id;
                     this._loadMembersForProject(this._selectedProjectId);
+                } else {
+                    this._isLoading = false;
                 }
             })
-            .catch(err => this._showToast('error', this._readErr(err)));
+            .catch(err => {
+                const msg = this._readErr(err);
+                this._errorMessage = msg;
+                this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
+                this._isLoading = false;
+            });
     }
 
     _loadMembersForProject(projectId) {
         loadMembers({ projectId })
             .then(res => {
                 if (!res || !res.success) {
-                    this._showToast('error', (res && res.message) || 'Failed to load members');
+                    const msg = (res && res.message) || 'Failed to load members';
+                    this._errorMessage = msg;
+                    this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
                     return;
                 }
                 this._members = res.data || [];
             })
-            .catch(err => this._showToast('error', this._readErr(err)));
+            .catch(err => {
+                const msg = this._readErr(err);
+                this._errorMessage = msg;
+                this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
+            })
+            .finally(() => { this._isLoading = false; });
     }
 
     // ─── PROJECT SELECTOR ─────────────────────────────────────────────────────
@@ -80,6 +103,8 @@ export default class ManageProjectMember extends LightningElement {
         this._searchTerm = '';
         this._searchResults = [];
         this._showDropdown = false;
+        this._errorMessage = null;
+        this._isLoading = true;
         this._loadMembersForProject(projectId);
     }
 
@@ -93,6 +118,14 @@ export default class ManageProjectMember extends LightningElement {
 
     get memberCount() {
         return this._members.length;
+    }
+
+    get hasError() {
+        return !!this._errorMessage;
+    }
+
+    get shouldShowContent() {
+        return !this._isLoading && !this.hasError;
     }
 
     get hasMembers() {

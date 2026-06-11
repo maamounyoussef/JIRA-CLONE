@@ -15,6 +15,7 @@ export default class TicketType extends LightningElement {
     @track _ticketTypes       = [];
     @track _workflowOptions   = [];
     @track _isLoading         = false;
+    @track _errorMessage      = null;
 
     // create modal
     @track _showCreateModal     = false;
@@ -56,6 +57,7 @@ export default class TicketType extends LightningElement {
     handleProjectChosen(event) {
         this._projectId = event.detail?.projectId || localStorage.getItem('projectId');
         if (this._projectId) {
+            this._errorMessage = null;
             this._loadTicketTypes();
             this._loadWorkflows();
         }
@@ -64,15 +66,22 @@ export default class TicketType extends LightningElement {
     // ─── LIST (step 2) ────────────────────────────────────────────────────────
     _loadTicketTypes() {
         this._isLoading = true;
+        this._errorMessage = null;
         loadTicketTypesByProject({ projectId: this._projectId })
             .then(res => {
                 if (!res || !res.success) {
-                    this._showToast('error', (res && res.message) || 'Failed to load ticket types');
+                    const msg = (res && res.message) || 'Failed to load ticket types';
+                    this._errorMessage = msg;
+                    this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
                     return;
                 }
                 this._ticketTypes = res.data || [];
             })
-            .catch(err => this._showToast('error', this._readErr(err)))
+            .catch(err => {
+                const msg = this._readErr(err);
+                this._errorMessage = msg;
+                this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: msg, variant: 'error' }));
+            })
             .finally(() => { this._isLoading = false; });
     }
 
@@ -93,6 +102,8 @@ export default class TicketType extends LightningElement {
 
     get hasTicketTypes() { return this._ticketTypes.length > 0; }
     get ticketTypeCount() { return this._ticketTypes.length; }
+    get hasError() { return !!this._errorMessage; }
+    get shouldShowContent() { return !this._isLoading && !this.hasError; }
 
     get ticketTypeRows() {
         return this._ticketTypes.map(t => ({
