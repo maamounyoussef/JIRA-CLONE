@@ -18,6 +18,16 @@ public with sharing class SprintService {
             sprint.TotalEndedStoryPoint__c = 0;
             sprint.MaxScore__c = '000000';
             sprint.Name = NameSequenceService.nextSprintName(sprint.Project__c);
+
+            List<Sprint__c> duplicates = [
+                SELECT Id FROM Sprint__c
+                WHERE Name = :sprint.Name
+                AND Project__c = :sprint.Project__c
+                AND RecordStatus__c != 'deleted'
+                LIMIT 1
+            ];
+            DomainCompleteValidator.requireSprintNameUniquePerProject(duplicates);
+
             insert sprint;
             return sprint;
         } catch (DmlException dex) {

@@ -20,10 +20,20 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // SPRINT — state machine
+    // SPRINT — state machine and naming
     // ═══════════════════════════════════════════════════════════════
 
-        /**
+    /**
+     * Sprint name must be unique per project.
+     * Caller queries for duplicates and passes the result.
+     */
+    public static void requireSprintNameUniquePerProject(List<Sprint__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A sprint with this name already exists in this project');
+        }
+    }
+
+    /**
      * Only one sprint per project can be in_progress at a time.
      * Prevents starting a new sprint when another is already running.
      */
