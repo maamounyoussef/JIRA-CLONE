@@ -59,7 +59,7 @@ public with sharing class ManageProjectMemberController {
                        Role__c, RecordStatus__c
                 FROM ProjectMember__c
                 WHERE Id = :pm.Id
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             return new APIResponse(true, 'Member added', rows.isEmpty() ? pm : rows[0]);

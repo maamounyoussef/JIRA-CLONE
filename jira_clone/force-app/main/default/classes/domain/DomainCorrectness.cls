@@ -31,7 +31,7 @@ public with sharing class DomainCorrectness {
         List<ProjectMember__c> rows = [
             SELECT Id, User__c, Project__c, RecordStatus__c
             FROM ProjectMember__c
-            WHERE Id = :memberId AND RecordStatus__c != 'delete'
+            WHERE Id = :memberId AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty()) throw new ServiceException('Project member not found or deleted: ' + memberId);
@@ -51,7 +51,7 @@ public with sharing class DomainCorrectness {
         List<TicketType__c> rows = [
             SELECT Id, Name, Project__c, Workflow__c, Description__c, IconUrl__c, RecordStatus__c, CreatedDate
             FROM TicketType__c
-            WHERE Id = :ticketTypeId AND RecordStatus__c != 'delete'
+            WHERE Id = :ticketTypeId AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty()) throw new ServiceException('Ticket Type not found');
@@ -61,7 +61,7 @@ public with sharing class DomainCorrectness {
     public static TicketType__c requireTicketTypeExistsByName(String ticketTypeName, String projectId) {
         List<TicketType__c> rows = [
             SELECT Id, Name, Project__c FROM TicketType__c
-            WHERE Name = :ticketTypeName AND Project__c = :projectId AND RecordStatus__c != 'delete'
+            WHERE Name = :ticketTypeName AND Project__c = :projectId AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty()) throw new ServiceException('Ticket Type not found: ' + ticketTypeName);
@@ -88,7 +88,7 @@ public with sharing class DomainCorrectness {
                    Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
                    StartDate__c, EndDate__c, Score__c
             FROM Ticket__c
-            WHERE Id = :ticketId AND RecordStatus__c != 'delete'
+            WHERE Id = :ticketId AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty()) throw new ServiceException('Ticket not found: ' + ticketId);
@@ -103,7 +103,7 @@ public with sharing class DomainCorrectness {
                 Epic__c, Sprint__c, RecordStatus__c, StoryPoint__c,
                 StartDate__c, EndDate__c, Score__c
             FROM Ticket__c
-            WHERE Id IN :ticketIds AND RecordStatus__c != 'delete'
+            WHERE Id IN :ticketIds AND RecordStatus__c != 'deleted'
         ]);
 
         for (Id ticketId : ticketIds) {
@@ -143,7 +143,7 @@ public with sharing class DomainCorrectness {
                    CurrentState__c, StoryPoint__c, StartDate__c,
                    RecordStatus__c, Ticket__c
             FROM Subtask__c
-            WHERE Id = :subtaskId AND RecordStatus__c != 'delete'
+            WHERE Id = :subtaskId AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty()) throw new ServiceException('Subtask not found: ' + subtaskId);

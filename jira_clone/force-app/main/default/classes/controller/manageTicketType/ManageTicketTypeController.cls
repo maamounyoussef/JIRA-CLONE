@@ -56,7 +56,7 @@ public with sharing class ManageTicketTypeController {
                        Workflow__c, Workflow__r.Name
                 FROM TicketType__c
                 WHERE Id = :created.Id
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             return new APIResponse(true, 'Ticket type created', rows.isEmpty() ? created : rows[0]);

@@ -275,7 +275,7 @@ public with sharing class WorkflowService {
                     SELECT Id
                     FROM TicketType__c
                     WHERE Workflow__c = :transition.Workflow__c
-                      AND RecordStatus__c != 'delete'
+                      AND RecordStatus__c != 'deleted'
                 ];
 
                 if (!ticketTypes.isEmpty()) {
@@ -285,7 +285,7 @@ public with sharing class WorkflowService {
                         FROM Ticket__c
                         WHERE Ticket_Type__c IN :ticketTypeIds
                           AND CurrentState__c = :transition.FromStatus__c
-                          AND RecordStatus__c != 'delete'
+                          AND RecordStatus__c != 'deleted'
                     ];
                     DomainCompleteValidator.requireNoTicketsInTransitionFromStatus(ticketsInFromStatus);
                 }

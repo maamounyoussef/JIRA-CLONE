@@ -333,7 +333,7 @@ public class TicketServiceTest {
         Test.stopTest();
 
         Assert.areEqual(0, result.size(), 'No sprint updates for backlog bulk delete');
-        List<Ticket__c> after = [SELECT Id FROM Ticket__c WHERE Id IN (:t1.Id, :t2.Id) AND RecordStatus__c = 'delete'];
+        List<Ticket__c> after = [SELECT Id FROM Ticket__c WHERE Id IN (:t1.Id, :t2.Id) AND RecordStatus__c = 'deleted'];
         Assert.areEqual(2, after.size(), 'Both tickets should be soft-deleted');
     }
 

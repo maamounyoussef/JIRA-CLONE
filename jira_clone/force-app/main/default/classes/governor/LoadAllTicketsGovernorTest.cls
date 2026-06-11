@@ -49,7 +49,7 @@ public class LoadAllTicketsGovernorTest {
                 Summary__c,
                 Ticket_Type__c
             FROM Ticket__c
-            WHERE RecordStatus__c != 'delete'
+            WHERE RecordStatus__c != 'deleted'
         ];
 
         Long    wallAfter     = System.currentTimeMillis();

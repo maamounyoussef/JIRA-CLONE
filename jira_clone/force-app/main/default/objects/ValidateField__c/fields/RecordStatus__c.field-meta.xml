@@ -15,9 +15,9 @@
                 <label>active</label>
             </value>
             <value>
-                <fullName>delete</fullName>
+                <fullName>deleted</fullName>
                 <default>false</default>
-                <label>delete</label>
+                <label>deleted</label>
             </value>
         </valueSetDefinition>
     </valueSet>

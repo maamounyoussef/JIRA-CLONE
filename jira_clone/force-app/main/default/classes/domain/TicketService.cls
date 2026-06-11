@@ -16,7 +16,7 @@ public with sharing class TicketService {
                        AssignedTo__c, Creator__c, Epic__c, Sprint__c, RecordStatus__c, Ticket_Type__c,
                        StartDate__c, EndDate__c, Score__c
                 FROM Ticket__c
-                WHERE Id = :ticketId AND RecordStatus__c != 'delete'
+                WHERE Id = :ticketId AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             return res.isEmpty() ? null : res[0];
@@ -105,7 +105,7 @@ public with sharing class TicketService {
 
     public static Sprint__c deleteTicket(Ticket__c ticket) {
         try {
-            ticket.RecordStatus__c = 'delete';
+            ticket.RecordStatus__c = 'deleted';
             updateTicket(ticket);
             if (String.isNotBlank(ticket.Sprint__c)) {
                 Status__c status = StatusService.findStatus(ticket.CurrentState__c);
@@ -126,7 +126,7 @@ public with sharing class TicketService {
         try {
             if (tickets.isEmpty()) return new List<Sprint__c>();
 
-            for (Ticket__c t : tickets) t.RecordStatus__c = 'delete';
+            for (Ticket__c t : tickets) t.RecordStatus__c = 'deleted';
             update tickets;
 
             Map<String, Decimal> sprintTotalStoryPointMap = new Map<String, Decimal>();
@@ -263,7 +263,7 @@ public with sharing class TicketService {
 
                 List<TicketType__c> types = [
                     SELECT Project__c FROM TicketType__c
-                    WHERE Id = :ticket.Ticket_Type__c AND RecordStatus__c != 'delete'
+                    WHERE Id = :ticket.Ticket_Type__c AND RecordStatus__c != 'deleted'
                     LIMIT 1
                 ];
                 if (types.isEmpty()) throw new ServiceException('Cannot resolve project for ticket ' + ticket.Id);
@@ -361,7 +361,7 @@ public with sharing class TicketService {
             if (isBacklog) {
                 TicketType__c tt = [
                     SELECT Project__c FROM TicketType__c
-                    WHERE Id = :movedTicket.Ticket_Type__c AND RecordStatus__c != 'delete'
+                    WHERE Id = :movedTicket.Ticket_Type__c AND RecordStatus__c != 'deleted'
                     LIMIT 1
                 ];
                 projectId = tt.Project__c;
@@ -418,7 +418,7 @@ public with sharing class TicketService {
     private static String nextScoreForSprintInsert(String sprintId) {
         List<Sprint__c> rows = [
             SELECT Id, MaxScore__c FROM Sprint__c
-            WHERE Id = :sprintId AND RecordStatus__c != 'delete'
+            WHERE Id = :sprintId AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty()) throw new ServiceException('Sprint not found: ' + sprintId);
@@ -467,7 +467,7 @@ public with sharing class TicketService {
                 SELECT Id, Score__c, Sprint__c
                 FROM Ticket__c
                 WHERE Sprint__c = :movedTicket.Sprint__c
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                   AND Id != :movedTicket.Id
                 ORDER BY Score__c ASC NULLS LAST
             ];
@@ -477,7 +477,7 @@ public with sharing class TicketService {
                 FROM Ticket__c
                 WHERE Ticket_Type__c IN :backlogTypeIds
                   AND Sprint__c = null
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                   AND Id != :movedTicket.Id
                 ORDER BY Score__c ASC NULLS LAST
             ];
@@ -522,7 +522,7 @@ public with sharing class TicketService {
                 SELECT Id, Score__c
                 FROM Ticket__c
                 WHERE Sprint__c = :movedTicket.Sprint__c
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                   AND Id != :excludeId
                   AND Score__c > :beforeScore
                 ORDER BY Score__c ASC NULLS LAST
@@ -535,7 +535,7 @@ public with sharing class TicketService {
             FROM Ticket__c
             WHERE Ticket_Type__c IN :backlogTypeIds
               AND Sprint__c = null
-              AND RecordStatus__c != 'delete'
+              AND RecordStatus__c != 'deleted'
               AND Id != :excludeId
               AND Score__c > :beforeScore
             ORDER BY Score__c ASC NULLS LAST
@@ -547,7 +547,7 @@ public with sharing class TicketService {
     private static Set<Id> projectTicketTypeIds(String projectId) {
         List<TicketType__c> types = [
             SELECT Id FROM TicketType__c
-            WHERE Project__c = :projectId AND RecordStatus__c != 'delete'
+            WHERE Project__c = :projectId AND RecordStatus__c != 'deleted'
         ];
         Set<Id> ids = new Set<Id>();
         for (TicketType__c t : types) ids.add(t.Id);
@@ -611,7 +611,7 @@ public with sharing class TicketService {
         List<Ticket__c> rows = [
             SELECT Id, Ticket_Type__r.Project__c
             FROM Ticket__c
-            WHERE Id = :s.Ticket__c AND RecordStatus__c != 'delete'
+            WHERE Id = :s.Ticket__c AND RecordStatus__c != 'deleted'
             LIMIT 1
         ];
         if (rows.isEmpty() || rows[0].Ticket_Type__r == null) {
@@ -643,7 +643,7 @@ public with sharing class TicketService {
 
     public static void deleteSubtask(Subtask__c subtask) {
         try {
-            subtask.RecordStatus__c = 'delete';
+            subtask.RecordStatus__c = 'deleted';
             updateSubtask(subtask);
         } catch (DmlException dex) {
             throw new ServiceException('DML error deleting subtask: ' + dex.getMessage());
@@ -656,7 +656,7 @@ public with sharing class TicketService {
         try {
             List<Subtask__c> found = [SELECT Id, RecordStatus__c FROM Subtask__c WHERE Id IN :subtaskIds];
             if (!found.isEmpty()) {
-                for (Subtask__c s : found) s.RecordStatus__c = 'delete';
+                for (Subtask__c s : found) s.RecordStatus__c = 'deleted';
                 update found;
             }
         } catch (DmlException dex) {
@@ -672,7 +672,7 @@ public with sharing class TicketService {
                 SELECT Id, Name, Summary__c, Description__c, CurrentState__c,
                        Assignee__c, StartDate__c, Ticket__c, RecordStatus__c
                 FROM Subtask__c
-                WHERE Ticket__c = :ticket.Id AND RecordStatus__c != 'delete'
+                WHERE Ticket__c = :ticket.Id AND RecordStatus__c != 'deleted'
                 ORDER BY CreatedDate DESC
             ];
         } catch (Exception ex) {
@@ -743,7 +743,7 @@ public with sharing class TicketService {
                     Workflow__r.Name
                 FROM TicketType__c
                 WHERE Project__c = :project.Id
-                AND RecordStatus__c != 'delete'
+                AND RecordStatus__c != 'deleted'
                 ORDER BY Name ASC
             ];
 
@@ -758,12 +758,12 @@ public with sharing class TicketService {
                 SELECT Id
                 FROM Ticket__c
                 WHERE Ticket_Type__c = :ticketType.Id
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             DomainCompleteValidator.requireNoTicketsReferenceTicketType(referencingTickets);
 
-            ticketType.RecordStatus__c = 'delete';
+            ticketType.RecordStatus__c = 'deleted';
             update ticketType;
             return ticketType;
         } catch (DmlException dex) {
@@ -782,7 +782,7 @@ public with sharing class TicketService {
                     SELECT Id
                     FROM Ticket__c
                     WHERE Ticket_Type__c = :ticketType.Id
-                      AND RecordStatus__c != 'delete'
+                      AND RecordStatus__c != 'deleted'
                     LIMIT 1
                 ];
                 DomainCompleteValidator.requireNoTicketsReferenceTicketTypeOnWorkflowChange(referencingTickets);
@@ -797,7 +797,7 @@ public with sharing class TicketService {
                        Workflow__c, Workflow__r.Name
                 FROM TicketType__c
                 WHERE Id = :ticketType.Id
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
         } catch (DmlException ex) {
@@ -883,7 +883,7 @@ public with sharing class TicketService {
                        LinkedToTicket__r.AssignedTo__c,
                        LinkedToTicket__r.Ticket_Type__c
                 FROM TicketLink__c
-                WHERE LinkedFromTicket__c = :ticketId AND RecordStatus__c != 'delete'
+                WHERE LinkedFromTicket__c = :ticketId AND RecordStatus__c != 'deleted'
             ];
 
             List<TicketLinkToDto> result = new List<TicketLinkToDto>();

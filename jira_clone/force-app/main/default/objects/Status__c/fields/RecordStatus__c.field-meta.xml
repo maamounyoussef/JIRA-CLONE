@@ -2,8 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>RecordStatus__c</fullName>
     <defaultValue>"active"</defaultValue>
-    <description>Expected record status</description>
-    <externalId>false</externalId>
+    <description>Soft delete flag for status records</description>
     <label>Record Status</label>
     <required>true</required>
     <trackTrending>false</trackTrending>

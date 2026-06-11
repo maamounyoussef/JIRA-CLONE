@@ -70,7 +70,7 @@ public with sharing class ProjectService {
             List<ProjectMember__c> rows = [
                 SELECT Id, User__c, Project__c, RecordStatus__c
                 FROM ProjectMember__c
-                WHERE User__c = :userId AND Project__c = :projectId AND RecordStatus__c != 'delete'
+                WHERE User__c = :userId AND Project__c = :projectId AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             return rows.isEmpty() ? null : rows[0];
@@ -93,7 +93,7 @@ public with sharing class ProjectService {
             RecordStatus__c
         FROM ProjectMember__c
         WHERE Project__c = :project.Id
-          AND RecordStatus__c != 'delete'   // exclude soft-deleted members
+          AND RecordStatus__c != 'deleted'   // exclude soft-deleted members
         ORDER BY User__r.Name ASC NULLS LAST
         ];
         } catch (Exception ex) {
@@ -108,7 +108,7 @@ public with sharing class ProjectService {
                 SELECT User__c
                 FROM ProjectMember__c
                 WHERE Project__c = :projectId
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
             ]) {
                 if (pm.User__c != null) {
                     alreadyMemberUserIds.add(pm.User__c);
@@ -162,7 +162,7 @@ public with sharing class ProjectService {
                 SELECT Id, Role__c, RecordStatus__c
                 FROM ProjectMember__c
                 WHERE Id = :memberId
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             if (rows.isEmpty()) {
@@ -183,14 +183,14 @@ public with sharing class ProjectService {
                 SELECT Id, RecordStatus__c
                 FROM ProjectMember__c
                 WHERE Id = :memberId
-                  AND RecordStatus__c != 'delete'
+                  AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
             if (rows.isEmpty()) {
                 throw new ServiceException('Project member not found.');
             }
             ProjectMember__c pm = rows[0];
-            pm.RecordStatus__c = 'delete';
+            pm.RecordStatus__c = 'deleted';
             update pm;
             return pm;
         } catch (Exception ex) {

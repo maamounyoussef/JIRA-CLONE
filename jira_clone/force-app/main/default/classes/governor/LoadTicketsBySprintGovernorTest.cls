@@ -52,7 +52,7 @@ public class LoadTicketsBySprintGovernorTest {
                 Ticket_Type__c
             FROM Ticket__c
             WHERE Sprint__c = :SPRINT_ID
-              AND RecordStatus__c != 'delete'
+              AND RecordStatus__c != 'deleted'
         ];
 
         // Long    wallAfter     = System.currentTimeMillis();
