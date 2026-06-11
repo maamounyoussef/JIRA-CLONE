@@ -20,6 +20,7 @@ public with sharing class ManageProjectMemberController {
             if (String.isBlank(projectId)) {
                 return new APIResponse(false, 'projectId is required');
             }
+            InputSecurityValidator.validatePageAccessManageProjectMember(projectId);
             Project__c project = new Project__c(Id = projectId);
             List<ProjectMember__c> members = ProjectService.loadProjectMembers(project);
             return new APIResponse(true, 'Members loaded', members);

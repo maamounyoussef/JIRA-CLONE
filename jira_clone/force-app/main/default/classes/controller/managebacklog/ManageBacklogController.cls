@@ -8,8 +8,9 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadBacklogData(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            InputSecurityValidator.validatePageAccessManageBacklog(projectId);
             System.debug('==== hit1 ====');
-            
+
             Project__c project = DomainCorrectness.requireProjectExists(projectId);
 
             List<Sprint__c> sprints = SprintService.loadUncompleteSprintsByProject(project);
@@ -658,7 +659,6 @@ public with sharing class ManageBacklogController {
     public static APIResponse deleteTickets(List<String> ticketIds) {
         try {
             if (ticketIds == null || ticketIds.isEmpty()) return new APIResponse(false, 'ticketIds are required');
-            InputSecurityValidator.validateTicketDeletionLimit(ticketIds);
 
             Set<Id> ticketIdSet = new Set<Id>();
             for (String ticketId : ticketIds) {

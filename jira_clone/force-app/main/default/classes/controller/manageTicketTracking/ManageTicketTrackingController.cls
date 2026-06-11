@@ -7,6 +7,7 @@ public with sharing class ManageTicketTrackingController {
     public static APIResponse loadManageTicketTrackingPage(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
+            InputSecurityValidator.validatePageAccessManageTicketTracking(projectId);
 
             Project__c project = DomainCorrectness.requireProjectExists(projectId);
 
