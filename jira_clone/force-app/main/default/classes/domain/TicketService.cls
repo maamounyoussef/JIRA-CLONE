@@ -28,6 +28,17 @@ public with sharing class TicketService {
     public static CreateTicketResponse createTicketWithoutSprint(Ticket__c ticket, TicketType__c ticketType) {
         try {
             prepareTicketForInsert(ticket, ticketType);
+
+            List<Ticket__c> duplicates = [
+                SELECT Id
+                FROM Ticket__c
+                WHERE Name = :ticket.Name
+                AND Ticket_Type__r.Project__c = :ticketType.Project__c
+                AND RecordStatus__c != 'deleted'
+                LIMIT 1
+            ];
+            DomainCompleteValidator.requireTicketNameUniquePerProject(duplicates);
+
             insert ticket;
             return new CreateTicketResponse(ticket);
         } catch (DmlException dex) {
@@ -40,6 +51,17 @@ public with sharing class TicketService {
     public static CreateTicketResponse createTicketWithSprint(Ticket__c ticket, TicketType__c ticketType) {
         try {
             Status__c status = prepareTicketForInsert(ticket, ticketType);
+
+            List<Ticket__c> duplicates = [
+                SELECT Id
+                FROM Ticket__c
+                WHERE Name = :ticket.Name
+                AND Ticket_Type__r.Project__c = :ticketType.Project__c
+                AND RecordStatus__c != 'deleted'
+                LIMIT 1
+            ];
+            DomainCompleteValidator.requireTicketNameUniquePerProject(duplicates);
+
             insert ticket;
 
             Sprint__c updatedSprint;

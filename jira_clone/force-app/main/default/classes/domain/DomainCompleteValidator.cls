@@ -196,6 +196,16 @@ public with sharing class DomainCompleteValidator {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // TICKET — creation and naming
+    // ═══════════════════════════════════════════════════════════════
+
+    public static void requireTicketNameUniquePerProject(List<Ticket__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A ticket with this name already exists in this project');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // WORKFLOW — transition availability
     // ═══════════════════════════════════════════════════════════════
 
