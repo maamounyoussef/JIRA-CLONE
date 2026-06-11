@@ -184,7 +184,7 @@ export default class ManageTicketTracking extends LightningElement {
     wiredTicketLinkedTo(result) {
         if (result.data && result.data.success && this._linkedToTargetTicketId) {
             const linkedTo = (result.data.data && result.data.data.ticketLinkTo) || [];
-            this._patchTicket(this._linkedToTargetTicketId, { linkedTo });
+            this._setTicketLinkedTo(this._linkedToTargetTicketId, linkedTo);
         }
     }
 
@@ -204,7 +204,7 @@ export default class ManageTicketTracking extends LightningElement {
     wiredSubtasks(result) {
         if (result.data && result.data.success && this._subtasksTargetTicketId) {
             const subtasks = result.data.data || [];
-            this._patchTicket(this._subtasksTargetTicketId, { subtasks });
+            this._setTicketSubtasks(this._subtasksTargetTicketId, subtasks);
         }
     }
 
@@ -289,19 +289,7 @@ export default class ManageTicketTracking extends LightningElement {
                     value: m.Id,
                 }));
 
-                const sprint = response.sprint;
-                this._sprint = sprint
-                    ? {
-                        ...sprint,
-                        tickets: buildSprintTickets(
-                            response.sprint_tickets,
-                            response.ticketTypes,
-                            response.workflows,
-                            this._statuses,
-                            response.members
-                        )
-                      }
-                    : null;
+                this._setSprintFromResponse(response);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error loading page')))
             .finally(() => { this.isLoading = false; });
@@ -314,14 +302,7 @@ export default class ManageTicketTracking extends LightningElement {
                 const isEndStatus   = res.data && res.data.isEndStatus;
                 const updatedSprint = res.data && res.data.updatedSprint;
 
-                const newSprint = {
-                    ...this._sprint,
-                    tickets: enrichTicketsWithStateChange(this.tickets, ticketId, toStatusId, isEndStatus)
-                };
-                if (isEndStatus && updatedSprint) {
-                    newSprint.TotalEndedStoryPoint__c = updatedSprint.TotalEndedStoryPoint__c;
-                }
-                this._sprint = newSprint;
+                this._applyTicketStateChange(ticketId, toStatusId, isEndStatus, updatedSprint);
                 this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error changing ticket state')))
@@ -394,7 +375,7 @@ export default class ManageTicketTracking extends LightningElement {
             .then(res => {
                 if (!res.success) { this._showError(res.message); return; }
                 const updated = res.data || {};
-                this._patchTicket(ticketId, { Summary__c: updated.Summary__c });
+                this._setTicketSummary(ticketId, updated.Summary__c);
                 this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error updating ticket summary')));
@@ -415,7 +396,7 @@ export default class ManageTicketTracking extends LightningElement {
             .then(res => {
                 if (!res.success) { this._showError(res.message); return; }
                 const updated = res.data || {};
-                this._patchTicket(ticketId, { Description__c: updated.Description__c });
+                this._setTicketDescription(ticketId, updated.Description__c);
                 this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error updating ticket description')));
@@ -442,9 +423,7 @@ export default class ManageTicketTracking extends LightningElement {
                 if (!res.success) { this._showError(res.message); return; }
                 const link = res.data && res.data.ticketLink;
                 if (!link) return;
-                const ticket   = this._findTicketById(fromTicketId);
-                const existing = (ticket && Array.isArray(ticket.linkedTo)) ? ticket.linkedTo : [];
-                this._patchTicket(fromTicketId, { linkedTo: [...existing, link] });
+                this._addTicketLink(fromTicketId, link);
                 this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error linking ticket')));
@@ -467,9 +446,7 @@ export default class ManageTicketTracking extends LightningElement {
                 if (!res.success) { this._showError(res.message); return; }
                 const created = res.data;
                 if (!created) return;
-                const ticket   = this._findTicketById(ticketId);
-                const existing = (ticket && Array.isArray(ticket.subtasks)) ? ticket.subtasks : [];
-                this._patchTicket(ticketId, { subtasks: [...existing, created] });
+                this._addTicketSubtask(ticketId, created);
                 this._showSuccess(res.message);
             })
             .catch(err => this._showError(this._errMsg(err, 'Error creating subtask')));
@@ -485,17 +462,78 @@ export default class ManageTicketTracking extends LightningElement {
         this._ticketSearchResults    = [];
     }
 
-    // ─── MUTATORS (R5: find / update over the principal state) ────────────────
+    // ─── PRINCIPAL-STATE MUTATORS (R5) ────────────────────────────────────────
+    // The sprint (with its tickets) is the principal de-normalized state.
+    // Every write goes through one of these named mutators — no inline
+    // `...this._sprint` / `...ticket` spread anywhere else. Each does a single
+    // immutable update, mirroring the manageWorkflow editor's
+    // _addStatus / _setTransition* / _addTransition* / _writeTransitions set.
     _findTicketById(ticketId) {
         return this.tickets.find(t => t.Id === ticketId) || null;
     }
 
-    _patchTicket(ticketId, patch) {
+    // Initial load → build the principal sprint state from the page response.
+    // (Statuses must already be set; buildSprintTickets reads them.)
+    _setSprintFromResponse(response) {
+        const sprint = response.sprint;
+        this._sprint = sprint
+            ? {
+                ...sprint,
+                tickets: buildSprintTickets(
+                    response.sprint_tickets,
+                    response.ticketTypes,
+                    response.workflows,
+                    this._statuses,
+                    response.members
+                )
+              }
+            : null;
+    }
+
+    // Low-level sprint write — replace the sprint immutably. All sprint-level
+    // mutators funnel here (analogous to manageWorkflow's _writeTransitions).
+    _writeSprint(patch) {
         if (!this._sprint) return;
-        this._sprint = {
-            ...this._sprint,
+        this._sprint = { ...this._sprint, ...patch };
+    }
+
+    // Low-level ticket write — replace the matching ticket immutably.
+    _patchTicket(ticketId, patch) {
+        this._writeSprint({
             tickets: this.tickets.map(t => t.Id === ticketId ? { ...t, ...patch } : t)
+        });
+    }
+
+    // changeTicketState response → move the ticket to its new status, and when
+    // the move ends the ticket fold the recomputed ended-story-point total onto
+    // the sprint.
+    _applyTicketStateChange(ticketId, toStatusId, isEndStatus, updatedSprint) {
+        if (!this._sprint) return;
+        const patch = {
+            tickets: enrichTicketsWithStateChange(this.tickets, ticketId, toStatusId, isEndStatus)
         };
+        if (isEndStatus && updatedSprint) {
+            patch.TotalEndedStoryPoint__c = updatedSprint.TotalEndedStoryPoint__c;
+        }
+        this._writeSprint(patch);
+    }
+
+    _setTicketSummary(ticketId, summary)         { this._patchTicket(ticketId, { Summary__c: summary }); }
+    _setTicketDescription(ticketId, description) { this._patchTicket(ticketId, { Description__c: description }); }
+
+    // set = replace the slice (wire load); add = append one (imperative create).
+    _setTicketLinkedTo(ticketId, linkedTo) { this._patchTicket(ticketId, { linkedTo }); }
+    _addTicketLink(ticketId, link) {
+        const ticket   = this._findTicketById(ticketId);
+        const existing = (ticket && Array.isArray(ticket.linkedTo)) ? ticket.linkedTo : [];
+        this._patchTicket(ticketId, { linkedTo: [...existing, link] });
+    }
+
+    _setTicketSubtasks(ticketId, subtasks) { this._patchTicket(ticketId, { subtasks }); }
+    _addTicketSubtask(ticketId, subtask) {
+        const ticket   = this._findTicketById(ticketId);
+        const existing = (ticket && Array.isArray(ticket.subtasks)) ? ticket.subtasks : [];
+        this._patchTicket(ticketId, { subtasks: [...existing, subtask] });
     }
 
     // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────
