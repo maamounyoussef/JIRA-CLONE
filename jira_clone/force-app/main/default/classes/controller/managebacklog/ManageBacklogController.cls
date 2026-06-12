@@ -8,7 +8,7 @@ public with sharing class ManageBacklogController {
     public static APIResponse loadBacklogData(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
-            InputSecurityValidator.validatePageAccessManageBacklog(projectId);
+            // InputSecurityValidator.validatePageAccessManageBacklog(projectId);
             System.debug('==== hit1 ====');
 
             Project__c project = DomainCorrectness.requireProjectExists(projectId);
