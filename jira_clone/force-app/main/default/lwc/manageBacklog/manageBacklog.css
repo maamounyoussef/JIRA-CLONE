@@ -353,13 +353,4 @@
     border-color: #4C9AFF;
 }
 
-/* ── Full-page loading overlay (above modals) ────────────────────────────── */
-.loading-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(9, 30, 66, 0.30);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+/* Full-page loading overlay now lives in c-ao-spinner (overlay variant). */

@@ -12,7 +12,7 @@
         <!-- Loading Spinner -->
         <template if:true={isLoading}>
             <div class="loading-container">
-                <lightning-spinner alternative-text="Loading..." size="large"></lightning-spinner>
+                <c-ao-spinner size="large" alternative-text="Loading..."></c-ao-spinner>
             </div>
         </template>
 
@@ -82,9 +82,7 @@
             </template>
 
             <template if:true={isLoading}>
-                <div class="loading-overlay">
-                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
-                </div>
+                <c-ao-spinner overlay size="medium" alternative-text="Loading..."></c-ao-spinner>
             </template>
 
             <template for:each={sprints} for:item="sprint">
@@ -128,7 +126,7 @@
                         </template>
 
                         <template if:true={sprint.isLoadingTickets}>
-                            <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
+                            <c-ao-spinner size="small" alternative-text="Loading tickets..."></c-ao-spinner>
                         </template>
 
                         <template if:true={sprint.showTopDropZone}>
@@ -238,7 +236,7 @@
             </template>
 
             <template if:true={backlogIsLoading}>
-                <lightning-spinner alternative-text="Loading tickets..." size="small"></lightning-spinner>
+                <c-ao-spinner size="small" alternative-text="Loading tickets..."></c-ao-spinner>
             </template>
 
             <template if:true={showBacklogTopDropZone}>

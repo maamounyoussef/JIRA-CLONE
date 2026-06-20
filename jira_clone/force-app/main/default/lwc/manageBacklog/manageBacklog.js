@@ -310,7 +310,6 @@ export default class ManageBacklog extends LightningElement {
 
     handleTicketLinkedToExpand(event) {
         const { ticketId } = event.detail;
-        this.isLoading = true;
         this._linkedToTargetTicketId = ticketId;
     }
 
@@ -331,7 +330,6 @@ export default class ManageBacklog extends LightningElement {
 
     handleTicketViewSubtasksExpand(event) {
         const { ticketId } = event.detail;
-        this.isLoading = true;
         this._subtasksTargetTicketId = ticketId;
     }
 
@@ -715,7 +713,7 @@ export default class ManageBacklog extends LightningElement {
     get hasBacklogTickets()  { return this.backlogTickets.length > 0; }
     get ticketVariant()      { return this._isSmallScreen ? 'full-ticket-card' : 'row'; }
     get hasError()           { return !!this.errorMessage; }
-    get shouldShowContent()  { return !this.isLoading && !this.hasError; }
+    get shouldShowContent()  { return  !this.hasError; }
 
 
 // ╔══════════════════════════════════════════════════════════════════════════╗

@@ -10,7 +10,8 @@ description: >
   makes an imperative Apex call (`apexMethod(...).then(...).catch(...)`),
   wire it to the component's `isLoading` flag so the user sees a spinner while
   the round-trip is in flight, AND make sure the spinner renders on top of any
-  open modal/peek-panel via a dedicated `.loading-overlay` wrapper.
+  open modal/peek-panel by using `<c-ao-spinner overlay>` at the template root
+  (the `overlay` mode owns the fixed full-viewport backdrop and its z-index).
 
   TRIGGER (apply silently) when ALL of these are true: (1) the file under edit
   is an LWC parent JS (`force-app/main/default/lwc/<name>/<name>.js`), (2) the
@@ -45,17 +46,19 @@ across the component:
 
 1. The JS handler flips an `isLoading` flag for the lifetime of the Apex
    promise (`try` at the top, `finally` at the bottom).
-2. The HTML renders a `<lightning-spinner>` wrapped in a `.loading-overlay`
-   div that is fixed-positioned and stacked above every other surface in the
-   component — modals, peek panels, bulk bars, etc.
-3. The CSS gives that overlay a z-index strictly greater than every other
-   z-index used in the file (modals are typically `9001`, so the overlay
-   sits at `9999`).
+2. The HTML renders `<c-ao-spinner overlay>` under `<template if:true={isLoading}>`,
+   placed at the component's **root** template so it can stack above every
+   other surface in the component — modals, peek panels, bulk bars, etc.
+3. The overlay backdrop and its `z-index: 9999` (above modals at `9001`) are
+   owned **inside** `c-ao-spinner` itself. You no longer hand-roll a
+   `.loading-overlay` wrapper div or its CSS — you just keep the spinner at the
+   root so its fixed overlay isn't trapped in a section's stacking context.
 
-The third point is the trap most implementations miss: a bare
-`<lightning-spinner>` inside a `<section class="panel">` inherits the panel's
-stacking context, so it disappears behind any open modal. The overlay
-wrapper exists for exactly that reason.
+The third point is the trap most implementations miss: a `<c-ao-spinner overlay>`
+nested inside a `<section class="panel">` that forms its own stacking context
+(any `position` + `z-index` ancestor) is confined to that context, so it
+disappears behind an open modal. Rendering it at the root `<template>` is what
+keeps its fixed overlay on top.
 
 ---
 
@@ -151,103 +154,115 @@ Rules specific to the wire form:
   the user has triggered anything — early-return so you don't toggle the
   spinner for a no-op invocation.
 - If the same reactive param is set by multiple handlers (e.g. open ticket
-  view, refresh ticket view), every one of them must flip `isLoading = true`
-  — the wire callback is the single source of truth for flipping it off.
+  view, refresh ticket view), every one of them must apply the same cache-miss
+  guard before flipping `isLoading = true` (see below) — the wire callback is
+  the single source of truth for flipping it off.
 
-#### Guard against re-assigning the SAME reactive value (avoids stuck spinner)
+#### Only raise the spinner on a genuine server fetch (a cache MISS)
 
-A `@wire` only refires when its reactive parameter **changes**. Assigning the
-param the value it already holds does nothing — the framework skips the wire,
-the callback never runs, and so `isLoading` is never flipped back off. The
-spinner spins forever.
+Set `isLoading = true` **only** when the wire will actually go to the server.
+There is **no request** — and therefore the spinner must **never** be raised —
+in two situations:
 
-So before you flip `isLoading = true`, check whether the value you are about to
-assign is the one already in the param. If it is, the data is already loaded:
-turn the spinner **off** and return. Only flip it **on** when the wire will
-actually run.
+1. **Same value.** Assigning the param the value it already holds does nothing:
+   the framework skips the wire, the callback never runs, so a spinner flipped
+   on here would spin **forever** (nothing ever flips it off).
+2. **Previously-fetched value.** Assigning a value the wire already fetched once
+   this session. Because you never `refreshApex` it, Lightning Data Service
+   serves it straight from its **client-side cache** with no network
+   round-trip. The callback fires, but instantly, off the cache — a spinner
+   here is just a pointless flash.
+
+So track the values you have actually fetched, and gate `isLoading = true` on a
+true cache **miss**. In the two no-request branches, leave `isLoading` alone
+(don't even set it `false` — a concurrent load from another handler may legitimately
+own the spinner); just switch the view and return.
 
 ```js
+// Values already fetched once this session. A wire param that lands back on
+// any of these is served from LDS cache — no server round-trip — so it must
+// NOT raise the spinner.
+_fetchedProjectIds = new Set();
+
 handleEpicsForProject(projectId) {
-    if (projectId === this._epicsTargetProjectId) {
-        // Wire won't refire — data is already loaded
-        this.isLoading = false;
-        return;
+    // No real request in either of these — never raise the spinner:
+    //   (1) same value the param already holds → wire won't refire at all
+    //   (2) a value already fetched once       → LDS serves it from cache
+    if (projectId === this._epicsTargetProjectId || this._fetchedProjectIds.has(projectId)) {
+        this._epicsTargetProjectId = projectId;   // still switch the view (cache-served)
+        return;                                    // leave isLoading untouched
     }
-    this.isLoading = true;          // only when the wire will actually run
+    this.isLoading = true;                         // genuine cache miss → real fetch
+    this._fetchedProjectIds.add(projectId);
     this._epicsTargetProjectId = projectId;
 }
 ```
 
-Do NOT reach for `refreshApex` to force the wire to re-run on the same value.
-`refreshApex` exists to re-fetch fresh data from the **server** (the backend
-changed), not to re-render UI you already have. Using it as a way to "retrigger
-the spinner" round-trips to Apex for data you already hold and masks the real
-bug, which is toggling the spinner for a wire that was never going to fire.
+Do NOT reach for `refreshApex` to force the wire to re-run on a same or
+already-cached value. `refreshApex` exists to re-fetch fresh data from the
+**server** (the backend changed), not to re-render UI you already have. Using
+it as a way to "retrigger the spinner" round-trips to Apex for data you already
+hold and masks the real bug, which is toggling the spinner for a wire that was
+never going to make a request.
 
-### Step 4 — Ensure the HTML renders the overlay
+### Step 4 — Ensure the HTML renders the spinner
 
 In `<name>.html`, look for an existing render of the loading flag. Three
 cases:
 
-**Case A — no spinner exists yet.** Add this block once, near the top of the
-relevant `<section>` (or the root `<template>` if the spinner should cover
-the whole component):
+**Case A — no spinner exists yet.** Add this block once at the root
+`<template>` so the overlay covers the whole component (including any open
+modal):
 
 ```html
 <template if:true={isLoading}>
-    <div class="loading-overlay">
-        <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
-    </div>
+    <c-ao-spinner overlay size="medium" alternative-text="Loading..."></c-ao-spinner>
 </template>
 ```
 
-**Case B — a bare spinner exists** (`<lightning-spinner ...>` directly under
-an `if:true={isLoading}` template, no wrapper div). Wrap it in the
-`.loading-overlay` div:
+`overlay` makes `c-ao-spinner` render its own fixed, full-viewport backdrop
+(navy at 70% transparency, `z-index: 9999`) — there is no wrapper div to add.
+
+**Case B — a bare spinner / hand-rolled overlay exists** (`<lightning-spinner ...>`,
+or a `<div class="loading-overlay"><lightning-spinner></div>` wrapper, under an
+`if:true={isLoading}` template). Replace the whole thing with `<c-ao-spinner overlay>`:
 
 ```html
 <!-- BEFORE -->
 <template if:true={isLoading}>
-    <lightning-spinner alternative-text="Loading..."></lightning-spinner>
-</template>
-
-<!-- AFTER -->
-<template if:true={isLoading}>
     <div class="loading-overlay">
         <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
     </div>
 </template>
+
+<!-- AFTER -->
+<template if:true={isLoading}>
+    <c-ao-spinner overlay size="medium" alternative-text="Loading..."></c-ao-spinner>
+</template>
 ```
 
-**Case C — overlay already present.** Leave it untouched.
+**Case C — `<c-ao-spinner overlay>` already present.** Leave it untouched.
 
-### Step 5 — Ensure the CSS has the overlay class
+### Step 5 — Stacking & CSS cleanup
 
-In `<name>.css`, search for `.loading-overlay`. If absent, append:
+The overlay backdrop and its `z-index: 9999` live **inside** `c-ao-spinner`'s
+own shadow DOM, so there is no `.loading-overlay` rule to add to `<name>.css`.
+Two things to verify instead:
 
-```css
-/* ── Full-page loading overlay (above modals) ────────────────────────────── */
-.loading-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(9, 30, 66, 0.30);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-```
+- **Placement.** `<c-ao-spinner overlay>` must sit at the component's root
+  `<template>`, not nested inside a `position` + `z-index` section — otherwise
+  its fixed overlay is confined to that ancestor's stacking context and hides
+  behind a modal. (This is the trap from the intro.)
+- **Cleanup.** If you replaced an old `<div class="loading-overlay">` wrapper
+  in Step 4, delete the now-orphaned `.loading-overlay` rule from `<name>.css`.
+- **z-index sanity.** The spinner's overlay is fixed at `9999`. Grep the same
+  CSS for `z-index:`; modals/peek-panels are typically `9000` / `9001`, which
+  sit below it. If a surface in this file uses `>= 9999`, lower it to the
+  conventional `9001` rather than leaving it to fight the spinner.
 
-Then verify the z-index ordering. Grep the same CSS file for `z-index:`:
-
-- Every other z-index in the file must be **strictly less than** `9999`.
-- Modal backdrop / modal / peek-panel are typically `9000` / `9001`. If the
-  file uses anything `>= 9999`, raise the overlay above it (e.g. `99999`)
-  rather than lowering the other surface.
-
-The fixed-position overlay also dims the page behind it — that's intentional;
-it both signals "the app is busy" and blocks click-throughs on whatever the
-user was just interacting with (modal buttons, ticket rows, drag handles).
+The overlay also dims the page behind it — that's intentional; it both signals
+"the app is busy" and blocks click-throughs on whatever the user was just
+interacting with (modal buttons, ticket rows, drag handles).
 
 ### Step 6 — Spot-check sibling handlers (optional cleanup)
 
@@ -266,12 +281,13 @@ inconsistency, not to balloon the diff.
 |--------------|----------------|-----|
 | Setting `isLoading = false` in BOTH `.then` and `.catch` | `.finally` already covers both — duplicates drift apart when one is edited | Use `.finally` only |
 | Putting `.finally` before `.catch` | A handler in `.then` that throws skips straight to `.catch`, and `.finally` only sees the post-catch state — order matters for readability and tooling | `.then` → `.catch` → `.finally` |
-| Bare `<lightning-spinner>` with no overlay | Inherits parent stacking context, hides behind modals | Wrap in `.loading-overlay` div |
+| Hand-rolling a `<lightning-spinner>` + `.loading-overlay` div | Re-implements what `c-ao-spinner overlay` already owns (backdrop + z-index), and a bare spinner inherits the parent stacking context, hiding behind modals | Use `<c-ao-spinner overlay>` at the root template |
+| Nesting `<c-ao-spinner overlay>` inside a `position`/`z-index` section | Its fixed overlay is confined to that ancestor's stacking context and hides behind modals | Render it at the component's root `<template>` |
 | New per-handler boolean (`isSavingComment`, `isDeletingThing`) | One spinner-driving flag per visual region is enough; per-handler flags multiply state | Reuse the existing `isLoading` (or the region-scoped flag) |
 | Flipping `isLoading = true` BEFORE early-return validation | Spinner flashes and clears for actions that never hit the network | Do validation first, then flip the flag |
-| Lowering modal z-index to make the spinner show | Other modals in the codebase still expect `9001` — you've created an inconsistency | Raise the overlay's z-index above the modal, never the reverse |
-| Flipping `isLoading = true` before assigning a reactive `@wire` param without checking the value first | If the new value equals the current one, the wire never refires, the callback never runs, and the spinner stays on forever | Early-return (spinner off) when the value is unchanged; only flip on when the param actually changes |
-| Calling `refreshApex` just to re-trigger the spinner on an unchanged value | `refreshApex` re-fetches from the server — it's for stale **backend** data, not for re-rendering UI you already hold; it hides the real toggle bug | Guard the assignment instead; reserve `refreshApex` for genuine server-side refreshes |
+| Leaving a surface at `z-index >= 9999` in the same file | It fights `c-ao-spinner`'s overlay (fixed at `9999`) | Lower that surface to the conventional `9001` |
+| Flipping `isLoading = true` before assigning a reactive `@wire` param without checking the value first | If the new value equals the current one the wire never refires and the spinner stays on forever; if it's a value already fetched, LDS serves it from cache and the spinner just flashes | Only flip on for a genuine cache **miss** (new, never-fetched value); leave `isLoading` untouched for same / already-fetched values |
+| Calling `refreshApex` just to re-trigger the spinner on a same or already-cached value | `refreshApex` re-fetches from the server — it's for stale **backend** data, not for re-rendering UI you already hold; it hides the real toggle bug | Guard the assignment instead; reserve `refreshApex` for genuine server-side refreshes |
 
 ---
 
@@ -305,27 +321,13 @@ handleSprintTicketCreate(event) {
 
 ```html
 <template if:true={isLoading}>
-    <div class="loading-overlay">
-        <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
-    </div>
+    <c-ao-spinner overlay size="medium" alternative-text="Loading..."></c-ao-spinner>
 </template>
 ```
 
-**CSS** (`manageBacklog.css`):
-
-```css
-.loading-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(9, 30, 66, 0.30);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-```
-
-The modal sits at `z-index: 9001`; the overlay at `9999` covers it.
+**CSS** (`manageBacklog.css`): nothing to add. `c-ao-spinner overlay` carries
+its own fixed backdrop and `z-index: 9999` inside its shadow DOM. The modal
+sits at `z-index: 9001`; the spinner's overlay at `9999` covers it.
 
 ---
 
@@ -339,11 +341,12 @@ Before reporting the task as done, confirm:
 - [ ] No `isLoading = false` assignment exists inside `.then` or `.catch`.
 
 **`@wire` with function handler case:**
-- [ ] Every user-action handler that mutates the reactive parameter sets `this.isLoading = true;`.
+- [ ] Every user-action handler that mutates the reactive parameter sets `this.isLoading = true;` **only on a genuine cache miss** (a new, never-fetched value).
+- [ ] Same-value and already-fetched (cache-served) assignments leave `isLoading` untouched and just switch the view — they never raise the spinner.
 - [ ] The wire callback contains a single `this.isLoading = false;` reached on **both** the `data` and `error` branches.
 - [ ] The wire callback guards against the initial null/undefined call before flipping any state.
 
 **Shared (both cases):**
-- [ ] The HTML renders `<lightning-spinner>` inside a `<div class="loading-overlay">` under `<template if:true={isLoading}>`.
-- [ ] `.loading-overlay` exists in the CSS with `position: fixed`, `inset: 0`, and `z-index` strictly greater than every other z-index in the same file.
+- [ ] The HTML renders `<c-ao-spinner overlay>` under `<template if:true={isLoading}>`, at the component's root template.
+- [ ] No hand-rolled `.loading-overlay` div/CSS remains; any surface in the same CSS file uses `z-index < 9999`.
 - [ ] The same loading flag is used (not a new per-handler boolean).

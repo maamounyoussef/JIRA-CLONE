@@ -14,7 +14,7 @@
             <!-- Loading Spinner -->
             <template if:true={_workflowsLoading}>
                 <div class="slds-var-m-around_medium slds-align_absolute-center">
-                    <lightning-spinner alternative-text="Loading workflows..." size="medium"></lightning-spinner>
+                    <c-ao-spinner size="medium" alternative-text="Loading workflows..."></c-ao-spinner>
                 </div>
             </template>
 
@@ -103,7 +103,7 @@
 
         <!-- Loading -->
         <template if:true={isLoading}>
-            <lightning-spinner alternative-text="Loading..." class="slds-m-around_medium"></lightning-spinner>
+            <c-ao-spinner size="medium" alternative-text="Loading..." class="slds-m-around_medium"></c-ao-spinner>
         </template>
 
         <!-- Page-level Error -->
@@ -427,7 +427,7 @@
                     <!-- Loading Indicator -->
                     <template if:true={transitionIsLoading}>
                         <div class="slds-m-around_large slds-align_absolute-center" style="min-height: 200px;">
-                            <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+                            <c-ao-spinner size="medium" alternative-text="Loading..."></c-ao-spinner>
                         </div>
                     </template>
 

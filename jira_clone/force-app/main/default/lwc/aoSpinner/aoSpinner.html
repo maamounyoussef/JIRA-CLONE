@@ -1,0 +1,11 @@
+<template>
+    <template if:true={overlay}>
+        <div class="ao-spinner__overlay">
+            <div class={spinnerClass} role="status" aria-label={alternativeText}></div>
+        </div>
+    </template>
+
+    <template if:false={overlay}>
+        <div class={spinnerClass} role="status" aria-label={alternativeText}></div>
+    </template>
+</template>
