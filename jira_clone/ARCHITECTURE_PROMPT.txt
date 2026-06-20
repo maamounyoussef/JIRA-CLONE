@@ -1,0 +1,14 @@
+classes/
+|
+|__ controller/                         ← Entry Points (per page)
+|   |__ page/
+|     |__ <>Controller.cls
+|__ domain/                             ← Business Logic (per domain object)
+    |__ DomainCompleteValidator.cls
+    |__ DomainCorrectnessValidator.cls
+    |__ <Domain 1>Service.cls
+    |__ <Domain 2>Service.cls
+    |__ <Domain n>Service.cls
+
+```
+

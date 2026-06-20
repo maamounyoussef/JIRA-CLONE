@@ -1,0 +1,132 @@
+---
+name: pather_lwc_state_management_checklist-guide
+activation:
+  mode: required
+  applies_when: >-
+    before emitting parent/pather code that owns principal state or handles
+    child events
+description: >
+  State-management checklist (Rules 0–7) for parent/pather LWCs: principal
+  state updated from Apex response data, wired-function form, one handler per
+  dispatched event, child props derived via getters, presentation state behind
+  getters, active-object id stored separately, find/update/delete/create
+  mutators, toast on failure, immutable spread + _key regeneration on update,
+  and every dispatched event wired in the template. Walk it and fix every
+  failing row before emitting code.
+---
+
+Before presenting the generated code, walk the checklist. If any row fails, fix
+it before emitting code:
+
+| # | Check | Fix if it fails |
+|---|-------|-----------------|
+| 1 | Is principal state updated from the Apex **response data**, not from optimistic local values? (Rule 0) | Move the `_patchXxx` call inside `.then()` / the wired-function body. |
+| 2 | Is `@wire` used in **wired-function form** when it must update principal state? (Rule 0) | Replace `@wire(...) prop;` with `@wire(...) wiredXxx(result) { ... }`. |
+| 3 | Is there one handler function per dispatched event, named `handle<Child><Event>`? (Rule 1) | Split combined handlers; rename per pattern. |
+| 4 | Are child props derived from principal state via getters, not stored in a new data state? (Rule 2) | Replace the `@track` field with `get childProp() { return ... }`. |
+| 5 | Is every presentation state exposed through a getter? (Rule 3) | Wrap in `get isXxxOpen() { return this._xxxId !== null; }`. |
+| 6 | Is the active-object ID stored separately from the principal state? (Rule 4) | Add `@track _activeXxxId = null`. |
+| 7 | Are there find / update / delete / create mutators (e.g. `_patchTicketEverywhere`)? (Rule 5) | Add them; never mutate state inline inside a handler. |
+| 8 | On Apex failure, is a `ShowToastEvent` dispatched? (Rule 6) | Add the toast in the `.then()` failure branch. |
+| 9 | When updating, are all levels on the path to the leaf spread, and is `_key` regenerated to flag the change? (Rule 7) | Apply the spread pattern; use `Id` to find, `_key` to flag. |
+| 10 | Does every dispatched event from the child have a handler wired via `onxxx={handler}` in the template? | Add the missing `on<event>={handle<Child><Event>}` attribute. |
+| 11 | Is every "panel/section open" flag a getter derived from the active-object id, not a parallel `@track` boolean? (Rule 3) | Delete the `@track showXxx` + its manual `= true/false` writes; replace with `get showXxx() { return this._activeXxxId != null; }`. |
+
+## Rule 8 — Shaping principal state on first load
+
+On the **first page load**, build the principal state from BOTH axes at once:
+
+- **UI display** decides how many TOP-LEVEL principal states exist — one per
+  independent panel the UI shows side-by-side.
+- **Entity (DB) hierarchy** decides the NESTING inside each principal state — a
+  child record lives under its parent, exactly as the schema relates them.
+
+When the two axes agree, keep one principal state. When the UI splits something
+the schema keeps together (or vice-versa), the UI split wins at the top level —
+but each split still nests by entity underneath, because that never contradicts
+the UI. Never flatten the entity hierarchy and never duplicate a child across
+levels.
+
+### Case A — one principal state (UI and entity agree)
+
+`manageWorkflow`: the UI shows statuses and transitions **all under one
+workflow**, and the entity nests them under `Workflow__c`. → a single
+`workflowData = { id, projectStatus:[…], workflow:{ transitions:[…] } }`.
+Everything (`_statuses`, `_transitions`, `activeTransition`,
+`showTransitionDetail`) is a getter off that one object.
+
+### Case B — two principal states, still nested by entity
+
+`manageBacklog`: the UI shows **Sprints** and the **Backlog** as two separate
+panels, so two top-level states — `@track sprints = []` and
+`@track backlogTickets = []`. But a sprint's tickets nest **under the sprint**
+(`sprint.tickets`), mirroring the `Sprint__c → Ticket__c` relation, because that
+nesting does not contradict the UI. Moving a ticket is one immutable rewrite of
+both states; no ticket is stored in two places.
+
+### Derived-flag example (Rule 3, row 11)
+
+```javascript
+// ❌ Parallel boolean kept in sync by hand with the selection.
+@track showTransitionDetail = false;
+@track selectedTransitionId  = null;
+handleTransitionClick(e){ this.selectedTransitionId = e...; this.showTransitionDetail = true; }
+handleClose(){ this.selectedTransitionId = null; this.showTransitionDetail = false; }
+
+// ✅ Visibility derived from the principal selection — one source of truth.
+@track selectedTransitionId = null;
+get showTransitionDetail() { return this.selectedTransitionId != null; }
+handleTransitionClick(e){ this.selectedTransitionId = e...; }
+handleClose(){ this.selectedTransitionId = null; }
+```
+
+## Example
+
+Anti-pattern to detect:
+
+```javascript
+// ❌ Optimistic mutation; wired-property form; duplicates child data into
+//     parent state; loads on activeObjectId when the user wanted expand-gated.
+@wire(loadTicketLinkedTo, { ticketId: '$activeTicketViewId' }) ticketLinkedTo;
+
+handleTicketSummaryUpdate(event) {
+    const { ticketId, summary } = event.detail;
+    // mutate principal state BEFORE Apex returns
+    this._patchTicketEverywhere(ticketId, { Summary__c: summary });
+    saveTicketSummary({ ticketId, summary }); // fire-and-forget
+}
+```
+
+Correct form (per the rules, after the interview):
+
+```javascript
+// ✅ Wired-function form, expand-gated where requested, state updated FROM
+//    the Apex response (Rule 0), one handler per event (Rule 1).
+@track _linkedToTargetTicketId = null;
+
+handleTicketLinkedToExpand(event) {
+    this._linkedToTargetTicketId = event.detail.ticketId;
+}
+
+@wire(loadTicketLinkedTo, { ticketId: '$_linkedToTargetTicketId' })
+wiredTicketLinkedTo(result) {
+    if (result.data && result.data.success && this._linkedToTargetTicketId) {
+        const linkedTo = result.data.data?.ticketLinkTo || [];
+        this._patchTicketEverywhere(this._linkedToTargetTicketId, { linkedTo });
+    }
+}
+
+handleTicketSummaryUpdate(event) {
+    const { ticketId, summary } = event.detail;
+    updateTicketSummary({ ticketId, summary })
+        .then(res => {
+            if (res?.success) {
+                this._patchTicketEverywhere(ticketId, { Summary__c: summary });
+            } else {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Update failed', message: res?.message, variant: 'error'
+                }));
+            }
+        });
+}
+```

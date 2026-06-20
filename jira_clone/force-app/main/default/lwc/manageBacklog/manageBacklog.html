@@ -1,0 +1,343 @@
+<template>
+
+    <!-- Choose Project Splash -->
+    <template if:true={showChooseProject}>
+        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
+    </template>
+
+    <template if:false={showChooseProject}>
+
+    <!-- Content (hidden if loading or error) -->
+    <template if:true={shouldShowContent}>
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <div class="loading-container">
+                <c-ao-spinner size="large" alternative-text="Loading..."></c-ao-spinner>
+            </div>
+        </template>
+
+    <!-- Bulk Delete Bar -->
+    <template if:true={hasSelectedTickets}>
+        <div class="bulk-bar">
+            <span>{selectedCount} ticket(s) selected</span>
+            <c-ao-btn label="Delete Selected" variant="danger" onclick={handleBulkDelete}></c-ao-btn>
+            <c-ao-btn label="Cancel" variant="ghost" onclick={handleClearSelection}></c-ao-btn>
+        </div>
+    </template>
+
+    <!-- Confirmation Dialog -->
+    <template if:true={showConfirmDialog}>
+        <div class="modal-backdrop" onclick={handleCancelConfirm}></div>
+        <section role="dialog" aria-modal="true" class="modal modal--sm">
+            <div class="modal__content">
+                <p class="modal__message">{confirmMessage}</p>
+            </div>
+            <footer class="modal__footer">
+                <c-ao-btn label="Cancel"  variant="ghost"  onclick={handleCancelConfirm}></c-ao-btn>
+                <c-ao-btn label="Confirm" variant="danger" onclick={handleConfirm}></c-ao-btn>
+            </footer>
+        </section>
+    </template>
+
+    <!-- Create / Edit Sprint Modal -->
+    <template if:true={showSprintModal}>
+        <div class="modal-backdrop" onclick={handleCloseSprintModal}></div>
+        <section role="dialog" aria-modal="true" class="modal">
+            <header class="modal__header">
+                <h2 class="modal__title">{sprintModalTitle}</h2>
+            </header>
+            <div class="modal__content">
+                <c-ao-input label="Duration (days)" required type="number" value={sprintForm.duration}  data-field="duration"  onchange={handleSprintFormChange}></c-ao-input>
+                <c-ao-input label="Start Date"      required type="date"   value={sprintForm.startDate} data-field="startDate" onchange={handleSprintFormChange}></c-ao-input>
+                <c-ao-input label="Goal"            required value={sprintForm.goal}      data-field="goal"      onchange={handleSprintFormChange}></c-ao-input>
+                <template if:true={modalError}>
+                    <p class="modal__error">{modalError}</p>
+                </template>
+            </div>
+            <footer class="modal__footer">
+                <c-ao-btn label="Cancel"                 variant="ghost"   onclick={handleCloseSprintModal}></c-ao-btn>
+                <c-ao-btn label={sprintModalSubmitLabel} variant="primary" onclick={handleSprintSubmit}></c-ao-btn>
+            </footer>
+        </section>
+    </template>
+
+    <!-- ══════════════════════════════════════════
+         MAIN LAYOUT
+         ══════════════════════════════════════════ -->
+    <div class="page-wrapper" ondragstart={handlePageDragStart} ondragend={handlePageDragEnd}>
+
+        <!-- WORK (Sprints) -->
+        <section class="panel">
+            <h1 class="panel__title">Sprints</h1>
+
+            <template if:true={showSprintTicketModal}>
+                <c-ao-create-ticket-modal
+                    sprint-id={_activeSprintId}
+                    status-options={statusOptions}
+                    ticket-type-options={ticketTypeOptions}
+                    priority-options={priorityOptions}
+                    onticketcreate={handleSprintTicketCreate}
+                    oncancel={handleCreateTicketCancel}>
+                </c-ao-create-ticket-modal>
+            </template>
+
+            <template if:true={isLoading}>
+                <c-ao-spinner overlay size="medium" alternative-text="Loading..."></c-ao-spinner>
+            </template>
+
+            <template for:each={sprints} for:item="sprint">
+                <div key={sprint.Id} class={sprint.dropTargetClass} data-sprint-id={sprint.Id}
+                     ondragenter={handleDragEnterSprint}
+                     ondragleave={handleDragLeaveSprint}
+                     ondragover={handleDragOver}
+                     ondrop={handleDropOnSprint}>
+
+                    <div class="sprint-header">
+                        <button class="toggle-btn" data-sprint-id={sprint.Id} onclick={handleToggle}>
+                            <lightning-icon icon-name={sprint.chevronIcon} size="x-small"></lightning-icon>
+                        </button>
+                        <span class="sprint-name">{sprint.Name}</span>
+                        <span class="sprint-dates">{sprint.StartDate__c} → {sprint.endDate}</span>
+                        <span class="sprint-status-badge">{sprint.RecordStatus__c}</span>
+                        <template if:false={sprint.isComplete}>
+                            <c-ao-btn label="Start"    variant="primary"   data-sprint-id={sprint.Id} onclick={handleSprintStart}></c-ao-btn>
+                        </template>
+                        <c-ao-btn label="Complete" variant="secondary" data-sprint-id={sprint.Id} onclick={handleSprintComplete}></c-ao-btn>
+                        <c-ao-btn label="Edit"     variant="secondary" data-sprint-id={sprint.Id} onclick={handleSprintEdit}></c-ao-btn>
+                        <c-ao-btn label="Delete"   variant="danger"    data-sprint-id={sprint.Id} onclick={handleSprintDelete}></c-ao-btn>
+                        <c-ao-btn label="+ Ticket" variant="ghost"     data-sprint-id={sprint.Id} onclick={handleSprintAddTicket}></c-ao-btn>
+                    </div>
+
+                    <template if:true={sprint.isExpanded}>
+                        <template if:true={sprint.Goal__c}>
+                            <p class="sprint-goal">{sprint.Goal__c}</p>
+                        </template>
+
+                        <template if:true={sprint.tickets}>
+                            <div class="sprint-progress" data-sprint-id={sprint.Id}>
+                                <div class="sprint-progress-labels">
+                                    <span class="sprint-progress-label">Story Points</span>
+                                    <span class="sprint-progress-count">
+                                        <strong data-metric="ended">{sprint.TotalEndedStoryPoint__c}</strong> / <span data-metric="total">{sprint.TotalStoryPoint__c}</span> SP &nbsp;·&nbsp; <span data-metric="percent">{sprint.storyPointsPercent}</span>%
+                                    </span>
+                                </div>
+                                <lightning-progress-bar value={sprint.storyPointsPercent} size="small"></lightning-progress-bar>
+                            </div>
+                        </template>
+
+                        <template if:true={sprint.isLoadingTickets}>
+                            <c-ao-spinner size="small" alternative-text="Loading tickets..."></c-ao-spinner>
+                        </template>
+
+                        <template if:true={sprint.showTopDropZone}>
+                            <div class={sprint.topDropZoneClass}
+                                 data-container={sprint.Id}
+                                 ondragenter={handleTopZoneDragEnter}
+                                 ondragleave={handleTopZoneDragLeave}
+                                 ondragover={handleDropZoneDragOver}
+                                 ondrop={handleDropOnTopZone}>
+                            </div>
+                        </template>
+
+                        <template for:each={sprint.tickets} for:item="ticket">
+                            <div key={ticket._key} class="ticket-drop-wrapper"
+                                 data-ticket-id={ticket.Id}
+                                 data-container={sprint.Id}
+                                 ondragenter={handleTicketDragEnter}
+                                 ondragleave={handleTicketDragLeave}
+                                 ondragover={handleDropZoneDragOver}
+                                 ondrop={handleDropOnTicket}>
+                                <c-ao-ticket-item
+                                    data-ticket-id={ticket.Id}
+                                    ticket={ticket}
+                                    variant={ticketVariant}
+                                    status-options={statusOptions}
+                                    member-options={memberOptions}
+                                    priority-options={priorityOptions}
+                                    project-id={_projectId}
+                                    epics={epics}
+                                    onticketselect={handleTicketSelect}
+                                    onticketdelete={handleTicketDelete}
+                                    onticketsummaryupdate={handleTicketSummaryUpdate}
+                                    onticketpriorityupdate={handleTicketPriorityUpdate}
+                                    onticketstatechange={handleTicketStateChange}
+                                    onticketassigneechange={handleTicketAssigneeChange}
+                                    onticketepicupdate={handleTicketEpicUpdate}
+                                    onepiccreateforticket={handleEpicCreateForTicket}
+                                    onsubtaskcreate={handleSubtaskCreate}
+                                    onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
+                                    onsubtaskassigneechange={handleSubtaskAssigneeChange}
+                                    onsubtaskdelete={handleSubtaskDelete}
+                                    onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                                    onsubtasksexpand={handleTicketViewSubtasksExpand}
+                                    onticketviewopen={handleOpenTicketView}>
+                                </c-ao-ticket-item>
+                                <div class={ticket.dropIndicatorClass}></div>
+                            </div>
+                        </template>
+
+                        <template if:false={sprint.hasTickets}>
+                            <template if:false={sprint.isLoadingTickets}>
+                                <p class="empty-sprint">No tickets in this sprint.</p>
+                            </template>
+                        </template>
+
+                        <div class="pagination-footer">
+                            <c-ao-btn
+                                icon-name="utility:chevronleft"
+                                variant="secondary"
+                                size="sm"
+                                title="Previous page"
+                                disabled={sprint.isFirstPage}
+                                data-sprint-id={sprint.Id}
+                                onclick={handleSprintPrevPage}>
+                            </c-ao-btn>
+                            <span class="page-indicator">Page {sprint.currentPage}</span>
+                            <c-ao-btn
+                                icon-name="utility:chevronright"
+                                variant="secondary"
+                                size="sm"
+                                title="Next page"
+                                disabled={sprint.isLastPage}
+                                data-sprint-id={sprint.Id}
+                                onclick={handleSprintNextPage}>
+                            </c-ao-btn>
+                        </div>
+                    </template>
+
+                </div>
+            </template>
+
+            <template if:false={hasSprints}>
+                <p class="empty-msg">No active sprints.</p>
+            </template>
+        </section>
+
+        <!-- BACKLOG -->
+        <section class={backlogDropClass}
+             ondragenter={handleDragEnterBacklog}
+             ondragleave={handleDragLeaveBacklog}
+             ondragover={handleDragOver}
+             ondrop={handleDropOnBacklog}>
+            <div class="backlog-header">
+                <h1 class="panel__title">Backlog</h1>
+                <c-ao-btn label="+ Sprint" variant="secondary" onclick={handleOpenCreateSprint}></c-ao-btn>
+                <c-ao-btn label="+ Ticket" variant="primary"   onclick={handleOpenCreateTicketForBacklog}></c-ao-btn>
+            </div>
+
+            <template if:true={showBacklogTicketModal}>
+                <c-ao-create-ticket-modal
+                    status-options={statusOptions}
+                    ticket-type-options={ticketTypeOptions}
+                    priority-options={priorityOptions}
+                    onticketcreate={handleBacklogTicketCreate}
+                    oncancel={handleCreateTicketCancel}>
+                </c-ao-create-ticket-modal>
+            </template>
+
+            <template if:true={backlogIsLoading}>
+                <c-ao-spinner size="small" alternative-text="Loading tickets..."></c-ao-spinner>
+            </template>
+
+            <template if:true={showBacklogTopDropZone}>
+                <div class={backlogTopDropZoneClass}
+                     data-container="backlog"
+                     ondragenter={handleTopZoneDragEnter}
+                     ondragleave={handleTopZoneDragLeave}
+                     ondragover={handleDropZoneDragOver}
+                     ondrop={handleDropOnTopZone}>
+                </div>
+            </template>
+
+            <template for:each={backlogTickets} for:item="ticket">
+                <div key={ticket.Id} class="ticket-drop-wrapper"
+                     data-ticket-id={ticket.Id}
+                     data-container="backlog"
+                     ondragenter={handleTicketDragEnter}
+                     ondragleave={handleTicketDragLeave}
+                     ondragover={handleDropZoneDragOver}
+                     ondrop={handleDropOnTicket}>
+                    <c-ao-ticket-item
+                        data-ticket-id={ticket.Id}
+                        ticket={ticket}
+                        variant={ticketVariant}
+                        status-options={statusOptions}
+                        member-options={memberOptions}
+                        priority-options={priorityOptions}
+                        project-id={_projectId}
+                        epics={epics}
+                        onticketselect={handleTicketSelect}
+                        onticketdelete={handleTicketDelete}
+                        onticketsummaryupdate={handleTicketSummaryUpdate}
+                        onticketpriorityupdate={handleTicketPriorityUpdate}
+                        onticketstatechange={handleTicketStateChange}
+                        onticketassigneechange={handleTicketAssigneeChange}
+                        onticketepicupdate={handleTicketEpicUpdate}
+                        onepiccreateforticket={handleEpicCreateForTicket}
+                        onsubtaskcreate={handleSubtaskCreate}
+                        onsubtasksummaryupdate={handleSubtaskSummaryUpdate}
+                        onsubtaskassigneechange={handleSubtaskAssigneeChange}
+                        onsubtaskdelete={handleSubtaskDelete}
+                        onsubtasksbulkdelete={handleSubtasksBulkDelete}
+                        onsubtasksexpand={handleTicketViewSubtasksExpand}
+                        onticketviewopen={handleOpenTicketView}>
+                    </c-ao-ticket-item>
+                    <div class={ticket.dropIndicatorClass}></div>
+                </div>
+            </template>
+
+            <template if:false={hasBacklogTickets}>
+                <template if:false={backlogIsLoading}>
+                    <p class="empty-msg">No tickets in backlog.</p>
+                </template>
+            </template>
+
+            <div class="pagination-footer">
+                <c-ao-btn
+                    icon-name="utility:chevronleft"
+                    variant="secondary"
+                    size="sm"
+                    title="Previous page"
+                    disabled={backlogIsFirstPage}
+                    onclick={handleBacklogPrevPage}>
+                </c-ao-btn>
+                <span class="page-indicator">{backlogOffsetLabel}</span>
+                <c-ao-btn
+                    icon-name="utility:chevronright"
+                    variant="secondary"
+                    size="sm"
+                    title="Next page"
+                    disabled={backlogIsLastPage}
+                    onclick={handleBacklogNextPage}>
+                </c-ao-btn>
+            </div>
+        </section>
+
+    </div>
+
+    </template>
+
+    <!-- Ticket View — right-side peek panel -->
+    <template if:true={isTicketViewOpen}>
+        <div class="peek-backdrop" onclick={handleCloseTicketView}></div>
+        <aside role="dialog" aria-modal="true" class="peek-panel">
+            <c-ticket-view
+                ticket={activeTicketViewModel}
+                status-options={statusOptions}
+                ticket-linked-to-type-options={ticketLinkedToTypeOptions}
+                ticket-options={ticketViewSearchOptions}
+                onticketsummaryupdate={handleTicketViewSummaryUpdate}
+                onticketstatuschange={handleTicketViewStatusChange}
+                onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
+                onticketsearch={handleTicketSearch}
+                onticketlinkcreate={handleTicketLinkCreate}
+                onticketlinkedtoexpand={handleTicketLinkedToExpand}
+                onsubtasksexpand={handleTicketViewSubtasksExpand}
+                onsubtaskcreate={handleTicketViewSubtaskCreate}
+                oncloseticketview={handleCloseTicketView}>
+            </c-ticket-view>
+        </aside>
+    </template>
+
+    </template>
+</template>

@@ -1,0 +1,87 @@
+Ticket View : 
+
+No request in this component.
+
+	UI BEHAVIOR: 
+		- As a user i want to see summary 
+		- As a user i want to update the summary
+		- As a user i want to see the current status for the current ticket. 
+		- As a user i want to update the current state for the current ticket.
+		- As a user i want to update the description.
+		- As a user i want to see a linked to expanding list. 
+	
+	
+	summary component behavior : 
+		Create an inline editable text field component with two states:
+		State 1 (view mode): renders as a bold plain text label with no border, clickable.
+		State 2 (edit mode): clicking the label replaces it with a focused, full-width single-line text input with a blue border. Below the input, right-aligned, show two small square icon buttons — a checkmark (confirm) and an X (cancel). Confirm saves and returns to view mode; Cancel discards and returns to view mode.
+		you can use @aoInput component. 
+		
+	Description component behavior: 
+		Create a UI component called DescriptionField with two states:
+		State 1 — View mode (default):
+
+			A bold "Description" label
+			A muted placeholder text below it: "Add a description..."
+			Clicking it switches to edit mode
+
+		State 2 — Edit mode:
+
+			The same "Description" label
+			A rich text editor box with a formatting toolbar (text size, bold, lists, text color, image, code, emoji, insert, link, undo, redo, history)
+			A drag handle and placeholder text inside the editor: "Type [] to jot down things that don't need to be tracked elsewhere."
+			A "Save" button and a "Cancel" button below
+			Cancel returns to view mode
+			Save stores the content and displays it in view mode instead of the placeholder
+			for state 2  use : lightning-input-rich-text 
+			
+		
+	
+	
+	linked to expanding list component BEHAVIOR  : 
+		Linked Work Items Component — Skeleton Collapsed State
+
+		[> Chevron Icon]  [Section Title]
+		Expanded State
+
+		[v Chevron Icon]  [Section Title]                    [+ Button]
+
+		  [Sub-label]
+
+		  ┌──────────────────────────────────────────────────────────────────────────────────────────────-┐
+		  │ [Checkbox]  [ID]  [Ticket Name] [Ticket Summary]   [Status Dropdown ▼]  [Priority]  [Assigne] │
+		  └──────────────────────────────────────────────────────────────────────────────────────────────-┘
+		Section title : Linked work items
+		Sub label : blocks
+		the Id should be hidden 
+		
+		field1: show assignee name
+		field2 : show priority 
+		
+
+		show  a new state when the user click on +Button show a comboBox in the left and comboBox in the right . 
+
+		// for ticket link 
+		comboBox in the left show ticket linked to types (data came from @api set this as Todo and use static data for now )
+		auto complete comboBox in the right (that does not work  until set at least  2 character) so user can choose ticket  (data came from @api set this as Todo and use static data for now )
+		Link button (this function should print data but mark on the up of it Todo dispatchEvent, it should be inactive until the user fill the required field )
+		cancel button 
+		
+		
+!! FOR NOW PLEASE SET A console.log  with  dispatchEvent. 
+
+	
+Framework details : 
+	- structure : all of this sub component should be in the same lwc of ticket view -- no separate lwc --. 
+	- state handling : @handle-state.md 
+	- how to pass the state ? 
+		- summary , current status , description, priority, assigneeName,  linked To  encapsulate them in a ticket object that should be  passed from the pather. 
+		- statusOptions should be passed from the pather. 
+		- ticketLinkedToType should be passed from the pather. 
+		- ticketOptions(taht load when the user go and search in the autoComplete comboBox ) that can be linked to should be passed from the pather also. 
+		
+	- functionNaming : @function_naming.md 
+	
+- Validation : 
+	- for validation for this ticket object go  and read @OBJECT_VALIDATION_LWC_APEX.md 
+

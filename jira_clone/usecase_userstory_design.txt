@@ -1,0 +1,47 @@
+## Documentation Split
+
+---
+
+### Use Case Diagram — visual only
+- Actor: Project Member
+- Use Case 1: Create Ticket Without Sprint
+- Use Case 2: Create Ticket With Sprint
+- <<include>> / <<extend>> relationships (visual only)
+
+---
+
+### Use Case Description — full specification
+- Actor
+- <<include>> and <<extend>> relationships with explanation
+- User stories linked to this use case
+- Pre-conditions
+- Trigger
+- Post-conditions
+- Failure reasons (business level)
+- Business flow (what happens, not how)
+- Full sequence call flow (Controller → Service → Database)
+- API specification (endpoint, request body JSON, response JSON)
+
+---
+
+### User Story — UI / frontend behavior
+- Front-end validation rules (name not empty, storyPoint positive integer, etc.)
+- Response handling (toast messages, modal closes, card appended)
+- Sprint metrics refresh on success
+- Button state behavior (disabled / re-enabled)
+- Inline error messages / error banner display
+
+---
+
+### Sequence Diagram — visual companion only
+- Visual form of the call flow already written in the use case description
+- No new information — just easier to read at a glance
+
+---
+
+### Hierarchy
+Use Case Description
+    └── User Story 1: Create Ticket Without Sprint
+            └── UI / frontend behavior details
+    └── User Story 2: Create Ticket With Sprint
+            └── UI / frontend behavior details

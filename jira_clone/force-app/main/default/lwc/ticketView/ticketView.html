@@ -1,0 +1,350 @@
+<template>
+    <article class="ticket-view">
+
+        <header class="tv-header">
+            <span class="tv-header__name">{ticket.Name}</span>
+            <c-ao-btn
+                icon-name="utility:close"
+                variant="bare"
+                size="sm"
+                title="Close"
+                onclick={handleClose}>
+            </c-ao-btn>
+        </header>
+
+        <div class="tv-body">
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                       SUMMARY                                ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-summary">
+            <template if:false={isSummaryEditing}>
+                <h1 class="tv-summary__label" onclick={handleTicketSummaryEdit} title="Click to edit">
+                    {ticket.Summary__c}
+                </h1>
+            </template>
+
+            <template if:true={isSummaryEditing}>
+                <div class="tv-summary__editor">
+                    <c-ao-input
+                        class="tv-summary__input"
+                        variant="label-hidden"
+                        value={draftSummary}
+                        required
+                        onchange={handleTicketSummaryChange}>
+                    </c-ao-input>
+                    <template if:true={summaryError}>
+                        <p class="tv-error">{summaryError}</p>
+                    </template>
+                    <div class="tv-summary__actions">
+                        <c-ao-btn
+                            icon-name="utility:check"
+                            variant="primary"
+                            size="sm"
+                            title="Confirm"
+                            onclick={handleTicketSummarySave}>
+                        </c-ao-btn>
+                        <c-ao-btn
+                            icon-name="utility:close"
+                            variant="secondary"
+                            size="sm"
+                            title="Cancel"
+                            onclick={handleTicketSummaryCancel}>
+                        </c-ao-btn>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                    CURRENT STATUS                            ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-status">
+            <span class="tv-section__label">Status</span>
+            <c-ao-combobox
+                class="tv-status__combo"
+                variant="label-hidden"
+                placeholder="Select status"
+                value={currentStatusId}
+                options={statusOptions}
+                onchange={handleTicketStatusChange}>
+            </c-ao-combobox>
+            <template if:true={statusError}>
+                <p class="tv-error">{statusError}</p>
+            </template>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                       DESCRIPTION                            ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-description">
+            <h2 class="tv-section__label tv-section__label--bold">Description</h2>
+
+            <template if:false={isDescriptionEditing}>
+                <template if:true={hasDescription}>
+                    <div class="tv-description__view"
+                         onclick={handleTicketDescriptionEdit}>
+                        <lightning-formatted-rich-text value={ticket.Description__c}></lightning-formatted-rich-text>
+                    </div>
+                </template>
+                <template if:false={hasDescription}>
+                    <p class="tv-description__placeholder"
+                       onclick={handleTicketDescriptionEdit}>
+                        Add a description...
+                    </p>
+                </template>
+            </template>
+
+            <template if:true={isDescriptionEditing}>
+                <lightning-input-rich-text
+                    value={draftDescription}
+                    placeholder="Type [] to jot down things that don't need to be tracked elsewhere."
+                    onchange={handleTicketDescriptionChange}>
+                </lightning-input-rich-text>
+                <div class="tv-description__actions">
+                    <c-ao-btn
+                        label="Save"
+                        variant="primary"
+                        size="sm"
+                        onclick={handleTicketDescriptionSave}>
+                    </c-ao-btn>
+                    <c-ao-btn
+                        label="Cancel"
+                        variant="ghost"
+                        size="sm"
+                        onclick={handleTicketDescriptionCancel}>
+                    </c-ao-btn>
+                </div>
+            </template>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                     LINKED  WORK ITEMS                       ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-linked">
+
+            <header class="tv-linked__header">
+                <button class="tv-linked__toggle"
+                        type="button"
+                        onclick={handleTicketLinkedToToggle}>
+                    <lightning-icon icon-name={chevronIcon} size="xx-small"></lightning-icon>
+                    <span class="tv-linked__title">Linked work items</span>
+                </button>
+
+                <template if:true={isLinkedToExpanded}>
+                    <c-ao-btn
+                        icon-name="utility:add"
+                        variant="bare"
+                        size="sm"
+                        title="Add linked item"
+                        onclick={handleTicketLinkedToAdd}>
+                    </c-ao-btn>
+                </template>
+            </header>
+
+            <template if:true={isLinkedToExpanded}>
+                <div class="tv-linked__body">
+                    <p class="tv-linked__sublabel">blocks</p>
+
+                    <template if:true={hasLinkedItems}>
+                        <template for:each={linkedItems} for:item="item">
+                            <div key={item.linkId} class="tv-linked__row">
+                                <c-ao-checkbox
+                                    class="tv-linked__check"
+                                    data-link-id={item.linkId}>
+                                </c-ao-checkbox>
+
+                                <!-- ID intentionally hidden per spec -->
+                                <span class="tv-linked__hidden-id">{item.linkedToTicket.Id}</span>
+
+                                <span class="tv-linked__name">{item.linkedToTicket.Name}</span>
+                                <span class="tv-linked__summary">{item.linkedToTicket.Summary__c}</span>
+
+                                <c-ao-combobox
+                                    class="tv-linked__status"
+                                    variant="label-hidden"
+                                    placeholder="State"
+                                    value={item.linkedToTicket.CurrentState__c}
+                                    options={statusOptions}>
+                                </c-ao-combobox>
+
+                                <span class="tv-linked__priority">{item.linkedToTicket.Priority__c}</span>
+                                <span class="tv-linked__assignee">{item.linkedToTicket.AssignedTo__c}</span>
+                            </div>
+                        </template>
+                    </template>
+
+                    <template if:false={hasLinkedItems}>
+                        <p class="tv-linked__empty">No linked items.</p>
+                    </template>
+
+                    <template if:true={showLinkedToAddForm}>
+                        <div class="tv-linked__form">
+                            <div class="tv-linked__form-row">
+                                <c-ao-combobox
+                                    class="tv-linked__form-type"
+                                    variant="label-hidden"
+                                    placeholder="Link type..."
+                                    options={ticketLinkedToTypeOptions}
+                                    onchange={handleTicketLinkedToTypeChange}>
+                                </c-ao-combobox>
+
+                                <c-auto-complete-combo-box
+                                    class="tv-linked__form-ticket"
+                                    variant="label-hidden"
+                                    placeholder="Search ticket (min 2 chars)..."
+                                    options={ticketOptions}
+                                    onchange={handleTicketLinkedToTicketChange}
+                                    onsearch={handleTicketLinkedToTicketSearch}>
+                                </c-auto-complete-combo-box>
+                            </div>
+
+                            <template if:true={linkedToError}>
+                                <p class="tv-error">{linkedToError}</p>
+                            </template>
+
+                            <div class="tv-linked__form-actions">
+                                <c-ao-btn
+                                    label="Cancel"
+                                    variant="ghost"
+                                    size="sm"
+                                    onclick={handleTicketLinkedToCancel}>
+                                </c-ao-btn>
+                                <c-ao-btn
+                                    label="Link"
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={isLinkDisabled}
+                                    onclick={handleTicketLinkCreate}>
+                                </c-ao-btn>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                          SUBTASKS                            ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-subtasks">
+
+            <header class="tv-subtasks__header">
+                <button class="tv-subtasks__toggle"
+                        type="button"
+                        onclick={handleTicketSubtasksToggle}>
+                    <lightning-icon icon-name={subtasksChevronIcon} size="xx-small"></lightning-icon>
+                    <span class="tv-subtasks__title">Subtasks</span>
+                </button>
+
+                <template if:true={isSubtasksExpanded}>
+                    <c-ao-btn
+                        icon-name="utility:add"
+                        variant="bare"
+                        size="sm"
+                        title="Add subtask"
+                        onclick={handleTicketSubtaskAdd}>
+                    </c-ao-btn>
+                </template>
+            </header>
+
+            <template if:true={isSubtasksExpanded}>
+                <div class="tv-subtasks__body">
+
+                    <template if:true={hasSubtasks}>
+                        <div class="tv-subtasks__table">
+                            <div class="tv-subtasks__row tv-subtasks__row--head">
+                                <span class="tv-subtasks__col">Sub Task Name</span>
+                                <span class="tv-subtasks__col">Sub Task Summary</span>
+                                <span class="tv-subtasks__col">Sub Task assignee</span>
+                            </div>
+                            <template for:each={subtasks} for:item="subtask">
+                                <div key={subtask.Id} class="tv-subtasks__row">
+                                    <span class="tv-subtasks__col tv-subtasks__name">{subtask.Name}</span>
+                                    <span class="tv-subtasks__col tv-subtasks__summary">{subtask.Summary__c}</span>
+                                    <span class="tv-subtasks__col tv-subtasks__assignee">{subtask.assigneeName}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:false={hasSubtasks}>
+                        <p class="tv-subtasks__empty">No subtasks.</p>
+                    </template>
+
+                    <template if:true={showSubtaskAddForm}>
+                        <div class="tv-subtasks__form">
+                            <c-ao-input
+                                class="tv-subtasks__form-field"
+                                label="Summary"
+                                value={newSubtask.summary}
+                                required
+                                onchange={handleTicketSubtaskSummaryChange}>
+                            </c-ao-input>
+
+                            <c-ao-combobox
+                                class="tv-subtasks__form-field"
+                                label="Assignee"
+                                placeholder="Select assignee"
+                                value={newSubtask.assigneeId}
+                                options={assigneeOptions}
+                                onchange={handleTicketSubtaskAssigneeChange}>
+                            </c-ao-combobox>
+
+                            <c-ao-combobox
+                                class="tv-subtasks__form-field"
+                                label="Current State"
+                                placeholder="Select state"
+                                value={newSubtask.currentStateId}
+                                options={statusOptions}
+                                onchange={handleTicketSubtaskStateChange}>
+                            </c-ao-combobox>
+
+                            <lightning-input
+                                class="tv-subtasks__form-field"
+                                type="date"
+                                label="Start Date"
+                                value={newSubtask.startDate}
+                                onchange={handleTicketSubtaskStartDateChange}>
+                            </lightning-input>
+
+                            <lightning-input
+                                class="tv-subtasks__form-field"
+                                type="number"
+                                label="Story Point"
+                                value={newSubtask.storyPoint}
+                                onchange={handleTicketSubtaskStoryPointChange}>
+                            </lightning-input>
+
+                            <lightning-input-rich-text
+                                class="tv-subtasks__form-field"
+                                value={newSubtask.description}
+                                placeholder="Description..."
+                                onchange={handleTicketSubtaskDescriptionChange}>
+                            </lightning-input-rich-text>
+
+                            <div class="tv-subtasks__form-actions">
+                                <c-ao-btn
+                                    label="Cancel"
+                                    variant="ghost"
+                                    size="sm"
+                                    onclick={handleTicketSubtaskCancel}>
+                                </c-ao-btn>
+                                <c-ao-btn
+                                    label="Create"
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={isSubtaskCreateDisabled}
+                                    onclick={handleTicketSubtaskCreate}>
+                                </c-ao-btn>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+        </section>
+        </div>
+    </article>
+</template>

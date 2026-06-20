@@ -1,0 +1,53 @@
+<template>
+    <section class="page">
+        <h2 class="page__title">Create Project</h2>
+
+        <template if:true={successMessage}>
+            <div class="alert alert--success" role="alert">{successMessage}</div>
+        </template>
+
+        <template if:true={errorMessage}>
+            <div class="alert alert--error" role="alert">{errorMessage}</div>
+        </template>
+
+        <button class="btn btn--primary" onclick={toggleForm}>
+            <template if:true={showForm}>Close Form</template>
+            <template if:false={showForm}>Open Form</template>
+        </button>
+
+        <template if:true={showForm}>
+            <form class="form">
+                <label class="form__label" for="projectName">
+                    Project Name <span class="form__required">*</span>
+                </label>
+                <input
+                    id="projectName"
+                    class="form__input"
+                    type="text"
+                    placeholder="e.g., Website Redesign"
+                    value={newProject.name}
+                    onchange={handleNameChange}
+                />
+
+                <div class="form__actions">
+                    <button
+                        class="btn btn--primary"
+                        type="button"
+                        onclick={handleCreateProject}
+                        disabled={isLoading}
+                    >
+                        <template if:false={isLoading}>Create Project</template>
+                        <template if:true={isLoading}>Creating...</template>
+                    </button>
+                    <button
+                        class="btn btn--ghost"
+                        type="button"
+                        onclick={toggleForm}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </template>
+    </section>
+</template>

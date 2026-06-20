@@ -1,0 +1,101 @@
+<template>
+
+    <!-- Choose Project Splash -->
+    <template if:true={showChooseProject}>
+        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
+    </template>
+
+    <template if:false={showChooseProject}>
+
+    <!-- Content (hidden if loading or error) -->
+    <template if:true={shouldShowContent}>
+        <!-- Loading -->
+        <template if:true={isLoading}>
+            <div class="mtk-loading">
+                <c-ao-spinner size="large" alternative-text="Loading..."></c-ao-spinner>
+            </div>
+        </template>
+
+        <template if:true={sprint}>
+            <header class="sprint-header">
+                <div class="sprint-header__top">
+                    <h2 class="sprint-name">{sprint.Name}</h2>
+                    <span class="sprint-dates">{sprintDateRange}</span>
+                </div>
+                <p class="sprint-goal">{sprint.Goal__c}</p>
+                <div class="sprint-progress">
+                    <div class="sprint-progress__labels">
+                        <span class="sprint-progress__label">Story Points</span>
+                        <span class="sprint-progress__count">
+                            <strong>{endedStoryPoints}</strong> / {totalStoryPoints} SP &nbsp;·&nbsp; {storyPointsPercent}%
+                        </span>
+                    </div>
+                    <lightning-progress-bar value={storyPointsPercent} size="small"></lightning-progress-bar>
+                </div>
+            </header>
+        </template>
+
+        <template if:false={sprint}>
+            <p class="no-sprint-banner">No active sprint. Start a sprint from the Backlog page.</p>
+        </template>
+
+        <div class="board-columns"
+             onticketstatechange={handleTicketStateChange}
+             onopenlinkedto={handleOpenLinkedTo}
+             onticketviewopen={handleOpenTicketView}>
+            <template for:each={columns} for:item="col">
+                <c-ticket-board-column
+                    key={col.statusId}
+                    status-id={col.statusId}
+                    status-name={col.statusName}
+                    tickets={col.tickets}
+                    is-valid-target={col.isValidTarget}
+                    member-options={memberOptions}
+                    status-options={statusOptions}
+                    priority-options={priorityOptions}
+                    epics={epics}
+                    project-id={projectId}
+                    onticketdragstart={handleTicketDragStart}
+                    onticketdrop={handleTicketDrop}
+                    onticketdragend={handleTicketDragEnd}
+                ></c-ticket-board-column>
+            </template>
+        </div>
+
+        <template if:true={showLinkedToPopup}>
+            <c-ticket-linked-to
+                ticket-id={linkedToTicketId}
+                linked-items={linkedToItems}
+                list-key={linkedToListKey}
+                ticket-options={tickets}
+                link-type-options={ticketLinkTypes}
+                onexpandlinkedto={handleExpandLinkedTo}
+                oncloselinkedto={handleCloseLinkedTo}
+                oncreateticketlink={handleCreateTicketLink}
+            ></c-ticket-linked-to>
+        </template>
+
+        <template if:true={isTicketViewOpen}>
+            <div class="modal-backdrop" onclick={handleCloseTicketView}></div>
+            <section role="dialog" aria-modal="true" class="modal modal--ticket-view">
+            <c-ticket-view
+                ticket={activeTicketViewModel}
+                status-options={statusOptions}
+                ticket-linked-to-type-options={ticketLinkTypes}
+                ticket-options={ticketViewSearchOptions}
+                onticketsummaryupdate={handleTicketViewSummaryUpdate}
+                onticketstatuschange={handleTicketViewStatusChange}
+                onticketdescriptionupdate={handleTicketViewDescriptionUpdate}
+                onticketsearch={handleTicketSearch}
+                onticketlinkcreate={handleTicketLinkCreate}
+                onticketlinkedtoexpand={handleTicketLinkedToExpand}
+                onsubtasksexpand={handleTicketSubtasksExpand}
+                onsubtaskcreate={handleTicketSubtaskCreate}
+                oncloseticketview={handleCloseTicketView}
+            ></c-ticket-view>
+            </section>
+        </template>
+
+    </template>
+
+</template>

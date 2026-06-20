@@ -1,0 +1,312 @@
+/**
+ * @description Business-rule invariants for all domain operations.
+ *              Existence / record-availability checks live in DomainCorrectness and
+ *              are the responsibility of the controller layer.
+ *
+ *              Convention:
+ *                requireXxx(...)  — validates a business invariant, throws if violated
+ */
+public with sharing class DomainCompleteValidator {
+
+    // ═══════════════════════════════════════════════════════════════
+    // PROJECT MEMBER — authorization
+    // ═══════════════════════════════════════════════════════════════
+
+    public static ProjectMember__c requireCurrentUserMemberForProject(ProjectMember__c member, String userId) {
+        if (member == null || member.User__c != userId) {
+            throw new ServiceException('User ' + userId + ' is not an active member of this project');
+        }
+        return member;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SPRINT — state machine and naming
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Sprint name must be unique per project.
+     * Caller queries for duplicates and passes the result.
+     */
+    public static void requireSprintNameUniquePerProject(List<Sprint__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A sprint with this name already exists in this project');
+        }
+    }
+
+    /**
+     * Only one sprint per project can be in_progress at a time.
+     * Prevents starting a new sprint when another is already running.
+     */
+    public static void requireNoActiveSprintInProject(List<Sprint__c> activeSprint ) {
+        if (!activeSprint.isEmpty()) throw new ServiceException('Project already has an active sprint in progress');
+    }
+    /**
+     * Sprint must be in 'future' status to be started.
+     */
+    public static void requireSprintIsStartable(Sprint__c sprint) {
+        if (sprint.RecordStatus__c != 'future') {
+            throw new ServiceException('Sprint can only be started from future status, current status: ' + sprint.RecordStatus__c);
+        }
+    }
+
+    /**
+     * Sprint must be in 'in_progress' status to be completed.
+     */
+    public static void requireSprintIsCompletable(Sprint__c sprint) {
+        if (sprint.RecordStatus__c != 'in_progress') {
+            throw new ServiceException('Sprint can only be completed from in_progress status, current status: ' + sprint.RecordStatus__c);
+        }
+    }
+
+    /**
+     * Ticket cannot be moved from one sprint to another sprint.
+     * It can only be moved from backlog (null) to a sprint, or from a sprint to backlog (null).
+     */
+    public static void requireTicketNotInDifferentSprint(Ticket__c ticket, String targetSprintId) {
+        if (String.isNotBlank(ticket.Sprint__c) && ticket.Sprint__c != targetSprintId) {
+            throw new ServiceException('Ticket cannot be moved from one sprint to another sprint');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW TRANSITION — invariants
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * FromStatus and ToStatus must not be the same — a self-loop transition is invalid.
+     */
+    public static void requireTransitionStatusesDifferent(String fromStatusId, String toStatusId) {
+        if (fromStatusId == toStatusId) {
+            throw new ServiceException('From Status and To Status must be different');
+        }
+    }
+
+    /**
+     * Transition name must be unique — caller queries duplicates and passes the result.
+     */
+    public static void requireTransitionNameUnique(List<WorkflowTransition__c> duplicates) {
+        if (!duplicates.isEmpty()) throw new ServiceException('Transition name already exists in this workflow');
+    }
+
+    /**
+     * A transition from one status to another can only exist once — duplicate from/to pairs are invalid.
+     */
+    public static void requireTransitionStatusPairUnique(List<WorkflowTransition__c> duplicates) {
+        if (!duplicates.isEmpty()) throw new ServiceException('A transition with the same from and to status already exists in this workflow');
+    }
+
+    /**
+     * Only pending transitions can be activated.
+     */
+    public static void requireTransitionIsPending(WorkflowTransition__c transition) {
+        if (transition.RecordStatus__c != WorkflowConstants.RECORD_STATUS_PENDING) {
+            throw new ServiceException('Workflow Transition can only be activated from pending status');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // VALIDATE FIELD — invariants
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * A ValidateField__c must be unique on (FieldName__c, Type__c) — the same
+     * Ticket field cannot carry the same validation type twice. Caller queries
+     * the matching (non-deleted) rules and passes the result.
+     */
+    public static void requireValidateFieldUnique(List<ValidateField__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A validation field with the same field and type already exists');
+        }
+    }
+
+    /**
+     * Every ValidateField__c configured on the transition must pass before the
+     * state change is applied. Each rule asserts that a Ticket field
+     * (FieldName__c) satisfies a validation Type__c. Several rules may share the
+     * same Type__c (e.g. two different fields both "Isn't Empty"); the first
+     * rule that fails throws, with a message combining the rule's
+     * ErrorMessage__c, field, and type.
+     */
+    public static void requireValidateFieldsPass(Ticket__c ticket, List<ValidateField__c> validateFields) {
+        for (ValidateField__c vf : validateFields) {
+            if (!passesValidateField(ticket, vf)) {
+                throw new ServiceException(
+                    vf.ErrorMessage__c + ' [field: ' + vf.FieldName__c + ', type: ' + vf.Type__c + ']'
+                );
+            }
+        }
+    }
+
+    /**
+     * Evaluate a single validation rule against the ticket. Unknown types are
+     * treated as passing so a new picklist value never silently blocks a
+     * transition before its check is implemented here.
+     */
+    private static Boolean passesValidateField(Ticket__c ticket, ValidateField__c vf) {
+        Object value = ticket.get(vf.FieldName__c);
+        if (vf.Type__c == WorkflowConstants.VALIDATION_TYPE_ISNT_EMPTY) {
+            return value != null && String.isNotBlank(String.valueOf(value));
+        }
+        return true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TICKET TYPE — business rules
+    // ═══════════════════════════════════════════════════════════════
+
+    public static void requireWorkflowAssignedToTicketType(TicketType__c ticketType, String workflowId) {
+        if (ticketType.Workflow__c != workflowId) {
+            throw new ServiceException('Workflow is not assigned to this Ticket Type');
+        }
+    }
+
+    public static void requireTransitionBelongsToWorkflow(WorkflowTransition__c transition, String workflowId) {
+        if (transition.Workflow__c != workflowId) {
+            throw new ServiceException('Workflow Transition does not belong to this Workflow');
+        }
+    }
+
+    /**
+     * A TicketType cannot be deleted while at least one Ticket still
+     * references it via Ticket__c.Ticket_Type__c (FK guard).
+     * Caller queries the referencing tickets and passes the result.
+     */
+    public static void requireNoTicketsReferenceTicketType(List<Ticket__c> referencingTickets) {
+        if (!referencingTickets.isEmpty()) {
+            throw new ServiceException(
+                'Cannot delete Ticket Type: ' + referencingTickets.size() +
+                ' Ticket(s) still reference it'
+            );
+        }
+    }
+
+    /**
+     * The Workflow of a TicketType cannot be changed while at least one Ticket
+     * still references that TicketType — switching workflows would strand the
+     * tickets in statuses that may not exist in the new workflow.
+     * Caller queries the referencing tickets and passes the result.
+     */
+    public static void requireNoTicketsReferenceTicketTypeOnWorkflowChange(List<Ticket__c> referencingTickets) {
+        if (!referencingTickets.isEmpty()) {
+            throw new ServiceException(
+                'Cannot change Workflow: ' + referencingTickets.size() +
+                ' Ticket(s) still reference this Ticket Type'
+            );
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW — creation and naming
+    // ═══════════════════════════════════════════════════════════════
+
+    public static void requireWorkflowNameUniquePerProject(List<Workflow__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A workflow with this name already exists in this project');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TICKET — creation and naming
+    // ═══════════════════════════════════════════════════════════════
+
+    public static void requireTicketNameUniquePerProject(List<Ticket__c> duplicates) {
+        if (!duplicates.isEmpty()) {
+            throw new ServiceException('A ticket with this name already exists in this project');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW — transition availability
+    // ═══════════════════════════════════════════════════════════════
+
+    public static WorkflowTransition__c requireTransitionAllowed(String fromStatusId, String toStatusId, List<WorkflowTransition__c> transitions) {
+        for (WorkflowTransition__c t : transitions) {
+            if (t.FromStatus__c == fromStatusId && t.ToStatus__c == toStatusId) {
+                return t;
+            }
+        }
+        throw new ServiceException('Transition from current status to target status is not allowed by the workflow');
+    }
+
+    public static Boolean isEndStatus(Status__c status) {
+        return status.isEnd__c;
+    }
+
+    /**
+     * No outgoing transition may originate from an end status — it is terminal.
+     */
+    public static void requireFromStatusNotEnd(Status__c fromStatus) {
+        if (fromStatus.isEnd__c) {
+            throw new ServiceException('Cannot create a transition from an end status');
+        }
+    }
+
+    /**
+     * No transition may target the start (todo) status — it is the entry point only.
+     */
+    public static void requireToStatusNotStart(Status__c toStatus) {
+        if (toStatus.isStart__c) {
+            throw new ServiceException('Cannot create a transition to the start (todo) status');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WORKFLOW — deletion guards
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * A Workflow cannot be deleted while at least one TicketType still
+     * references it via TicketType__c.Workflow__c (FK guard).
+     * Caller queries the referencing ticket types and passes the result.
+     */
+    public static void requireNoTicketTypesReferenceWorkflow(List<TicketType__c> referencingTicketTypes) {
+        if (!referencingTicketTypes.isEmpty()) {
+            throw new ServiceException(
+                'Cannot delete Workflow: ' + referencingTicketTypes.size() +
+                ' Ticket Type(s) still reference it'
+            );
+        }
+    }
+
+    /**
+     * An active Workflow Transition cannot be deleted while at least one
+     * Ticket — belonging to a TicketType bound to the parent Workflow —
+     * currently sits in the transition's FromStatus. Deleting it would
+     * strand those tickets in a status with no outgoing path.
+     * Caller queries the offending tickets and passes the result.
+     */
+    public static void requireNoTicketsInTransitionFromStatus(List<Ticket__c> ticketsInFromStatus) {
+        if (!ticketsInFromStatus.isEmpty()) {
+            throw new ServiceException(
+                'Cannot delete active Workflow Transition: ' + ticketsInFromStatus.size() +
+                ' ticket(s) are currently in its From Status'
+            );
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TICKET LINK — business rules
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Both tickets in a link must belong to the same project.
+     * Project is resolved from each ticket's TicketType.
+     */
+    public static void requireSameProjectForTicketLink(TicketType__c fromTicketType, TicketType__c toTicketType) {
+        if (fromTicketType.Project__c != toTicketType.Project__c) {
+            throw new ServiceException('Cannot link tickets that belong to different projects');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PAGINATION — utilities
+    // ═══════════════════════════════════════════════════════════════
+
+    public static Integer safeOffset(Integer offset) {
+        return (offset != null && offset >= 0) ? offset : 0;
+    }
+
+    public static Integer safePageSize(Integer pageSize, Integer defaultPageSize) {
+        return (pageSize != null && pageSize > 0) ? pageSize : defaultPageSize;
+    }
+}

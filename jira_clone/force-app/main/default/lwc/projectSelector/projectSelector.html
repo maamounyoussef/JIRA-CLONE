@@ -1,0 +1,56 @@
+<template>
+    <div class="selector-container">
+        <!-- Project Selection View -->
+        <template if:false={projectSelected}>
+            <div class="selection-panel slds-p-around_large">
+                <h2 class="slds-text-heading_medium slds-m-bottom_medium">Select Project</h2>
+                
+                <template if:true={isLoading}>
+                    <lightning-spinner alternative-text="Loading projects..."></lightning-spinner>
+                </template>
+                
+                <template if:true={errorMessage}>
+                    <div class="error-box slds-m-bottom_medium">
+                        <lightning-icon icon-name="utility:error" size="x-small" variant="error"></lightning-icon>
+                        <span>{errorMessage}</span>
+                    </div>
+                </template>
+                
+                <template if:false={isLoading}>
+                    <lightning-combobox
+                        label="Project"
+                        placeholder="Choose a project..."
+                        value={selectedProjectId}
+                        options={projectOptions}
+                        onchange={handleProjectChange}
+                        class="slds-m-bottom_medium">
+                    </lightning-combobox>
+                    
+                    <lightning-button
+                        label="Load Backlog"
+                        variant="brand"
+                        onclick={handleLoadBacklog}
+                        disabled={isLoadDisabled}>
+                    </lightning-button>
+                </template>
+            </div>
+        </template>
+        
+        <!-- Backlog View -->
+        <template if:true={projectSelected}>
+            <div class="backlog-wrapper">
+                <div class="backlog-header slds-p-around_small">
+                    <lightning-button
+                        label="Change Project"
+                        variant="neutral"
+                        onclick={handleChangeProject}>
+                    </lightning-button>
+                    <span class="selected-project slds-m-left_medium">
+                        Project: <strong>{selectedProjectName}</strong>
+                    </span>
+                </div>
+                <c-manage-backlog></c-manage-backlog>
+            </div>
+        </template>
+    </div>
+</template>

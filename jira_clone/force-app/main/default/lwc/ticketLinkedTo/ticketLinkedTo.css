@@ -1,0 +1,312 @@
+:host {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+}
+
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.54);
+    z-index: 9000;
+}
+
+/* ── Popup ───────────────────────────────────────────────────────────────── */
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9001;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(9, 30, 66, 0.25);
+    width: 680px;
+    max-width: calc(100vw - 32px);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* ── Popup header ────────────────────────────────────────────────────────── */
+.popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #DFE1E6;
+}
+
+.popup-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #172B4D;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    color: #6B778C;
+    padding: 6px 10px;
+    border-radius: 3px;
+    line-height: 1;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.close-btn:hover {
+    background-color: #EBECF0;
+    color: #172B4D;
+}
+
+/* ── Linked card ─────────────────────────────────────────────────────────── */
+.linked-card {
+    margin: 16px 20px;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: #FAFBFC;
+    border-bottom: 1px solid #DFE1E6;
+}
+
+.card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    color: #6B778C;
+    line-height: 1.4;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.icon-btn:hover {
+    background-color: #EBECF0;
+    color: #172B4D;
+}
+
+.icon-btn--add {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0052CC;
+}
+
+.icon-btn--add:hover {
+    color: #0065FF;
+}
+
+/* ── Items body ──────────────────────────────────────────────────────────── */
+.items-body {
+    min-height: 48px;
+}
+
+.empty-row {
+    padding: 16px;
+    font-size: 0.875rem;
+    color: #6B778C;
+    margin: 0;
+}
+
+.item-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #EBECF0;
+}
+
+.item-row:last-child { border-bottom: none; }
+
+.link-type-badge {
+    flex-shrink: 0;
+    background-color: #DEEBFF;
+    color: #0747A6;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+}
+
+.item-details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    font-size: 0.8125rem;
+    color: #42526E;
+    flex: 1;
+}
+
+.ticket-type {
+    font-size: 0.6875rem;
+    color: #6B778C;
+    background-color: #F4F5F7;
+    border-radius: 3px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.ticket-name {
+    font-weight: 600;
+    color: #0052CC;
+}
+
+.ticket-summary {
+    flex: 1;
+    min-width: 120px;
+    color: #172B4D;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ticket-status {
+    background-color: #E3FCEF;
+    color: #006644;
+    font-size: 0.6875rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.ticket-assignee {
+    color: #6B778C;
+}
+
+.ticket-priority {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #FF991F;
+}
+
+/* ── Add form ────────────────────────────────────────────────────────────── */
+.add-form {
+    padding: 14px 16px;
+    border-top: 1px solid #DFE1E6;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: #FAFBFC;
+}
+
+.form-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.form-select {
+    padding: 8px 10px;
+    border: 1px solid #DFE1E6;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    color: #172B4D;
+    background-color: #FFFFFF;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: border-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.form-select:focus {
+    border-color: #4C9AFF;
+    box-shadow: 0 0 0 1px #4C9AFF;
+}
+
+.form-select--type {
+    flex: 0 0 160px;
+}
+
+.form-ticket {
+    flex: 1;
+}
+
+.create-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.875rem;
+    color: #0052CC;
+    cursor: pointer;
+    text-align: left;
+    width: fit-content;
+    font-family: inherit;
+    font-weight: 500;
+}
+
+.create-link-btn:hover {
+    color: #0065FF;
+    text-decoration: underline;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    line-height: 1;
+    font-family: inherit;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn--primary {
+    background-color: #0052CC;
+    color: #FFFFFF;
+}
+
+.btn--primary:hover:not(:disabled) {
+    background-color: #0065FF;
+}
+
+.btn--ghost {
+    background-color: transparent;
+    color: #42526E;
+}
+
+.btn--ghost:hover:not(:disabled) {
+    background-color: #EBECF0;
+    color: #172B4D;
+}

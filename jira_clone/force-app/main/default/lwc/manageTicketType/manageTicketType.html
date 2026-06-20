@@ -1,0 +1,216 @@
+<template>
+
+    <!-- Step 1 — Project picker (no projectId yet) -->
+    <template if:false={hasProject}>
+        <c-choose-project onprojectchosen={handleProjectChosen}></c-choose-project>
+    </template>
+
+    <!-- Step 2 — Ticket type list for the chosen project -->
+    <template if:true={hasProject}>
+        <section class="tt-page">
+
+                <!-- Content (hidden if loading or error) -->
+            <template if:true={shouldShowContent}>
+                <!-- Loading Spinner -->
+                <template if:true={_isLoading}>
+                    <div class="tt-loading">
+                        <c-ao-spinner size="large" alternative-text="Loading ticket types..."></c-ao-spinner>
+                    </div>
+                </template>
+
+            <!-- Header -->
+            <header class="tt-header">
+                <h1 class="tt-header__title">Ticket Types</h1>
+                <span class="tt-header__badge" title="Total ticket types">{ticketTypeCount}</span>
+                <div class="tt-header__spacer"></div>
+                <c-ao-btn
+                    label="New Ticket Type"
+                    icon-name="utility:add"
+                    variant="primary"
+                    onclick={handleOpenCreate}>
+                </c-ao-btn>
+            </header>
+
+            <!-- List panel -->
+            <div class="tt-card tt-panel">
+
+                <template lwc:if={hasTicketTypes}>
+                    <ul class="tt-list">
+                        <template for:each={ticketTypeRows} for:item="t">
+                            <li key={t.Id} class="tt-row">
+                                <div class="tt-row__icon">
+                                    <template lwc:if={t.hasIcon}>
+                                        <img src={t.iconUrl} alt="" class="tt-row__icon-img" />
+                                    </template>
+                                    <template lwc:else>
+                                        <span class="tt-row__icon-fallback">🎫</span>
+                                    </template>
+                                </div>
+                                <div class="tt-row__main">
+                                    <span class="tt-row__name">{t.name}</span>
+                                    <span class="tt-row__desc">{t.description}</span>
+                                </div>
+                                <div class="tt-row__meta">
+                                    <span class="tt-row__meta-label">Workflow</span>
+                                    <span class="tt-row__meta-value">{t.workflowName}</span>
+                                </div>
+                                <div class="tt-row__actions">
+                                    <c-ao-btn
+                                        icon-name="utility:edit"
+                                        variant="bare"
+                                        size="sm"
+                                        title="Edit ticket type"
+                                        data-id={t.Id}
+                                        onclick={handleOpenEdit}>
+                                    </c-ao-btn>
+                                    <c-ao-btn
+                                        icon-name="utility:delete"
+                                        variant="bare"
+                                        size="sm"
+                                        title="Delete ticket type"
+                                        data-id={t.Id}
+                                        onclick={handleOpenDelete}>
+                                    </c-ao-btn>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+
+                <template if:false={hasTicketTypes}>
+                    <template if:false={_isLoading}>
+                        <div class="tt-empty">
+                            <span class="tt-empty__icon">🎫</span>
+                            <p class="tt-empty__title">No ticket types yet</p>
+                            <p class="tt-empty__hint">Use "New Ticket Type" above to create one.</p>
+                        </div>
+                    </template>
+                </template>
+            </div>
+
+            <!-- ── Create modal ────────────────────────────────────────── -->
+            <template lwc:if={showCreateModal}>
+                <div class="modal-backdrop" onclick={handleCloseCreate}></div>
+                <div class="modal modal--sm" role="dialog" aria-modal="true">
+                    <div class="modal__header">
+                        <h3 class="modal__title">New ticket type</h3>
+                    </div>
+                    <div class="modal__content">
+                        <c-ao-input
+                            label="Name"
+                            value={_newName}
+                            placeholder="e.g. Bug, Story, Task"
+                            disabled={_isCreating}
+                            onchange={handleNewNameChange}>
+                        </c-ao-input>
+                        <c-ao-input
+                            label="Description"
+                            value={_newDescription}
+                            placeholder="Short description"
+                            disabled={_isCreating}
+                            onchange={handleNewDescriptionChange}>
+                        </c-ao-input>
+                        <c-ao-input
+                            label="Icon URL"
+                            value={_newIconUrl}
+                            placeholder="https://…"
+                            disabled={_isCreating}
+                            onchange={handleNewIconUrlChange}>
+                        </c-ao-input>
+                        <c-ao-combobox
+                            label="Workflow"
+                            value={_newWorkflowId}
+                            options={workflowOptions}
+                            placeholder="Select a workflow"
+                            disabled={_isCreating}
+                            onchange={handleNewWorkflowChange}>
+                        </c-ao-combobox>
+
+                        <template lwc:if={_createErrorMessage}>
+                            <div class="tt-error">
+                                <span class="tt-error__icon">⚠</span>
+                                <span>{_createErrorMessage}</span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="modal__footer">
+                        <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseCreate} disabled={_isCreating}></c-ao-btn>
+                        <c-ao-btn label="Create" variant="primary" onclick={handleSubmitCreate} disabled={_isCreating}></c-ao-btn>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ── Edit modal ──────────────────────────────────────────── -->
+            <template lwc:if={showEditModal}>
+                <div class="modal-backdrop" onclick={handleCloseEdit}></div>
+                <div class="modal modal--sm" role="dialog" aria-modal="true">
+                    <div class="modal__header">
+                        <h3 class="modal__title">Edit ticket type</h3>
+                    </div>
+                    <div class="modal__content">
+                        <c-ao-input
+                            label="Name"
+                            value={_editName}
+                            disabled={_isUpdating}
+                            onchange={handleEditNameChange}>
+                        </c-ao-input>
+                        <c-ao-input
+                            label="Icon URL"
+                            value={_editIconUrl}
+                            placeholder="https://…"
+                            disabled={_isUpdating}
+                            onchange={handleEditIconUrlChange}>
+                        </c-ao-input>
+                        <c-ao-combobox
+                            label="Workflow"
+                            value={_editWorkflowId}
+                            options={workflowOptions}
+                            placeholder="Select a workflow"
+                            disabled={_isUpdating}
+                            onchange={handleEditWorkflowChange}>
+                        </c-ao-combobox>
+
+                        <template lwc:if={_editErrorMessage}>
+                            <div class="tt-error">
+                                <span class="tt-error__icon">⚠</span>
+                                <span>{_editErrorMessage}</span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="modal__footer">
+                        <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseEdit} disabled={_isUpdating}></c-ao-btn>
+                        <c-ao-btn label="Save changes" variant="primary" onclick={handleSubmitEdit} disabled={_isUpdating}></c-ao-btn>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ── Delete confirmation modal (console.log only) ────────── -->
+            <template lwc:if={showDeleteModal}>
+                <div class="modal-backdrop" onclick={handleCloseDelete}></div>
+                <div class="modal modal--sm" role="dialog" aria-modal="true">
+                    <div class="modal__header">
+                        <h3 class="modal__title">Delete ticket type</h3>
+                    </div>
+                    <div class="modal__content">
+                        <p class="modal__message">
+                            Are you sure you want to delete <strong>{deletingTicketTypeName}</strong>?
+                        </p>
+                    </div>
+                    <div class="modal__footer">
+                        <c-ao-btn label="Cancel" variant="ghost" onclick={handleCloseDelete} disabled={_isDeleting}></c-ao-btn>
+                        <c-ao-btn label="Delete" variant="danger" onclick={handleConfirmDelete} disabled={_isDeleting}></c-ao-btn>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ── Toast ───────────────────────────────────────────────── -->
+            <template lwc:if={_toast}>
+                <div class={toastClass} role="status">{_toast.message}</div>
+            </template>
+
+            </template>
+
+        </section>
+    </template>
+
+</template>

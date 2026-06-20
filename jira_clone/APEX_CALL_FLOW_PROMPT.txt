@@ -1,0 +1,31 @@
+Create a vertical flowchart for a backend request handling process with the following steps:
+
+1. Controller receives input
+2. Controller validates input
+
+3. Decision: "VALID?"
+   - If NO → Return API Response with success = false → END
+   - If YES → Continue
+
+4. Controller calls Domain Correctness 
+
+5. Domain Correctness calls database
+
+6. Decision: "Integrity valid?"
+   - If NO → Throw Exception → END
+   - If YES → Continue
+
+7. Domain Correctness returns the retrieved object
+
+8. Controller calls Service layer
+
+9. Service interacts with database and passes correct input to Domain Complete Validator to check business rules
+
+10. Decision: "VALID?"
+    - If NO → Throw Exception → END
+    - If YES → Continue
+
+11. Make the final change on database
+
+12. END
+

@@ -1,0 +1,26 @@
+______________
+|_____________|  trueBtn   falseBtn
+
+
+
+	* condition to show trueBtn and false 	-> isEditing<fieldName> 
+	* onchange 				-> handle<fieldName>DraftChange
+	* value 				-> <fieldDraftStateValue>
+	* state value (js only) 		-> used to know the actual value retrieved from the network call.
+
+isEditing<fieldName>         : used for template condition.
+handle<fieldName>DraftChange : update fieldStateValue.
+fieldDraftStateValue              : used to know the current value.
+
+____________________________________________________________________________
+
+
+combo BOX : 
+______________
+|____________>|  trueBtn   falseBtn
+
+	* isEditing<FieldName>
+	* handle<>DarftChange
+	* <fieldName>Options
+	* fieldDraftValue
+	* fieldValue

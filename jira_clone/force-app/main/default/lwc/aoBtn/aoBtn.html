@@ -1,0 +1,19 @@
+<template>
+    <button
+        class={computedClass}
+        type={type}
+        disabled={disabled}
+        title={title}
+        aria-label={ariaLabel}>
+        <template if:true={iconName}>
+            <lightning-icon
+                icon-name={iconName}
+                size={iconSize}
+                class="ao-btn__icon">
+            </lightning-icon>
+        </template>
+        <template if:true={label}>
+            <span class="ao-btn__label">{label}</span>
+        </template>
+    </button>
+</template>

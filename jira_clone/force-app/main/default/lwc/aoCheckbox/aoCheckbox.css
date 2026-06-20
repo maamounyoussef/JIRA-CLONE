@@ -1,0 +1,73 @@
+:host {
+    display: inline-flex;
+}
+
+.ao-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+}
+
+.ao-check__native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.ao-check__box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    border: 2px solid #DFE1E6;
+    border-radius: 3px;
+    background-color: #FFFFFF;
+    transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.ao-check:hover .ao-check__box {
+    border-color: #B3BAC5;
+}
+
+.ao-check__native:checked + .ao-check__box {
+    background-color: #0052CC;
+    border-color: #0052CC;
+}
+
+.ao-check__native:checked + .ao-check__box::after {
+    content: '';
+    display: block;
+    width: 0.25em;
+    height: 0.45em;
+    border-right: 2px solid #FFFFFF;
+    border-bottom: 2px solid #FFFFFF;
+    transform: rotate(40deg) translateY(-10%);
+}
+
+.ao-check__native:focus-visible + .ao-check__box {
+    outline: 2px solid #4C9AFF;
+    outline-offset: 2px;
+}
+
+.ao-check__native:disabled + .ao-check__box {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ao-check__label {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.875rem;
+    color: #172B4D;
+    line-height: 1.4;
+}

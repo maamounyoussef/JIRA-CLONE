@@ -1,0 +1,10 @@
+confirm : 
+- pendingAction state 
+- showConfirmDialog state 
+- confirm Message state
+
+confirm action that take message and action as input and that update the pendingAction with the input action , and update showConfirmDialog state to true
+
+in html , jsx etc... (based on which framework) we should check for the showConfirmationDialog and show the confirmMessage State.
+
+

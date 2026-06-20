@@ -1,0 +1,85 @@
+<template>
+    <div class="overlay" onclick={handleOverlayClick}></div>
+
+    <div class="popup">
+
+        <div class="popup-header">
+            <span class="popup-title">Ticket details</span>
+            <button class="close-btn" onclick={handleClose} title="Close">&#x2715;</button>
+        </div>
+
+        <div class="linked-card">
+
+            <div class="card-header">
+                <span class="card-title">Linked work items</span>
+                <div class="card-actions">
+                    <button class="icon-btn" onclick={handleExpandCollapse} title={expandTitle}>
+                        <template if:true={isExpanded}>&#x25B2;</template>
+                        <template if:false={isExpanded}>&#x25BC;</template>
+                    </button>
+                    <button class="icon-btn icon-btn--add" onclick={handleAddLink} title="Add link">&#x2B;</button>
+                </div>
+            </div>
+
+            <template if:true={isExpanded}>
+                <div class="items-body">
+
+                    <template if:true={hasItems}>
+                        <template for:each={_items} for:item="item">
+                            <div key={item.linkId} class="item-row">
+                                <span class="link-type-badge">{item.linkType}</span>
+                                <div class="item-details">
+                                    <span class="ticket-type">{item.ticketTypeName}</span>
+                                    <span class="ticket-name">{item.ticketName}</span>
+                                    <span class="ticket-summary">{item.summary}</span>
+                                    <span class="ticket-status">{item.currentStatusName}</span>
+                                    <span class="ticket-assignee">{item.assigneeName}</span>
+                                    <span class="ticket-priority">{item.priority}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+
+                    <template if:true={showEmptyState}>
+                        <p class="empty-row">No linked items</p>
+                    </template>
+
+                    <template if:true={showAddForm}>
+                        <div class="add-form">
+
+                            <div class="form-row">
+                                <select class="form-select form-select--type" onchange={handleLinkTypeChange}>
+                                    <option value="">Link type…</option>
+                                    <template for:each={linkTypeOptions} for:item="opt">
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    </template>
+                                </select>
+
+                                <c-ao-combobox
+                                    class="form-ticket"
+                                    variant="label-hidden"
+                                    placeholder="Search for a ticket…"
+                                    value={_selectedTicketId}
+                                    options={ticketOptionNames}
+                                    onchange={handleTicketChange}>
+                                </c-ao-combobox>
+                            </div>
+
+                            <button class="create-link-btn" onclick={handleCreateLinkedItem}>
+                                + Create linked work item
+                            </button>
+
+                            <div class="form-actions">
+                                <button class="btn btn--ghost" onclick={handleCancelAddLink}>Cancel</button>
+                                <button class="btn btn--primary" onclick={handleLinkSubmit} disabled={isLinkDisabled}>Link</button>
+                            </div>
+
+                        </div>
+                    </template>
+
+                </div>
+            </template>
+
+        </div>
+    </div>
+</template>

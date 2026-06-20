@@ -1,0 +1,23 @@
+<template>
+    <div class={fieldClass}>
+        <template if:true={showLabel}>
+            <span class="ao-field__label">
+                {label}<template if:true={required}><span class="ao-field__required" aria-hidden="true"> *</span></template>
+            </span>
+        </template>
+        <input
+            class="ao-field__input"
+            type={resolvedType}
+            value={value}
+            placeholder={placeholder}
+            disabled={disabled}
+            required={required}
+            readonly={readonly}
+            min={min}
+            max={max}
+            step={step}
+            aria-label={ariaLabel}
+            oninput={handleInput}
+        />
+    </div>
+</template>

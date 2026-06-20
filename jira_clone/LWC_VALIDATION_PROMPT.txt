@@ -1,0 +1,16 @@
+read objects_validation_lwc_apex.txt.
+
+
+Question: This is a a reusable or not reusable component ?
+
+
+yes : 
+	- create a <>validator.js file: it will include all validation for data type and required field.
+	- in main js file call the validation method before call dispatch and if error exist show in it.
+
+no : 
+	- create a <>validator.js file: 
+		*include all validation for data type and required field 
+		*include check for required field per apex call (some method have required field that is not related to the store as required)
+		example lets say in some case we have field1 can be null but we have a method to update this field so in this request it cant be null.
+ 

@@ -1,0 +1,24 @@
+<template>
+    <div class={wrapperClass}>
+        <template if:true={showLabel}>
+            <span class="ao-select__label">{label}</span>
+        </template>
+        <div class="ao-select__control">
+            <select
+                class="ao-select__native"
+                disabled={disabled}
+                aria-label={ariaLabel}
+                onchange={handleChange}
+                onclick={handleClick}
+                onfocus={handleFocus}>
+                <template if:true={placeholder}>
+                    <option value="" disabled selected={isNothingSelected}>{placeholder}</option>
+                </template>
+                <template for:each={computedOptions} for:item="opt">
+                    <option key={opt.value} value={opt.value} selected={opt.isSelected}>{opt.label}</option>
+                </template>
+            </select>
+            <span class="ao-select__chevron" aria-hidden="true">▾</span>
+        </div>
+    </div>
+</template>

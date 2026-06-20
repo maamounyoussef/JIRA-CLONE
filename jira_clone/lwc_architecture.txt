@@ -1,0 +1,263 @@
+When generating or organizing a LWC (Lightning Web Component), always apply
+the following architecture rules.
+
+There are two types of LWC components. Each has its own rules and file structure.
+
+──────────────────────────────────────────────
+COMPONENT TYPES:
+──────────────────────────────────────────────
+
+  TYPE 1 — PAGE COMPONENT (Parent)
+    - The entry point for a full page or major feature area.
+    - The ONLY component allowed to call Apex.
+    - Receives events from child components and reacts to them.
+
+  TYPE 2 — CHILD COMPONENT (Modal AND Reusable)
+    - Reusable across multiple pages.
+    - NEVER calls Apex. NEVER imports @salesforce/apex.
+    - Communicates upward exclusively via CustomEvents.
+    - Requires an additional events file (see below).
+
+──────────────────────────────────────────────
+FILE STRUCTURE — PAGE COMPONENT:
+──────────────────────────────────────────────
+
+  myPageComponent/
+  ├── myPageComponent.js           → main controller (single entry point)
+  ├── myPageComponent.html         → template
+  ├── myPageComponent.css          → styles
+  │
+  ├── myPageComponentValidator.js  → root-level validator (shared validations)
+  │
+  ├── <domain>Validator.js         → one validator file per domain (always created,
+  │                                  even if empty, with a comment explaining its purpose)
+  │
+  └── <domain>Utils.js             → one utils file per domain (always created,
+                                     even if empty, with a comment explaining its purpose)
+
+──────────────────────────────────────────────
+FILE STRUCTURE — CHILD COMPONENT:
+──────────────────────────────────────────────
+
+  myChildComponent/
+  ├── myChildComponent.js           → main controller (UI logic, validation calls, dispatch calls)
+  ├── myChildComponent.html         → template
+  ├── myChildComponent.css          → styles
+  │
+  ├── myChildComponentValidator.js  → root-level validator (shared validations)
+  ├── myChildComponentEvents.js     → ALL dispatch functions declared here (see below)
+  │
+  ├── <domain>Validator.js          → one validator file per domain (always created,
+  │                                   even if empty, with a comment explaining its purpose)
+  │
+  └── <domain>Utils.js              → one utils file per domain (always created,
+                                      even if empty, with a comment explaining its purpose)
+
+──────────────────────────────────────────────
+EVENTS FILE (myChildComponentEvents.js):
+──────────────────────────────────────────────
+
+  - Required for every child component. Never required for page components.
+  - Declares ALL CustomEvents this component can dispatch.
+  - This is the single contract between the child and any parent that uses it.
+    A developer integrating this component reads only this file to know
+    every event name, its payload, and its bubbling configuration.
+  - Each function receives the component instance as the first argument
+    and any payload data as subsequent arguments.
+  - Always use bubbles: true and composed: true on every event.
+  - Export every function individually (named exports, no default export).
+  - The main JS NEVER calls dispatchEvent inline — always imports and calls
+    a function from this file.
+
+  Example:
+
+    /**
+     * My Child Component Events
+     * Declares all CustomEvents dispatched by this component.
+     * This is the single place to discover what this component communicates upward.
+     */
+
+    /**
+     * Fired when the user submits the form.
+     * Parent should call Apex with the ticket data.
+     */
+    export function dispatchTicketCreate(component, ticketData) {
+        component.dispatchEvent(new CustomEvent('ticketcreate', {
+            detail: { ticketData },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    /**
+     * Fired when the user cancels or closes the modal.
+     * Parent should close or hide this component.
+     */
+    export function dispatchModalClose(component) {
+        component.dispatchEvent(new CustomEvent('modalclose', {
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+──────────────────────────────────────────────
+MAIN JS (myComponent.js) — BOTH TYPES:
+──────────────────────────────────────────────
+
+  - Acts as the single orchestrator for all domains.
+  - Imports from each domain's validator and utils.
+  - Structured using the section/subsection comment convention:
+
+      // ╔══════════════════════════════════════════════════════════════════════════╗
+      // ║                        <DOMAIN NAME> SECTION                            ║
+      // ╚══════════════════════════════════════════════════════════════════════════╝
+
+          // ─── PROPERTIES & STATE ───────────────────────────────────────────────
+          // ─── WIRE ─────────────────────────────────────────────────────────────
+          // ─── APEX CALLS ───────────────────────────────────────────────────────  (page only)
+          // ─── EVENT HANDLERS ───────────────────────────────────────────────────
+          // ─── GETTERS ──────────────────────────────────────────────────────────
+
+  - Omit any subsection that has no members for that domain.
+  - The APEX CALLS subsection must never appear in a child component.
+  - Private helpers shared across domains go at the bottom under PRIVATE HELPERS.
+
+──────────────────────────────────────────────
+CHILD COMPONENT — ADDITIONAL RULES:
+──────────────────────────────────────────────
+
+  - No @salesforce/apex imports of any kind.
+  - No @wire decorators calling Apex.
+  - dispatchEvent must never be called inline in the main JS.
+    Always wrap it in a named function in the events file and import it.
+  - Validators and utils follow the same rules as page components.
+
+──────────────────────────────────────────────
+VALIDATOR FILES (<domain>Validator.js):
+──────────────────────────────────────────────
+
+  - One file per domain, always generated even if empty.
+  - Contains only pure validation functions (no Apex, no LWC imports).
+  - Each function returns a string error message or null.
+  - If empty, include this placeholder:
+
+      /**
+       * <Domain> Validator
+       * Validations for the <domain> domain.
+       * Add validate* functions here as the domain grows.
+       */
+
+  - Naming convention: validate<Entity><Field>() or validate<Entity>()
+  - Export every function individually (named exports, no default export).
+
+──────────────────────────────────────────────
+UTILS FILES (<domain>Utils.js):
+──────────────────────────────────────────────
+
+  - One file per domain, always generated even if empty.
+  - Contains only pure helper functions: formatters, mappers, empty object
+    factories, constants, and derived data builders.
+  - No Apex calls, no LWC decorators, no side effects.
+  - If empty, include this placeholder:
+
+      /**
+       * <Domain> Utils
+       * Utility functions for the <domain> domain.
+       * Add formatters, mappers, and factory functions here as the domain grows.
+       */
+
+  - Naming conventions:
+      empty<Entity>()       → factory that returns a blank object
+      format<Entity>()      → maps raw data to display-ready structure
+      build<Entity>()       → constructs derived or computed structures
+      to<Format>()          → converters (e.g. toISODateOrNull)
+
+  - Export every function individually (named exports, no default export).
+
+──────────────────────────────────────────────
+DOMAIN RULES:
+──────────────────────────────────────────────
+
+  - A domain is any distinct feature area of the component
+    (e.g. ticket, subtask, epic, member).
+  - Each domain gets its own validator and utils file, regardless of whether
+    they have content at the time of generation.
+  - The main JS is the only file allowed to call Apex (page components only)
+    or call dispatch functions from the events file (child components only).
+  - Validators and utils must remain free of side effects and LWC-specific APIs.
+  - If a function could belong to multiple domains, place it in the domain
+    that owns the primary entity it operates on.
+
+──────────────────────────────────────────────
+IMPORT CONVENTION IN MAIN JS:
+──────────────────────────────────────────────
+
+  Group imports in this order, separated by a blank line:
+
+    1. LWC core imports       (lwc, @salesforce/apex, etc.)
+    2. Events imports         (child components only — from myChildComponentEvents.js)
+    3. Validator imports      (one per domain)
+    4. Utils imports          (one per domain)
+
+──────────────────────────────────────────────
+VALIDATION RESPONSIBILITY RULES:
+──────────────────────────────────────────────
+
+  The location where validation must be called depends on where the action
+  is triggered and whether the component that owns the action is reusable.
+
+  RULE 1 — REUSABLE CHILD COMPONENT (standalone, self-contained):
+    - Validation must be called inside the child component itself,
+      before dispatching any event.
+    - The child validates its own data in its main JS, using its own
+      validator files, then dispatches only if validation passes.
+    - The parent must NOT re-validate data that originated in a reusable child.
+    - This keeps the child truly self-contained and independently usable.
+
+    Pattern:
+      handleSubmit() {
+          const error = validateMyEntity(this.formData);
+          if (error) { /* show error, return */ }
+          dispatchMyEvent(this, this.formData);   // only reached if valid
+      }
+
+  RULE 2 — NON-REUSABLE MODAL OR INLINE FORM OWNED BY THE PAGE COMPONENT:
+    - When a modal or form is declared entirely within a page component
+      (not a separate child component), its submit handler lives in the
+      page component's main JS.
+    - Validation must be called in the page component's main JS,
+      before the Apex call, using the page component's own validator files.
+    - There is no dispatch involved — the page component calls Apex directly
+      after a successful validation.
+
+    Pattern:
+      handleInlineSubmit() {
+          const error = validateMyEntity(this.formData);
+          if (error) { /* show error, return */ }
+          callApexMethod({ data: this.formData });  // only reached if valid
+      }
+
+  SUMMARY TABLE:
+
+    Scenario                                  Validate Where?       Then What?
+    ───────────────────────────────────────── ───────────────────── ──────────────────────
+    Reusable child component (self-contained) Inside the child JS   Dispatch event upward
+    Non-reusable modal/form in page component Inside the page JS    Call Apex directly
+
+  KEY PRINCIPLE:
+    Validation always lives in the same file as the action it guards.
+    If the action is a dispatch → validate in the child.
+    If the action is an Apex call → validate in the page component.
+
+──────────────────────────────────────────────
+COMPONENT TYPE COMPARISON:
+──────────────────────────────────────────────
+
+  Rule                        Page Component     Child Component
+  ─────────────────────────── ────────────────── ──────────────────
+  Apex calls                  ✅ Allowed          ❌ Never
+  @wire Apex                  ✅ Allowed          ❌ Never
+  dispatchEvent inline        Avoid              ❌ Never — use events file
+  Events file required        No                 ✅ Yes
+  Receives child events       ✅ Yes              Only if it has its own children
+  Reusable across pages       No                 ✅ Yes

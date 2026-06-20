@@ -1,0 +1,15 @@
+showModalState 
+
+
+ONLY WHEN WE HAVE OWNER RELATIONSHIP FROM A PATHER DOMAIN TO THE MODAL DOMAIN 
+	we need to store the pather domain id that open the modal to create it.
+	in that case you should ask me if i need to show the modal if even if we refresh the page or let another tab to see the modal: 
+		- if the answer is yes so you need to store in the local storage 
+		else store in a state
+
+
+IF WE NEED TO CLOSE THE MODAL IN CASE OF FAILURE AND SUCCESS : 
+	IN FINALLY SET showModalState to false
+	
+ELSE IF WE NEED TO LET THE MODAL IN CASE OF FAILURE AND CLOSE IN CASE OF SUCCESS : 
+	IN THEN SET showModalState to false

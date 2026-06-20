@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Epic__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
     <description>Epic reference</description>
     <label>Epic</label>
     <referenceTo>Epic__c</referenceTo>
     <relationshipLabel>Tickets</relationshipLabel>
     <relationshipName>Tickets</relationshipName>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Lookup</type>
-    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

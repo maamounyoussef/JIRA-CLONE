@@ -4,5 +4,6 @@
     <description>Epic end date</description>
     <label>End Date</label>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

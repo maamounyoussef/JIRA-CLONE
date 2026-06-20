@@ -1,0 +1,356 @@
+:host {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    background-color: #F4F5F7;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* ── Section panels ──────────────────────────────────────────────────────── */
+.panel,
+.backlog-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    padding: 20px 24px;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.panel__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0 0 16px 0;
+    line-height: 1.3;
+}
+
+/* ── Backlog header row ──────────────────────────────────────────────────── */
+.backlog-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.backlog-header .panel__title {
+    flex: 1;
+    margin: 0;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-msg,
+.empty-sprint {
+    padding: 16px;
+    text-align: center;
+    color: #6B778C;
+    font-size: 0.875rem;
+    background-color: #FAFBFC;
+    border-radius: 3px;
+    margin: 8px 0 0 0;
+}
+
+.empty-sprint {
+    text-align: left;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.error-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: #FFEBE6;
+    border-left: 4px solid #DE350B;
+    border-radius: 3px;
+    color: #BF2600;
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+}
+
+/* ── Bulk-action bar ─────────────────────────────────────────────────────── */
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background-color: #172B4D;
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(9, 30, 66, 0.25);
+    position: fixed;
+    width: min(560px, 80%);
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
+.bulk-bar span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #FFFFFF;
+    flex: 1;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.54);
+    z-index: 9000;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9001;
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal--sm { width: min(420px, calc(100vw - 32px)); }
+
+/* ── Ticket-view peek panel (docked right, up to half the page) ──────────── */
+.peek-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.30);
+    z-index: 9000;
+}
+
+.peek-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 50%;
+    min-width: 380px;
+    max-width: 50vw;
+    z-index: 9001;
+    background-color: #FFFFFF;
+    box-shadow: -8px 0 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: peek-slide-in 0.18s ease-out;
+}
+
+@keyframes peek-slide-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+
+.modal__header { padding: 20px 24px 8px; }
+
+.modal__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+}
+
+.modal__content {
+    padding: 8px 24px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal__message {
+    font-size: 0.9375rem;
+    color: #172B4D;
+    margin: 12px 0;
+    line-height: 1.5;
+}
+
+.modal__footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
+}
+
+.modal__error {
+    color: #DE350B;
+    font-size: 0.8125rem;
+    margin: 0;
+    padding: 8px 12px;
+    background-color: #FFEBE6;
+    border-radius: 3px;
+}
+
+/* ── Sprint container ────────────────────────────────────────────────────── */
+.sprint-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.sprint-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    background-color: #FAFBFC;
+    border-bottom: 1px solid #DFE1E6;
+    border-radius: 6px 6px 0 0;
+}
+
+.toggle-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    color: #6B778C;
+    flex-shrink: 0;
+    transition: background-color 0.1s ease;
+}
+
+.toggle-btn:hover {
+    background-color: #EBECF0;
+    color: #172B4D;
+}
+
+.sprint-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #172B4D;
+}
+
+.sprint-dates {
+    font-size: 0.8125rem;
+    color: #6B778C;
+}
+
+.sprint-status-badge {
+    border-radius: 3px;
+    background-color: #DFE1E6;
+    color: #42526E;
+    padding: 2px 8px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sprint-goal {
+    padding: 8px 16px;
+    margin: 0;
+    color: #42526E;
+    font-style: italic;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #DFE1E6;
+    background-color: #FFFFFF;
+}
+
+.sprint-progress {
+    padding: 8px 16px;
+    border-bottom: 1px solid #DFE1E6;
+    background-color: #FFFFFF;
+}
+
+.sprint-progress-labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.sprint-progress-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sprint-progress-count {
+    font-size: 0.8125rem;
+    color: #42526E;
+}
+
+.pagination-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid #DFE1E6;
+    background-color: #FAFBFC;
+    border-radius: 0 0 6px 6px;
+}
+
+.page-indicator {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #42526E;
+    min-width: 4rem;
+    text-align: center;
+}
+
+/* ── Drag-and-drop drop zones ─────────────────────────────────────────────── */
+.sprint-container.drop-target-active,
+.backlog-container.drop-target-active {
+    border-color: #4C9AFF;
+    background-color: #DEEBFF;
+}
+
+/* ── Same-container reorder: ticket wrapper + drop indicator line ────────── */
+.ticket-drop-wrapper {
+    position: relative;
+}
+
+.drop-indicator {
+    height: 3px;
+    margin: 0 4px;
+    border-radius: 2px;
+    background-color: transparent;
+    transition: background-color 0.1s ease;
+    pointer-events: none;
+}
+
+.drop-indicator--active {
+    background-color: #4C9AFF;
+    box-shadow: 0 0 0 1px rgba(76, 154, 255, 0.35);
+}
+
+/* ── Same-container reorder: top drop zone (move to first) ──────────────── */
+.top-drop-zone {
+    height: 10px;
+    margin: 4px 4px 6px 4px;
+    border-radius: 3px;
+    border: 1px dashed transparent;
+    background-color: transparent;
+    transition: background-color 0.1s ease, border-color 0.1s ease, height 0.1s ease;
+}
+
+.top-drop-zone--active {
+    height: 28px;
+    background-color: #DEEBFF;
+    border-color: #4C9AFF;
+}
+
+/* Full-page loading overlay now lives in c-ao-spinner (overlay variant). */

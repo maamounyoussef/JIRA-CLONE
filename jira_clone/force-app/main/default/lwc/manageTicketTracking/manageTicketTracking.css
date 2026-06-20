@@ -1,0 +1,123 @@
+:host {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #172B4D;
+    background-color: #F4F5F7;
+    min-height: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.54);
+    z-index: 9000;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9001;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(9, 30, 66, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal--ticket-view {
+    width: min(960px, calc(100vw - 48px));
+    height: min(860px, calc(100vh - 64px));
+    animation: tv-modal-in 0.16s ease-out;
+}
+
+@keyframes tv-modal-in {
+    from { opacity: 0; transform: translate(-50%, -48%); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.page-spinner {
+    display: flex;
+    justify-content: center;
+    padding: 48px;
+}
+
+.sprint-header {
+    padding: 0 0 16px;
+    border-bottom: 1px solid #DFE1E6;
+    margin-bottom: 16px;
+}
+
+.sprint-header__top {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.sprint-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #172B4D;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.sprint-dates {
+    font-size: 0.8125rem;
+    color: #6B778C;
+}
+
+.sprint-goal {
+    font-size: 0.875rem;
+    color: #42526E;
+    margin: 6px 0 0;
+    font-style: italic;
+}
+
+.sprint-progress {
+    margin-top: 12px;
+}
+
+.sprint-progress__labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.sprint-progress__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sprint-progress__count {
+    font-size: 0.8125rem;
+    color: #42526E;
+}
+
+.no-sprint-banner {
+    padding: 16px;
+    background-color: #FFFFFF;
+    border: 1px solid #DFE1E6;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    text-align: center;
+    color: #6B778C;
+    font-size: 0.875rem;
+}
+
+.board-columns {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    align-items: flex-start;
+    padding-bottom: 8px;
+}

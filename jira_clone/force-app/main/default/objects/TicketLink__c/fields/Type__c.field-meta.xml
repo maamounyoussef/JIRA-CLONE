@@ -3,7 +3,8 @@
     <fullName>Type__c</fullName>
     <description>Link type</description>
     <label>Type</label>
-    <required>false</required>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
         <valueSetDefinition>
@@ -11,18 +12,22 @@
             <value>
                 <fullName>Blocks</fullName>
                 <default>false</default>
+                <label>Blocks</label>
             </value>
             <value>
                 <fullName>Relates To</fullName>
                 <default>false</default>
+                <label>Relates To</label>
             </value>
             <value>
                 <fullName>Duplicates</fullName>
                 <default>false</default>
+                <label>Duplicates</label>
             </value>
             <value>
                 <fullName>Depends On</fullName>
                 <default>false</default>
+                <label>Depends On</label>
             </value>
         </valueSetDefinition>
     </valueSet>

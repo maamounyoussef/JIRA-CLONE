@@ -1,0 +1,8 @@
+read objects_validation_lwc_apex.txt.
+read DomainCompleteValidator.cls
+
+and check  for all  required field in the service layer based on the required field 
+but some method have a required field per method like when we have field that can be null but we have a method to update it so in this method it cant be null 
+
+
+we should also call the DomainCompleteValidator.cls file to check for business rules ai should ask developer which rule need to be checked 

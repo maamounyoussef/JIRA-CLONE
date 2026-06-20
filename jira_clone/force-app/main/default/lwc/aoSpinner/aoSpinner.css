@@ -1,0 +1,55 @@
+:host {
+    display: inline-flex;
+}
+
+/* ── Rotating ring ───────────────────────────────────────────────────────── */
+.ao-spinner {
+    display: inline-block;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border-style: solid;
+    /* Faint navy track + brand-blue head */
+    border-color: rgba(9, 30, 66, 0.15);
+    border-top-color: #0052CC;
+    animation: ao-spinner-rotate 0.7s linear infinite;
+}
+
+.ao-spinner--small {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+}
+
+.ao-spinner--medium {
+    width: 2rem;
+    height: 2rem;
+    border-width: 3px;
+}
+
+.ao-spinner--large {
+    width: 3rem;
+    height: 3rem;
+    border-width: 4px;
+}
+
+@keyframes ao-spinner-rotate {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Full-viewport blocking overlay (navy at 70% transparency) ───────────── */
+.ao-spinner__overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(9, 30, 66, 0.30);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Respect users who prefer no motion */
+@media (prefers-reduced-motion: reduce) {
+    .ao-spinner {
+        animation-duration: 1.6s;
+    }
+}

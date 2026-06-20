@@ -1,0 +1,23 @@
+<template>
+    <div
+        class="ao-card"
+        role="button"
+        tabindex="0"
+        title={heading}
+        onclick={handleClick}
+        onkeydown={handleKeydown}>
+
+        <template if:true={hasImage}>
+            <div class="ao-card__thumb">
+                <img src={imageUrl} alt={heading} class="ao-card__img" />
+            </div>
+        </template>
+
+        <div class="ao-card__body">
+            <h3 class="ao-card__heading">{heading}</h3>
+            <template if:true={description}>
+                <p class="ao-card__description">{description}</p>
+            </template>
+        </div>
+    </div>
+</template>

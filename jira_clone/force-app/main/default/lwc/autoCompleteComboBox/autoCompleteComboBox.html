@@ -1,0 +1,44 @@
+<template>
+    <div class={wrapperClass}>
+        <template if:true={showLabel}>
+            <span class="ao-select__label">{label}</span>
+        </template>
+        <div class="ao-select__control" onkeydown={handleKeyDown}>
+            <input
+                type="text"
+                class="ao-select__native"
+                value={inputText}
+                placeholder={placeholder}
+                disabled={disabled}
+                aria-label={ariaLabel}
+                aria-autocomplete="list"
+                aria-expanded={isOpen}
+                autocomplete="off"
+                oninput={handleInput}
+                onclick={handleClick}
+                onfocus={handleFocus}
+                onblur={handleBlur} />
+            <span class="ao-select__chevron" aria-hidden="true">▾</span>
+
+            <template if:true={isOpen}>
+                <ul class="ao-select__menu" role="listbox">
+                    <template for:each={visibleOptions} for:item="opt" for:index="idx">
+                        <li
+                            key={opt.value}
+                            class={opt.itemClass}
+                            role="option"
+                            data-value={opt.value}
+                            data-index={idx}
+                            aria-selected={opt.isSelected}
+                            onmousedown={handleOptionMouseDown}>
+                            {opt.label}
+                        </li>
+                    </template>
+                    <template if:true={showEmptyState}>
+                        <li class="ao-select__menu-empty" aria-disabled="true">No matches</li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+    </div>
+</template>
