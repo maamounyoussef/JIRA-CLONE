@@ -8,6 +8,7 @@
     <relationshipLabel>Tickets</relationshipLabel>
     <relationshipName>Tickets</relationshipName>
     <required>true</required>
+    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

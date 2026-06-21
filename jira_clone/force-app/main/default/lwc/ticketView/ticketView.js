@@ -4,7 +4,8 @@ import {
     validateTicketSummary,
     validateTicketCurrentState,
     validateTicketLink,
-    validateSubtaskSummary
+    validateSubtaskSummary,
+    validateTicketComment
 } from './ticketViewValidator';
 
 /**
@@ -90,6 +91,12 @@ export default class TicketView extends LightningElement {
     @track _showSubtaskAddForm   = false;
     @track _newSubtask           = this.blankSubtask();
 
+    @track _isHistoryExpanded    = false;
+
+    @track _isCommentsExpanded   = false;
+    @track _draftComment         = '';
+    @track _commentError         = null;
+
 
     // ─── GETTERS ──────────────────────────────────────────────────────────────
 
@@ -137,6 +144,35 @@ export default class TicketView extends LightningElement {
 
     get isSubtaskCreateDisabled() {
         return !this._newSubtask.summary || !this._newSubtask.summary.trim();
+    }
+
+    get isHistoryExpanded()    { return this._isHistoryExpanded; }
+    get historyChevronIcon()   { return this._isHistoryExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
+
+    get historyItems() {
+        return Array.isArray(this._ticket.history) ? this._ticket.history : [];
+    }
+
+    get hasHistory() {
+        return this.historyItems.length > 0;
+    }
+
+    get isCommentsExpanded()   { return this._isCommentsExpanded; }
+    get commentsChevronIcon()  { return this._isCommentsExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
+
+    get commentItems() {
+        return Array.isArray(this._ticket.comments) ? this._ticket.comments : [];
+    }
+
+    get hasComments() {
+        return this.commentItems.length > 0;
+    }
+
+    get draftComment()           { return this._draftComment; }
+    get commentError()           { return this._commentError; }
+
+    get isCommentCreateDisabled() {
+        return !this._draftComment || !this._draftComment.trim();
     }
 
 
@@ -388,6 +424,65 @@ export default class TicketView extends LightningElement {
             startDate:      '',
             storyPoint:     ''
         };
+    }
+
+
+    // ╔══════════════════════════════════════════════════════════════════════╗
+    // ║                          HISTORY                                     ║
+    // ╚══════════════════════════════════════════════════════════════════════╝
+
+    handleTicketHistoryToggle() {
+        this._isHistoryExpanded = !this._isHistoryExpanded;
+        if (this._isHistoryExpanded) {
+            const detail = { ticketId: this._ticket.Id };
+            console.log('[ticket-view] dispatch tickethistoryexpand', detail);
+            this.dispatchEvent(new CustomEvent('tickethistoryexpand', {
+                detail, bubbles: true, composed: true
+            }));
+        }
+    }
+
+
+    // ╔══════════════════════════════════════════════════════════════════════╗
+    // ║                          COMMENTS                                    ║
+    // ╚══════════════════════════════════════════════════════════════════════╝
+
+    handleTicketCommentsToggle() {
+        this._isCommentsExpanded = !this._isCommentsExpanded;
+        if (this._isCommentsExpanded) {
+            const detail = { ticketId: this._ticket.Id };
+            console.log('[ticket-view] dispatch ticketcommentsexpand', detail);
+            this.dispatchEvent(new CustomEvent('ticketcommentsexpand', {
+                detail, bubbles: true, composed: true
+            }));
+        } else {
+            this._draftComment = '';
+            this._commentError = null;
+        }
+    }
+
+    handleTicketCommentChange(event) {
+        this._draftComment = event.target.value;
+        if (this._commentError) this._commentError = null;
+    }
+
+    handleTicketCommentCreate() {
+        const error = validateTicketComment(this._draftComment);
+        if (error) { this._commentError = error; return; }
+
+        const detail = { ticketId: this._ticket.Id, message: this._draftComment.trim() };
+        console.log('[ticket-view] dispatch ticketcommentcreate', detail);
+        this.dispatchEvent(new CustomEvent('ticketcommentcreate', {
+            detail, bubbles: true, composed: true
+        }));
+
+        this._draftComment = '';
+        this._commentError = null;
+    }
+
+    handleTicketCommentCancel() {
+        this._draftComment = '';
+        this._commentError = null;
     }
 
 

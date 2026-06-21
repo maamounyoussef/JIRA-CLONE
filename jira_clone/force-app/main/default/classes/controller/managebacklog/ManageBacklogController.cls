@@ -690,6 +690,45 @@ public with sharing class ManageBacklogController {
         }
     }
 
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketHistory(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            DomainCorrectness.requireTicketExists(ticketId);
+            List<TicketHistoryDto> logs = TicketService.getTicketHistory(ticketId);
+            return new APIResponse(true, 'Ticket history loaded', logs);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading ticket history: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static APIResponse loadTicketComments(String ticketId) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            DomainCorrectness.requireTicketExists(ticketId);
+            List<TicketCommentDto> comments = TicketService.getTicketComments(ticketId);
+            return new APIResponse(true, 'Ticket comments loaded', comments);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error loading ticket comments: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static APIResponse createTicketComment(String ticketId, String message) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (String.isBlank(message))  return new APIResponse(false, 'message is required');
+
+            DomainCorrectness.requireTicketExists(ticketId);
+
+            TicketCommentDto comment = TicketService.createTicketComment(ticketId, message);
+            return new APIResponse(true, 'Comment added', comment);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error adding comment: ' + ex.getMessage());
+        }
+    }
+
     // ========== Subtask Controller Actions ==========
 
     @AuraEnabled

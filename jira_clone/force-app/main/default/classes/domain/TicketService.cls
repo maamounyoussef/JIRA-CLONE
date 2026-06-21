@@ -967,4 +967,220 @@ public with sharing class TicketService {
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // HISTORY LOG  (Ticket__History → activity feed)
+    // ═══════════════════════════════════════════════════════════════
+
+    private static final String FIELD_CREATED = 'created';
+    private static final String FIELD_STATE   = 'CurrentState__c';
+    private static final String FIELD_SCORE   = 'Score__c';
+
+    /**
+     * Build the ticket activity log from Ticket__History. Bulk-safe: a fixed
+     * number of queries regardless of how many history rows exist —
+     *   1× Ticket (resolve project), 1× Ticket__History,
+     *   1× Status (bulk name resolve), 1× ProjectMember (bulk member resolve).
+     * Each row becomes a TicketHistoryDto carrying the editor's avatar +
+     * project-member name, the change date, and a derived message.
+     */
+    public static List<TicketHistoryDto> getTicketHistory(String ticketId) {
+        try {
+            List<Ticket__c> ticketRows = [
+                SELECT Id, Ticket_Type__r.Project__c
+                FROM Ticket__c
+                WHERE Id = :ticketId AND RecordStatus__c != 'deleted'
+                LIMIT 1
+            ];
+            if (ticketRows.isEmpty()) return new List<TicketHistoryDto>();
+            String projectId = ticketRows[0].Ticket_Type__r != null
+                ? ticketRows[0].Ticket_Type__r.Project__c : null;
+
+            List<Ticket__History> rows = [
+                SELECT Id, Field, OldValue, NewValue, CreatedDate, CreatedById,
+                       CreatedBy.Name
+                FROM Ticket__History
+                WHERE ParentId = :ticketId
+                ORDER BY CreatedDate DESC
+            ];
+            if (rows.isEmpty()) return new List<TicketHistoryDto>();
+
+            // Pass 1 — collect the ids we need to resolve in bulk.
+            Set<Id> statusIds = new Set<Id>();
+            Set<Id> userIds   = new Set<Id>();
+            for (Ticket__History h : rows) {
+                if (h.CreatedById != null) userIds.add(h.CreatedById);
+                if (h.Field == FIELD_STATE) {
+                    addIfId(statusIds, h.OldValue);
+                    addIfId(statusIds, h.NewValue);
+                }
+            }
+
+            // Cross-service reads stay in their owning services (service isolation).
+            Map<Id, Status__c> statusById = StatusService.findStatusesByIds(statusIds);
+            Map<Id, ProjectMember__c> memberByUser =
+                ProjectService.findMembersByUserIdsAndProject(userIds, projectId);
+
+            // Pass 2 — shape each row into a log entry.
+            List<TicketHistoryDto> logs = new List<TicketHistoryDto>();
+            for (Ticket__History h : rows) {
+                TicketHistoryDto dto = new TicketHistoryDto();
+                dto.id          = h.Id;
+                dto.field       = h.Field;
+                dto.createdDate = h.CreatedDate;
+
+                ProjectMember__c pm = memberByUser.get(h.CreatedById);
+                dto.memberName = (pm != null)
+                    ? pm.Name
+                    : (h.CreatedBy != null ? h.CreatedBy.Name : 'Unknown');
+
+                // Avatar comes from the project member's ImageUrl__c.
+                dto.photoUrl = (pm != null) ? pm.ImageUrl__c : null;
+
+                dto.message = buildHistoryMessage(h, statusById);
+                logs.add(dto);
+            }
+            return logs;
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading ticket history: ' + ex.getMessage());
+        }
+    }
+
+    private static void addIfId(Set<Id> ids, Object value) {
+        Id parsed = toId(value);
+        if (parsed != null) ids.add(parsed);
+    }
+
+    private static Id toId(Object value) {
+        if (value == null) return null;
+        try {
+            return Id.valueOf(String.valueOf(value));
+        } catch (Exception e) {
+            return null; // history value wasn't a parseable Id
+        }
+    }
+
+    // Map a history row → a human-readable message. State changes spell out
+    // old → new (by name); score (ordering) changes are noted without the value.
+    private static String buildHistoryMessage(Ticket__History h, Map<Id, Status__c> statusById) {
+        if (h.Field == FIELD_CREATED) {
+            return 'Ticket created';
+        }
+        if (h.Field == FIELD_STATE) {
+            String fromName = statusName(h.OldValue, statusById);
+            String toName   = statusName(h.NewValue, statusById);
+            return 'Status changed from ' + fromName + ' to ' + toName;
+        }
+        if (h.Field == FIELD_SCORE) {
+            return 'Backlog order changed';
+        }
+        return 'Field updated';
+    }
+
+    private static String statusName(Object value, Map<Id, Status__c> statusById) {
+        Id parsed = toId(value);
+        if (parsed != null) {
+            Status__c st = statusById.get(parsed);
+            if (st != null) return st.Name;
+        }
+        return 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // COMMENTS  (TicketComment__c → ticket-view comment section)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Load a ticket's comments, newest first, shaped for the ticket-view.
+     * Bulk-safe: a single query resolves the author (project member) name +
+     * avatar through the Creator__r lookup — no per-row queries, no DML.
+     * Soft-deleted comments are excluded.
+     */
+    public static List<TicketCommentDto> getTicketComments(String ticketId) {
+        try {
+            List<TicketComment__c> rows = [
+                SELECT Id, Message__c, CreatedDate,
+                       Creator__c, Creator__r.Name, Creator__r.ImageUrl__c
+                FROM TicketComment__c
+                WHERE Ticket__c = :ticketId AND RecordStatus__c != 'deleted'
+                ORDER BY CreatedDate DESC
+            ];
+
+            List<TicketCommentDto> comments = new List<TicketCommentDto>();
+            for (TicketComment__c c : rows) {
+                comments.add(toCommentDto(c));
+            }
+            return comments;
+        } catch (Exception ex) {
+            throw new ServiceException('Error loading ticket comments: ' + ex.getMessage());
+        }
+    }
+
+    /**
+     * Post a comment on a ticket, authored by the running user's active project
+     * member, and return it shaped for the ticket-view comment section (same
+     * shape getTicketComments returns, so the UI can append it directly).
+     *
+     * Single-record operation: resolves the ticket's project (own object),
+     * finds the running user's project member through ProjectService (service
+     * isolation — never queries ProjectMember__c here), inserts one
+     * TicketComment__c, then re-reads it once to build the DTO with the
+     * author's name + avatar.
+     */
+    public static TicketCommentDto createTicketComment(String ticketId, String message) {
+        try {
+            String projectId = resolveProjectIdForTicketComment(ticketId);
+
+            ProjectMember__c author = ProjectService.findActiveMemberByUserAndProject(
+                UserInfo.getUserId(), projectId
+            );
+            if (author == null) {
+                throw new ServiceException('You are not an active member of this project.');
+            }
+
+            TicketComment__c comment = new TicketComment__c(
+                Ticket__c       = ticketId,
+                Creator__c      = author.Id,
+                Message__c      = message,
+                RecordStatus__c = 'active'
+            );
+            insert comment;
+
+            List<TicketComment__c> rows = [
+                SELECT Id, Message__c, CreatedDate,
+                       Creator__c, Creator__r.Name, Creator__r.ImageUrl__c
+                FROM TicketComment__c
+                WHERE Id = :comment.Id AND RecordStatus__c != 'deleted'
+                LIMIT 1
+            ];
+            return toCommentDto(rows[0]);
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error creating ticket comment: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error creating ticket comment: ' + ex.getMessage());
+        }
+    }
+
+    private static String resolveProjectIdForTicketComment(String ticketId) {
+        List<Ticket__c> rows = [
+            SELECT Id, Ticket_Type__r.Project__c
+            FROM Ticket__c
+            WHERE Id = :ticketId AND RecordStatus__c != 'deleted'
+            LIMIT 1
+        ];
+        if (rows.isEmpty() || rows[0].Ticket_Type__r == null) {
+            throw new ServiceException('Cannot resolve project for ticket ' + ticketId);
+        }
+        return rows[0].Ticket_Type__r.Project__c;
+    }
+
+    private static TicketCommentDto toCommentDto(TicketComment__c c) {
+        TicketCommentDto dto = new TicketCommentDto();
+        dto.id          = c.Id;
+        dto.message     = c.Message__c;
+        dto.createdDate = c.CreatedDate;
+        dto.memberName  = c.Creator__r != null ? c.Creator__r.Name : 'Unknown';
+        dto.photoUrl    = c.Creator__r != null ? c.Creator__r.ImageUrl__c : null;
+        return dto;
+    }
+
 }

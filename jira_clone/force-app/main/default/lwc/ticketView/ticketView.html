@@ -345,6 +345,131 @@
             </template>
 
         </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                          HISTORY                             ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-history">
+
+            <header class="tv-history__header">
+                <button class="tv-history__toggle"
+                        type="button"
+                        onclick={handleTicketHistoryToggle}>
+                    <lightning-icon icon-name={historyChevronIcon} size="xx-small"></lightning-icon>
+                    <span class="tv-history__title">History</span>
+                </button>
+            </header>
+
+            <template if:true={isHistoryExpanded}>
+                <div class="tv-history__body">
+
+                    <template if:true={hasHistory}>
+                        <ul class="tv-history__list">
+                            <template for:each={historyItems} for:item="log">
+                                <li key={log.id} class="tv-history__row">
+                                    <img class="tv-history__avatar"
+                                         src={log.photoUrl}
+                                         alt={log.memberName} />
+                                    <div class="tv-history__detail">
+                                        <span class="tv-history__member">{log.memberName}</span>
+                                        <lightning-formatted-date-time
+                                            class="tv-history__date"
+                                            value={log.createdDate}
+                                            year="numeric" month="short" day="2-digit"
+                                            hour="2-digit" minute="2-digit">
+                                        </lightning-formatted-date-time>
+                                        <span class="tv-history__message">{log.message}</span>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+
+                    <template if:false={hasHistory}>
+                        <p class="tv-history__empty">No history yet.</p>
+                    </template>
+                </div>
+            </template>
+
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════════╗ -->
+        <!-- ║                          COMMENTS                            ║ -->
+        <!-- ╚══════════════════════════════════════════════════════════════╝ -->
+        <section class="tv-section tv-comments">
+
+            <header class="tv-comments__header">
+                <button class="tv-comments__toggle"
+                        type="button"
+                        onclick={handleTicketCommentsToggle}>
+                    <lightning-icon icon-name={commentsChevronIcon} size="xx-small"></lightning-icon>
+                    <span class="tv-comments__title">Comments</span>
+                </button>
+            </header>
+
+            <template if:true={isCommentsExpanded}>
+                <div class="tv-comments__body">
+
+                    <div class="tv-comments__form">
+                        <lightning-textarea
+                            class="tv-comments__form-field"
+                            label="Comment"
+                            variant="label-hidden"
+                            value={draftComment}
+                            placeholder="Add a comment..."
+                            onchange={handleTicketCommentChange}>
+                        </lightning-textarea>
+
+                        <template if:true={commentError}>
+                            <p class="tv-error">{commentError}</p>
+                        </template>
+
+                        <div class="tv-comments__form-actions">
+                            <c-ao-btn
+                                label="Cancel"
+                                variant="ghost"
+                                size="sm"
+                                onclick={handleTicketCommentCancel}>
+                            </c-ao-btn>
+                            <c-ao-btn
+                                label="Comment"
+                                variant="primary"
+                                size="sm"
+                                disabled={isCommentCreateDisabled}
+                                onclick={handleTicketCommentCreate}>
+                            </c-ao-btn>
+                        </div>
+                    </div>
+
+                    <template if:true={hasComments}>
+                        <ul class="tv-comments__list">
+                            <template for:each={commentItems} for:item="comment">
+                                <li key={comment.id} class="tv-comments__row">
+                                    <img class="tv-comments__avatar"
+                                         src={comment.photoUrl}
+                                         alt={comment.memberName} />
+                                    <div class="tv-comments__detail">
+                                        <span class="tv-comments__member">{comment.memberName}</span>
+                                        <lightning-formatted-date-time
+                                            class="tv-comments__date"
+                                            value={comment.createdDate}
+                                            year="numeric" month="short" day="2-digit"
+                                            hour="2-digit" minute="2-digit">
+                                        </lightning-formatted-date-time>
+                                        <span class="tv-comments__message">{comment.message}</span>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+
+                    <template if:false={hasComments}>
+                        <p class="tv-comments__empty">No comments yet.</p>
+                    </template>
+                </div>
+            </template>
+
+        </section>
         </div>
     </article>
 </template>

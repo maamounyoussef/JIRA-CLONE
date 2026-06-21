@@ -31,8 +31,12 @@ import deleteSubtasks        from '@salesforce/apex/ManageBacklogController.dele
 import loadTicketLinkedToType from '@salesforce/apex/ManageBacklogController.loadTicketLinkedToType';
 import loadTicketLinkedTo     from '@salesforce/apex/ManageBacklogController.loadTicketLinkedTo';
 import loadSubtasks           from '@salesforce/apex/ManageBacklogController.loadSubtasks';
+import loadTicketHistory      from '@salesforce/apex/ManageBacklogController.loadTicketHistory';
+import loadTicketComments     from '@salesforce/apex/ManageBacklogController.loadTicketComments';
+import createTicketComment    from '@salesforce/apex/ManageBacklogController.createTicketComment';
 import loadTicketBySearchTerm from '@salesforce/apex/ManageBacklogController.loadTicketBySearchTerm';
 import linkToTicket          from '@salesforce/apex/ManageBacklogController.linkToTicket';
+import { refreshApex }       from '@salesforce/apex';
 import aoThemeResource       from '@salesforce/resourceUrl/aoTheme';
 
 import { validateSprintForm }        from './backlogSprintValidator';
@@ -209,6 +213,33 @@ export default class ManageBacklog extends LightningElement {
         this.isLoading = false;
     }
 
+    @track _historyTargetTicketId = null;
+    @wire(loadTicketHistory, { ticketId: '$_historyTargetTicketId' })
+    wiredTicketViewHistory(result) {
+        if (!this._historyTargetTicketId) return;
+        if (result.data && result.data.success) {
+            const history = result.data.data || [];
+            this._patchTicketEverywhere(this._historyTargetTicketId, { history });
+        }
+        this.isLoading = false;
+    }
+
+    // Comments load on expand. The provisioned wire result is stored so a
+    // re-expand of the same ticket re-fetches via refreshApex (the wire input
+    // is unchanged, so it would not re-fire on its own).
+    @track _commentsTargetTicketId = null;
+    _commentsWireResult;
+    @wire(loadTicketComments, { ticketId: '$_commentsTargetTicketId' })
+    wiredTicketViewComments(result) {
+        this._commentsWireResult = result;
+        if (!this._commentsTargetTicketId) return;
+        if (result.data && result.data.success) {
+            const comments = result.data.data || [];
+            this._patchTicketEverywhere(this._commentsTargetTicketId, { comments });
+        }
+        this.isLoading = false;
+    }
+
     get isTicketViewOpen()           { return this._activeTicketViewId !== null; }
     get activeTicketViewModel() {
         if (!this._activeTicketViewId) return null;
@@ -333,6 +364,22 @@ export default class ManageBacklog extends LightningElement {
         this._subtasksTargetTicketId = ticketId;
     }
 
+    handleTicketViewHistoryExpand(event) {
+        const { ticketId } = event.detail;
+        this._historyTargetTicketId = ticketId;
+    }
+
+    handleTicketViewCommentsExpand(event) {
+        const { ticketId } = event.detail;
+        // Re-expanding the same ticket leaves the wire input unchanged, so pull
+        // fresh comments with refreshApex; otherwise the input change drives it.
+        if (this._commentsTargetTicketId === ticketId && this._commentsWireResult) {
+            refreshApex(this._commentsWireResult);
+        } else {
+            this._commentsTargetTicketId = ticketId;
+        }
+    }
+
     handleTicketViewSubtaskCreate(event) {
         const { ticketId, summary, description, assigneeId, currentStateId, startDate, storyPoint } = event.detail;
         this.isLoading = true;
@@ -345,6 +392,27 @@ export default class ManageBacklog extends LightningElement {
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error creating subtask'))
             .finally(() => { this.isLoading = false; });
+    }
+
+    handleTicketViewCommentCreate(event) {
+        const { ticketId, message } = event.detail;
+        this.isLoading = true;
+        createTicketComment({ ticketId, message })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error adding comment');
+                const created = res.data;
+                this._addCommentToTicket(ticketId, created);
+                this._showSuccess('Comment added');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error adding comment'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    // Comments load newest-first, so a freshly posted comment is prepended.
+    _addCommentToTicket(ticketId, comment) {
+        const ticket   = this._findTicketById(ticketId);
+        const existing  = (ticket && Array.isArray(ticket.comments)) ? ticket.comments : [];
+        this._patchTicketEverywhere(ticketId, { comments: [comment, ...existing] });
     }
 
     _findTicketById(ticketId) {

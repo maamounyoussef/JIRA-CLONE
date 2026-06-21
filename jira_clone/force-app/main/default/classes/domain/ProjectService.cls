@@ -79,6 +79,34 @@ public with sharing class ProjectService {
         }
     }
 
+    /**
+     * Bulk-resolve user Ids → their ProjectMember__c within one project, for
+     * history-log rendering. One query for the whole set (no SOQL in a loop).
+     * Excludes soft-deleted members; callers fall back to the User name when a
+     * user has no active membership (e.g. an admin who edited the ticket).
+     */
+    public static Map<Id, ProjectMember__c> findMembersByUserIdsAndProject(Set<Id> userIds, String projectId) {
+        Map<Id, ProjectMember__c> byUser = new Map<Id, ProjectMember__c>();
+        if (userIds == null || userIds.isEmpty() || String.isBlank(projectId)) return byUser;
+        try {
+            for (ProjectMember__c pm : [
+                SELECT Id, Name, User__c, ImageUrl__c
+                FROM ProjectMember__c
+                WHERE Project__c = :projectId
+                  AND User__c IN :userIds
+                  AND RecordStatus__c != 'deleted'
+                ORDER BY CreatedDate ASC
+            ]) {
+                if (pm.User__c != null && !byUser.containsKey(pm.User__c)) {
+                    byUser.put(pm.User__c, pm); // oldest active membership wins
+                }
+            }
+            return byUser;
+        } catch (Exception ex) {
+            throw new ServiceException('Error resolving project members: ' + ex.getMessage());
+        }
+    }
+
     public static List<ProjectMember__c> loadProjectMembers(Project__c project) {
         try {
                 return [

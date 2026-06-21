@@ -10,7 +10,11 @@ import updateTicketSummary          from '@salesforce/apex/ManageTicketTrackingC
 import updateTicketDescription      from '@salesforce/apex/ManageTicketTrackingController.updateTicketDescription';
 import linkToTicket                 from '@salesforce/apex/ManageTicketTrackingController.linkToTicket';
 import loadSubtasks                 from '@salesforce/apex/ManageTicketTrackingController.loadSubtasks';
+import loadTicketHistory            from '@salesforce/apex/ManageTicketTrackingController.loadTicketHistory';
+import loadTicketComments           from '@salesforce/apex/ManageTicketTrackingController.loadTicketComments';
 import createSubtask                from '@salesforce/apex/ManageTicketTrackingController.createSubtask';
+import createTicketComment          from '@salesforce/apex/ManageTicketTrackingController.createTicketComment';
+import { refreshApex }              from '@salesforce/apex';
 import aoThemeResource              from '@salesforce/resourceUrl/aoTheme';
 
 import { validateChangeTicketState }                        from './manageTicketTrackingValidator';
@@ -206,6 +210,31 @@ export default class ManageTicketTracking extends LightningElement {
         if (result.data && result.data.success && this._subtasksTargetTicketId) {
             const subtasks = result.data.data || [];
             this._setTicketSubtasks(this._subtasksTargetTicketId, subtasks);
+        }
+    }
+
+    // tickethistoryexpand: wire fires when _historyTargetTicketId is set on
+    // expand. Read the response and patch the history slice of the principal ticket.
+    @track _historyTargetTicketId = null;
+    @wire(loadTicketHistory, { ticketId: '$_historyTargetTicketId' })
+    wiredHistory(result) {
+        if (result.data && result.data.success && this._historyTargetTicketId) {
+            const history = result.data.data || [];
+            this._setTicketHistory(this._historyTargetTicketId, history);
+        }
+    }
+
+    // ticketcommentsexpand: wire fires when _commentsTargetTicketId is set on
+    // expand. The provisioned result is kept so re-expanding the same ticket can
+    // re-fetch via refreshApex (the wire input is unchanged, so it won't re-fire).
+    @track _commentsTargetTicketId = null;
+    _commentsWireResult;
+    @wire(loadTicketComments, { ticketId: '$_commentsTargetTicketId' })
+    wiredComments(result) {
+        this._commentsWireResult = result;
+        if (result.data && result.data.success && this._commentsTargetTicketId) {
+            const comments = result.data.data || [];
+            this._setTicketComments(this._commentsTargetTicketId, comments);
         }
     }
 
@@ -451,6 +480,24 @@ export default class ManageTicketTracking extends LightningElement {
         this._subtasksTargetTicketId = evt.detail.ticketId;
     }
 
+    // tickethistoryexpand → set the dedicated wire input so loadTicketHistory
+    // fires on expand (the wire handler does the R0-compliant history patch).
+    handleTicketHistoryExpand(evt) {
+        this._historyTargetTicketId = evt.detail.ticketId;
+    }
+
+    // ticketcommentsexpand → load comments on expand. Re-expanding the same
+    // ticket leaves the wire input unchanged, so pull fresh data with
+    // refreshApex; otherwise the input change drives the wire.
+    handleTicketCommentsExpand(evt) {
+        const { ticketId } = evt.detail;
+        if (this._commentsTargetTicketId === ticketId && this._commentsWireResult) {
+            refreshApex(this._commentsWireResult);
+        } else {
+            this._commentsTargetTicketId = ticketId;
+        }
+    }
+
     // subtaskcreate → imperative createSubtask, then append the returned subtask
     // to the principal ticket's subtasks list from the response (R0).
     handleTicketSubtaskCreate(evt) {
@@ -466,12 +513,28 @@ export default class ManageTicketTracking extends LightningElement {
             .catch(err => this._showError(this._errMsg(err, 'Error creating subtask')));
     }
 
+    // ticketcommentcreate → imperative createTicketComment, then append the
+    // returned comment to the principal ticket's comments list (R0).
+    handleTicketCommentCreate(evt) {
+        const { ticketId, message } = evt.detail;
+        createTicketComment({ ticketId, message })
+            .then(res => {
+                if (!res.success) { this._showError(res.message); return; }
+                const created = res.data;
+                if (!created) return;
+                this._addTicketComment(ticketId, created);
+                this._showSuccess(res.message);
+            })
+            .catch(err => this._showError(this._errMsg(err, 'Error adding comment')));
+    }
+
     // closeticketview → presentation-only reset, no Apex. Clearing the active
     // Id collapses the derived getters and unmounts the panel (R3/R4).
     handleCloseTicketView() {
         this._activeTicketViewId     = null;
         this._linkedToTargetTicketId = null;
         this._subtasksTargetTicketId = null;
+        this._commentsTargetTicketId = null;
         this._searchTerm             = null;
         this._ticketSearchResults    = [];
     }
@@ -544,10 +607,19 @@ export default class ManageTicketTracking extends LightningElement {
     }
 
     _setTicketSubtasks(ticketId, subtasks) { this._patchTicket(ticketId, { subtasks }); }
+    _setTicketHistory(ticketId, history)   { this._patchTicket(ticketId, { history }); }
+    _setTicketComments(ticketId, comments) { this._patchTicket(ticketId, { comments }); }
     _addTicketSubtask(ticketId, subtask) {
         const ticket   = this._findTicketById(ticketId);
         const existing = (ticket && Array.isArray(ticket.subtasks)) ? ticket.subtasks : [];
         this._patchTicket(ticketId, { subtasks: [...existing, subtask] });
+    }
+
+    // Comments load newest-first, so a freshly posted comment is prepended.
+    _addTicketComment(ticketId, comment) {
+        const ticket   = this._findTicketById(ticketId);
+        const existing = (ticket && Array.isArray(ticket.comments)) ? ticket.comments : [];
+        this._patchTicket(ticketId, { comments: [comment, ...existing] });
     }
 
     // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────

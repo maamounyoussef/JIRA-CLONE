@@ -56,6 +56,25 @@ public with sharing class StatusService {
         }
     }
 
+    /**
+     * Bulk-resolve status Ids → Status__c (Id, Name) for history-log rendering.
+     * One query for the whole set (no SOQL in a loop).
+     * intentional: omits RecordStatus__c != 'deleted' so a historical state name
+     * still renders even if that status was later soft-deleted (audit display).
+     */
+    public static Map<Id, Status__c> findStatusesByIds(Set<Id> statusIds) {
+        Map<Id, Status__c> byId = new Map<Id, Status__c>();
+        if (statusIds == null || statusIds.isEmpty()) return byId;
+        try {
+            for (Status__c s : [SELECT Id, Name FROM Status__c WHERE Id IN :statusIds]) {
+                byId.put(s.Id, s);
+            }
+            return byId;
+        } catch (Exception ex) {
+            throw new ServiceException('Error resolving statuses: ' + ex.getMessage());
+        }
+    }
+
     public static Status__c getStartStatus(String projectId)
     {
         try {

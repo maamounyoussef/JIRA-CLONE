@@ -9,7 +9,8 @@ const REQUIRED_MSG = {
     currentState:   'Current State is required.',
     linkType:       'Link type is required.',
     linkedTicket:   'Linked ticket is required.',
-    subtaskSummary: 'Subtask summary is required.'
+    subtaskSummary: 'Subtask summary is required.',
+    comment:        'Comment cannot be empty.'
 };
 
 export function validateTicketSummary(value) {
@@ -34,5 +35,12 @@ export function validateSubtaskSummary(value) {
     const trimmed = (value || '').trim();
     if (!trimmed) return REQUIRED_MSG.subtaskSummary;
     if (trimmed.length > 255) return 'Subtask summary must be 255 characters or fewer.';
+    return null;
+}
+
+export function validateTicketComment(value) {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return REQUIRED_MSG.comment;
+    if (trimmed.length > 32768) return 'Comment must be 32768 characters or fewer.';
     return null;
 }
