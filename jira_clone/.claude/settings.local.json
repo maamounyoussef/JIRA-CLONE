@@ -4,7 +4,8 @@
       "PowerShell(node scripts\\\\latest-debug-log.js)",
       "PowerShell(node scripts\\\\latest-debug-log.js --tail 5)",
       "PowerShell(\"--- tail 5 ---\")",
-      "Bash(cd \"c:/softreatail/project/app/jira_clone_v011/jira_clone/report\" && rm -rf _tmp_template _tmp_target && ls -la)"
+      "Bash(cd \"c:/softreatail/project/app/jira_clone_v011/jira_clone/report\" && rm -rf _tmp_template _tmp_target && ls -la)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python -)"
     ],
     "additionalDirectories": [
       "c:\\softreatail\\project\\app\\jira_clone_v011\\jira_clone\\report\\_tmp_template"
