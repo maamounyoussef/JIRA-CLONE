@@ -6,6 +6,7 @@
     <externalId>false</externalId>
     <label>Record Status</label>
     <required>true</required>
+    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
