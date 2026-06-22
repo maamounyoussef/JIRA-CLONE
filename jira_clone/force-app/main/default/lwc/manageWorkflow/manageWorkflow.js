@@ -1,4 +1,5 @@
 import { LightningElement, track, wire } from 'lwc';
+import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getWorkflow              from '@salesforce/apex/ManageWorkflowPageController.getWorkflow';
 import createStatus             from '@salesforce/apex/ManageWorkflowPageController.createStatus';
@@ -607,24 +608,42 @@ export default class ManageWorkflow extends LightningElement {
     @track isCreatingValidationRule   = false;
 
     // Expand-to-show-validation-details state. `selectedTransitionId` is the
-    // principal UI selection; `_wiredTransitionId` is a SEPARATE wire gate that
-    // stays undefined (wire dormant) until the user actually expands the detail,
-    // so the load fires only on expand — not on every transition selection.
+    // principal UI selection; this flag is the only presentation state the panel
+    // needs — the rules themselves live on the transition in principal state.
     @track _isValidationDetailExpanded = false;
-    _wiredTransitionId;
 
-    // ─── WIRE ──────────────────────────────────────────────────────────────
-    // Loads the validation details for the expanded transition and folds them
-    // INTO that transition inside the denormalized state — no parallel copy.
-    // Re-fires only when `_wiredTransitionId` changes (Not-important freshness).
+    // Wire gate: the validation-rule wire only provisions once a transition's
+    // panel is expanded (lazy load). Set to the selected transition id on expand;
+    // changing it re-runs the wire below.
+    @track _wiredTransitionId = null;
+    // The provisioned wire result, retained so refreshApex() can bust the
+    // Lightning Data Service cache and re-pull server-truth after a rule is added.
+    _wiredValidateFields;
+
+    // ─── LOAD (cached @wire) ───────────────────────────────────────────────
+    // Validation rules load through a cacheable @wire keyed by the expanded
+    // transition. The Lightning Data Service caches the list per transition, so
+    // re-expanding the same transition is instant. Freshness after an add is
+    // handled by refreshApex() in handleCreateValidationRuleSubmit, which busts
+    // that cache and re-provisions this wire. Results are folded INTO the owning
+    // transition in the denormalized state — no parallel copy.
     @wire(loadValidateFields, { transitionId: '$_wiredTransitionId' })
     wiredValidateFields(result) {
-        if (result.data && result.data.success) {
-            const fields = (result.data.data || []).map(vf => this._mapValidateField(vf));
-            this._setTransitionValidateFields(this._wiredTransitionId, fields);
-        } else if (result.data && !result.data.success) {
-            this._toast('Error', result.data.message || 'Failed to load validation details', 'error');
-        } else if (result.error) {
+        // Retain the provisioned value so refreshApex() can target it after an add.
+        this._wiredValidateFields = result;
+        // Ignore the initial provision before any panel is expanded (null param
+        // would otherwise surface the controller's "transitionId is required").
+        if (!this._wiredTransitionId) return;
+
+        const { data, error } = result;
+        if (data) {
+            if (data.success) {
+                const fields = (data.data || []).map(vf => this._mapValidateField(vf));
+                this._setTransitionValidateFields(this._wiredTransitionId, fields);
+            } else {
+                this._toast('Error', data.message || 'Failed to load validation details', 'error');
+            }
+        } else if (error) {
             this._toast('Error', 'Failed to load validation details', 'error');
         }
     }
@@ -699,7 +718,7 @@ export default class ManageWorkflow extends LightningElement {
         this.selectedTransitionId = lineId;
         // The detail is already in the denormalized state — `activeTransition`
         // finds it by id. Just collapse any panel left open on the previously
-        // viewed transition so its rules aren't shown; the wire re-loads on expand.
+        // viewed transition so its rules aren't shown; expanding reloads them.
         this._collapseValidationDetail();
     }
 
@@ -711,22 +730,29 @@ export default class ManageWorkflow extends LightningElement {
             return;
         }
         // Expanding: gate the load behind the transition-id validation. No pass,
-        // no wire fire (the wire only runs once _wiredTransitionId is set).
+        // no load.
         const error = validateTransitionId(this.selectedTransitionId);
         if (error) { this._toast('Validation', error, 'error'); return; }
 
+        this._expandValidationDetail();
+    }
+
+    // Reveal the validation detail for the selected transition: flip the
+    // presentation flag and point the wire at this transition. Provisioning the
+    // wire loads the rules into principal state (served from the LDS cache on a
+    // repeat expand). Called on manual expand and after a rule is added.
+    _expandValidationDetail() {
         this._isValidationDetailExpanded = true;
-        // Separate wire gate — set here (the method that needs the data), never
-        // in the wired callback and never reusing the principal selection id.
         this._wiredTransitionId = this.selectedTransitionId;
     }
 
     _collapseValidationDetail() {
         this._isValidationDetailExpanded = false;
-        // Drop the wire gate so the load re-fires on next expand. The already
-        // loaded validateFields stay on the transition in state — they are part
-        // of the denormalized record, not a throwaway panel buffer.
-        this._wiredTransitionId = undefined;
+        // Leave _wiredTransitionId pointing at this transition so its wire result
+        // stays provisioned for refreshApex(). The loaded validateFields remain on
+        // the transition in principal state; a repeat expand re-shows them from
+        // cache. (Display derives from principal state, so a collapsed panel that
+        // is out of sync with _wiredTransitionId is never visible.)
     }
 
     handleActivateTransition() {
@@ -845,12 +871,22 @@ export default class ManageWorkflow extends LightningElement {
                     throw new Error(res?.message || 'Failed to create validation rule');
                 }
                 // Fold the created record (from the backend response) onto the
-                // owning transition in the denormalized state — no re-fetch.
+                // owning transition in the denormalized state for instant feedback.
                 if (res.data) {
                     this._addTransitionValidateField(transitionId, this._mapValidateField(res.data));
                 }
+                // Reveal the detail so the show/hide panel derives the new rule
+                // from principal state, then reconcile with server-truth: a prior
+                // expand may have cached this transition's list (without the new
+                // rule), so refreshApex busts that LDS cache and re-provisions the
+                // wire, whose callback overwrites the list with the server's.
+                this._expandValidationDetail();
                 this._toast('Success', 'Validation rule created successfully', 'success');
                 this.closeValidationRuleModal();
+                if (this._wiredValidateFields) {
+                    return refreshApex(this._wiredValidateFields);
+                }
+                return null;
             })
             .catch(err => {
                 this._toast('Error', err?.body?.message || err?.message || 'An error occurred', 'error');

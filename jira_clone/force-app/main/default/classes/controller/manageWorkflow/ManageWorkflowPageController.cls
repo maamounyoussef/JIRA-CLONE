@@ -239,6 +239,10 @@ public with sharing class ManageWorkflowPageController {
 
     // ==================== VALIDATION FIELD METHODS ====================
 
+    // Cacheable: the show/hide validation panel reads this through a @wire, so the
+    // Lightning Data Service caches the list per transition for instant re-expands.
+    // Freshness after a rule is added is handled on the client via refreshApex(),
+    // which busts this cache and re-provisions the wire with server-truth.
     @AuraEnabled(cacheable=true)
     public static APIResponse loadValidateFields(String transitionId) {
         try {
