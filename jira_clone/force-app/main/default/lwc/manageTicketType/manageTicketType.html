@@ -110,13 +110,14 @@
                             disabled={_isCreating}
                             onchange={handleNewDescriptionChange}>
                         </c-ao-input>
-                        <c-ao-input
-                            label="Icon URL"
-                            value={_newIconUrl}
-                            placeholder="https://…"
+                        <lightning-file-upload
+                            label="Icon image"
+                            name="newIconUpload"
+                            accept={acceptedImageFormats}
+                            record-id={createUploadRecordId}
                             disabled={_isCreating}
-                            onchange={handleNewIconUrlChange}>
-                        </c-ao-input>
+                            onuploadfinished={handleNewIconUpload}>
+                        </lightning-file-upload>
                         <c-ao-combobox
                             label="Workflow"
                             value={_newWorkflowId}
@@ -154,13 +155,14 @@
                             disabled={_isUpdating}
                             onchange={handleEditNameChange}>
                         </c-ao-input>
-                        <c-ao-input
-                            label="Icon URL"
-                            value={_editIconUrl}
-                            placeholder="https://…"
+                        <lightning-file-upload
+                            label="Icon image"
+                            name="editIconUpload"
+                            accept={acceptedImageFormats}
+                            record-id={editUploadRecordId}
                             disabled={_isUpdating}
-                            onchange={handleEditIconUrlChange}>
-                        </c-ao-input>
+                            onuploadfinished={handleEditIconUpload}>
+                        </lightning-file-upload>
                         <c-ao-combobox
                             label="Workflow"
                             value={_editWorkflowId}

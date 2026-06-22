@@ -367,9 +367,6 @@
                         <ul class="tv-history__list">
                             <template for:each={historyItems} for:item="log">
                                 <li key={log.id} class="tv-history__row">
-                                    <img class="tv-history__avatar"
-                                         src={log.photoUrl}
-                                         alt={log.memberName} />
                                     <div class="tv-history__detail">
                                         <span class="tv-history__member">{log.memberName}</span>
                                         <lightning-formatted-date-time
@@ -445,9 +442,6 @@
                         <ul class="tv-comments__list">
                             <template for:each={commentItems} for:item="comment">
                                 <li key={comment.id} class="tv-comments__row">
-                                    <img class="tv-comments__avatar"
-                                         src={comment.photoUrl}
-                                         alt={comment.memberName} />
                                     <div class="tv-comments__detail">
                                         <span class="tv-comments__member">{comment.memberName}</span>
                                         <lightning-formatted-date-time

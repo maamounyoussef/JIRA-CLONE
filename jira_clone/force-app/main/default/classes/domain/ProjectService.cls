@@ -90,7 +90,7 @@ public with sharing class ProjectService {
         if (userIds == null || userIds.isEmpty() || String.isBlank(projectId)) return byUser;
         try {
             for (ProjectMember__c pm : [
-                SELECT Id, Name, User__c, ImageUrl__c
+                SELECT Id, Name, User__c
                 FROM ProjectMember__c
                 WHERE Project__c = :projectId
                   AND User__c IN :userIds

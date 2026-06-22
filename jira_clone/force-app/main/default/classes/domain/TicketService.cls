@@ -795,7 +795,7 @@ public with sharing class TicketService {
         }
     }
 
-    public static TicketType__c updateTicketType(String ticketTypeId, String name, String iconUrl, String workflowId) {
+    public static TicketType__c updateTicketType(String ticketTypeId, String name, String workflowId) {
         try {
             TicketType__c ticketType = DomainCorrectness.requireTicketTypeExists(ticketTypeId);
 
@@ -810,11 +810,13 @@ public with sharing class TicketService {
                 DomainCompleteValidator.requireNoTicketsReferenceTicketTypeOnWorkflowChange(referencingTickets);
             }
 
+            // IconUrl__c is no longer user-supplied — the icon is whatever file
+            // is currently linked to this record (resolved by applyLinkedIcons).
             ticketType.Name        = name;
-            ticketType.IconUrl__c  = iconUrl;
             ticketType.Workflow__c = workflowId;
             update ticketType;
-            return [
+
+            List<TicketType__c> rows = [
                 SELECT Id, Name, Description__c, IconUrl__c, Project__c, RecordStatus__c,
                        Workflow__c, Workflow__r.Name
                 FROM TicketType__c
@@ -822,8 +824,79 @@ public with sharing class TicketService {
                   AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
+            applyLinkedIcons(rows);
+            return rows.isEmpty() ? ticketType : rows[0];
         } catch (DmlException ex) {
             throw new ServiceException('Error updating ticket type: ' + ex.getMessage());
+        }
+    }
+
+    /**
+     * Load a project's ticket types with each icon resolved from its linked
+     * file (ContentDocumentLink), not from a stored URL. Scoped to the
+     * manage-ticket-type screen — the plain loadTicketTypes (used by backlog /
+     * tracking) keeps returning the stored IconUrl__c untouched.
+     */
+    public static List<TicketType__c> loadTicketTypesWithLinkedIcons(Project__c project) {
+        return applyLinkedIcons(loadTicketTypes(project));
+    }
+
+    /**
+     * Link an uploaded file (ContentDocument) to a ticket-type record so it
+     * becomes that type's icon. Used by the create flow, where the file is
+     * uploaded before the record exists; edit-mode uploads link directly via
+     * lightning-file-upload's record-id and don't need this.
+     */
+    public static void linkContentToTicketType(Id ticketTypeId, Id contentDocumentId) {
+        try {
+            insert new ContentDocumentLink(
+                LinkedEntityId    = ticketTypeId,
+                ContentDocumentId = contentDocumentId,
+                ShareType         = 'V',
+                Visibility        = 'AllUsers'
+            );
+        } catch (DmlException dex) {
+            throw new ServiceException('DML error linking icon to ticket type: ' + dex.getMessage());
+        } catch (Exception ex) {
+            throw new ServiceException('Error linking icon to ticket type: ' + ex.getMessage());
+        }
+    }
+
+    /**
+     * Populate each ticket type's IconUrl__c (in memory — no DML) with a
+     * download URL for the most recently linked file, or null when none is
+     * linked. Bulk-safe: one ContentDocumentLink query for all the types, so
+     * the SOQL count stays flat regardless of how many types are passed.
+     */
+    public static List<TicketType__c> applyLinkedIcons(List<TicketType__c> types) {
+        try {
+            if (types == null || types.isEmpty()) return types;
+
+            Set<Id> typeIds = new Set<Id>();
+            for (TicketType__c t : types) typeIds.add(t.Id);
+
+            // Newest link wins: ASC order means later rows overwrite earlier ones.
+            Map<Id, Id> versionIdByType = new Map<Id, Id>();
+            for (ContentDocumentLink link : [
+                SELECT LinkedEntityId, ContentDocument.LatestPublishedVersionId
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId IN :typeIds
+                ORDER BY ContentDocument.CreatedDate ASC
+            ]) {
+                if (link.ContentDocument != null && link.ContentDocument.LatestPublishedVersionId != null) {
+                    versionIdByType.put(link.LinkedEntityId, link.ContentDocument.LatestPublishedVersionId);
+                }
+            }
+
+            for (TicketType__c t : types) {
+                Id versionId = versionIdByType.get(t.Id);
+                t.IconUrl__c = (versionId != null)
+                    ? '/sfc/servlet.shepherd/version/download/' + versionId
+                    : null;
+            }
+            return types;
+        } catch (Exception ex) {
+            throw new ServiceException('Error resolving ticket type icons: ' + ex.getMessage());
         }
     }
 
@@ -1033,9 +1106,6 @@ public with sharing class TicketService {
                     ? pm.Name
                     : (h.CreatedBy != null ? h.CreatedBy.Name : 'Unknown');
 
-                // Avatar comes from the project member's ImageUrl__c.
-                dto.photoUrl = (pm != null) ? pm.ImageUrl__c : null;
-
                 dto.message = buildHistoryMessage(h, statusById);
                 logs.add(dto);
             }
@@ -1099,7 +1169,7 @@ public with sharing class TicketService {
         try {
             List<TicketComment__c> rows = [
                 SELECT Id, Message__c, CreatedDate,
-                       Creator__c, Creator__r.Name, Creator__r.ImageUrl__c
+                       Creator__c, Creator__r.Name
                 FROM TicketComment__c
                 WHERE Ticket__c = :ticketId AND RecordStatus__c != 'deleted'
                 ORDER BY CreatedDate DESC
@@ -1147,7 +1217,7 @@ public with sharing class TicketService {
 
             List<TicketComment__c> rows = [
                 SELECT Id, Message__c, CreatedDate,
-                       Creator__c, Creator__r.Name, Creator__r.ImageUrl__c
+                       Creator__c, Creator__r.Name
                 FROM TicketComment__c
                 WHERE Id = :comment.Id AND RecordStatus__c != 'deleted'
                 LIMIT 1
@@ -1179,7 +1249,6 @@ public with sharing class TicketService {
         dto.message     = c.Message__c;
         dto.createdDate = c.CreatedDate;
         dto.memberName  = c.Creator__r != null ? c.Creator__r.Name : 'Unknown';
-        dto.photoUrl    = c.Creator__r != null ? c.Creator__r.ImageUrl__c : null;
         return dto;
     }
 

@@ -7,6 +7,7 @@ import updateTicketTypeApex     from '@salesforce/apex/ManageTicketTypeControlle
 import deleteTicketTypeApex     from '@salesforce/apex/ManageTicketTypeController.deleteTicketType';
 
 const TOAST_VISIBLE_MS = 2600;
+const ACCEPTED_IMAGE_FORMATS = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'];
 
 export default class TicketType extends LightningElement {
 
@@ -21,7 +22,7 @@ export default class TicketType extends LightningElement {
     @track _showCreateModal     = false;
     @track _newName             = '';
     @track _newDescription      = '';
-    @track _newIconUrl          = '';
+    @track _newIconDocumentId   = '';   // ContentDocumentId of the uploaded icon, linked to the new record on create
     @track _newWorkflowId       = '';
     @track _isCreating          = false;
     @track _createErrorMessage  = '';
@@ -29,7 +30,6 @@ export default class TicketType extends LightningElement {
     // edit modal
     @track _editingTicketType   = null;
     @track _editName            = '';
-    @track _editIconUrl         = '';
     @track _editWorkflowId      = '';
     @track _isUpdating          = false;
     @track _editErrorMessage    = '';
@@ -121,11 +121,15 @@ export default class TicketType extends LightningElement {
         return this._workflowOptions;
     }
 
+    get acceptedImageFormats() {
+        return ACCEPTED_IMAGE_FORMATS;
+    }
+
     // ─── CREATE ───────────────────────────────────────────────────────────────
     handleOpenCreate() {
         this._newName            = '';
         this._newDescription     = '';
-        this._newIconUrl         = '';
+        this._newIconDocumentId  = '';
         this._newWorkflowId      = '';
         this._createErrorMessage = '';
         this._showCreateModal    = true;
@@ -135,7 +139,7 @@ export default class TicketType extends LightningElement {
         this._showCreateModal    = false;
         this._newName            = '';
         this._newDescription     = '';
-        this._newIconUrl         = '';
+        this._newIconDocumentId  = '';
         this._newWorkflowId      = '';
         this._createErrorMessage = '';
         this._isCreating         = false;
@@ -143,13 +147,24 @@ export default class TicketType extends LightningElement {
 
     handleNewNameChange(event)        { this._newName        = event.detail.value; this._createErrorMessage = ''; }
     handleNewDescriptionChange(event) { this._newDescription = event.detail.value; this._createErrorMessage = ''; }
-    handleNewIconUrlChange(event)     { this._newIconUrl     = event.detail.value; this._createErrorMessage = ''; }
     handleNewWorkflowChange(event)    { this._newWorkflowId  = event.detail.value; this._createErrorMessage = ''; }
+
+    // No ticket-type record yet during create — the file uploads against the
+    // project (a valid record id); the captured documentId is linked to the new
+    // ticket type server-side once it exists.
+    get createUploadRecordId() { return this._projectId; }
+
+    handleNewIconUpload(event) {
+        const files = event.detail.files || [];
+        if (!files.length) return;
+        this._newIconDocumentId = files[0].documentId;
+        this._createErrorMessage = '';
+    }
 
     handleSubmitCreate() {
         const name        = (this._newName || '').trim();
         const description = (this._newDescription || '').trim();
-        const iconUrl     = (this._newIconUrl || '').trim();
+        const contentDocumentId = this._newIconDocumentId || '';
         const workflowId  = this._newWorkflowId;
 
         if (!name)       { this._createErrorMessage = 'Name is required'; return; }
@@ -160,7 +175,7 @@ export default class TicketType extends LightningElement {
         createTicketTypeApex({
             name,
             description,
-            iconUrl,
+            contentDocumentId,
             workflowId,
             projectId: this._projectId
         })
@@ -186,7 +201,6 @@ export default class TicketType extends LightningElement {
         if (!tt) return;
         this._editingTicketType  = tt;
         this._editName           = tt.Name || '';
-        this._editIconUrl        = tt.IconUrl__c || '';
         this._editWorkflowId     = tt.Workflow__c || '';
         this._editErrorMessage   = '';
     }
@@ -194,22 +208,27 @@ export default class TicketType extends LightningElement {
     handleCloseEdit() {
         this._editingTicketType = null;
         this._editName          = '';
-        this._editIconUrl       = '';
         this._editWorkflowId    = '';
         this._editErrorMessage  = '';
         this._isUpdating        = false;
     }
 
     handleEditNameChange(event)     { this._editName        = event.detail.value; this._editErrorMessage = ''; }
-    handleEditIconUrlChange(event)  { this._editIconUrl     = event.detail.value; this._editErrorMessage = ''; }
     handleEditWorkflowChange(event) { this._editWorkflowId  = event.detail.value; this._editErrorMessage = ''; }
+
+    // The ticket-type record exists in edit mode — lightning-file-upload links
+    // the file directly to it, so the new icon is resolved on the next save.
+    get editUploadRecordId() { return this._editingTicketType ? this._editingTicketType.Id : null; }
+
+    handleEditIconUpload() {
+        this._editErrorMessage = '';
+    }
 
     handleSubmitEdit() {
         const tt = this._editingTicketType;
         if (!tt) return;
 
         const name       = (this._editName || '').trim();
-        const iconUrl    = (this._editIconUrl || '').trim();
         const workflowId = this._editWorkflowId;
 
         if (!name)       { this._editErrorMessage = 'Name is required'; return; }
@@ -219,7 +238,6 @@ export default class TicketType extends LightningElement {
         updateTicketTypeApex({
             ticketTypeId: tt.Id,
             name,
-            iconUrl,
             workflowId
         })
             .then(res => {

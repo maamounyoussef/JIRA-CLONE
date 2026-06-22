@@ -21,7 +21,7 @@ public with sharing class ManageTicketTypeController {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             // InputSecurityValidator.validatePageAccessManageTicketType(projectId);
             Project__c project = DomainCorrectness.requireProjectExists(projectId);
-            List<TicketType__c> types = TicketService.loadTicketTypes(project);
+            List<TicketType__c> types = TicketService.loadTicketTypesWithLinkedIcons(project);
             return new APIResponse(true, 'Ticket types loaded', types);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error loading ticket types: ' + ex.getMessage());
@@ -41,7 +41,7 @@ public with sharing class ManageTicketTypeController {
     }
 
     @AuraEnabled
-    public static APIResponse createTicketType(String name, String description, String iconUrl, String workflowId, String projectId) {
+    public static APIResponse createTicketType(String name, String description, String contentDocumentId, String workflowId, String projectId) {
         try {
             if (String.isBlank(name))        return new APIResponse(false, 'name is required');
             if (String.isBlank(workflowId))  return new APIResponse(false, 'workflowId is required');
@@ -51,7 +51,12 @@ public with sharing class ManageTicketTypeController {
             DomainCorrectness.requireWorkflowExists(workflowId);
             DomainCorrectness.requireWorkflowBelongsToProject(workflowId, projectId);
 
-            TicketType__c created = TicketService.createTicketType(name, description, iconUrl, workflowId, projectId);
+            // The icon is the file linked to the ticket type — no URL is stored.
+            TicketType__c created = TicketService.createTicketType(name, description, null, workflowId, projectId);
+            if (String.isNotBlank(contentDocumentId)) {
+                TicketService.linkContentToTicketType(created.Id, contentDocumentId);
+            }
+
             List<TicketType__c> rows = [
                 SELECT Id, Name, Description__c, IconUrl__c, Project__c, RecordStatus__c,
                        Workflow__c, Workflow__r.Name
@@ -60,6 +65,7 @@ public with sharing class ManageTicketTypeController {
                   AND RecordStatus__c != 'deleted'
                 LIMIT 1
             ];
+            TicketService.applyLinkedIcons(rows);
             return new APIResponse(true, 'Ticket type created', rows.isEmpty() ? created : rows[0]);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error creating ticket type: ' + ex.getMessage());
@@ -67,7 +73,7 @@ public with sharing class ManageTicketTypeController {
     }
 
     @AuraEnabled
-    public static APIResponse updateTicketType(String ticketTypeId, String name, String iconUrl, String workflowId) {
+    public static APIResponse updateTicketType(String ticketTypeId, String name, String workflowId) {
         try {
             if (String.isBlank(ticketTypeId)) return new APIResponse(false, 'ticketTypeId is required');
             if (String.isBlank(name))         return new APIResponse(false, 'name is required');
@@ -77,7 +83,7 @@ public with sharing class ManageTicketTypeController {
             DomainCorrectness.requireWorkflowExists(workflowId);
             DomainCorrectness.requireWorkflowBelongsToProject(workflowId, existing.Project__c);
 
-            TicketType__c updated = TicketService.updateTicketType(ticketTypeId, name, iconUrl, workflowId);
+            TicketType__c updated = TicketService.updateTicketType(ticketTypeId, name, workflowId);
             return new APIResponse(true, 'Ticket type updated', updated);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error updating ticket type: ' + ex.getMessage());
