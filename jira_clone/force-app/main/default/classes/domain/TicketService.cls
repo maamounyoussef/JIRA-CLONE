@@ -83,6 +83,7 @@ public with sharing class TicketService {
 
         if (String.isBlank(ticket.Creator__c)) {
             String userId = UserInfo.getUserId();
+            System.debug('user Id : is ' + userId);
             ProjectMember__c creator = ProjectService.findActiveMemberByUserAndProject(userId, projectId);
             DomainCompleteValidator.requireCurrentUserMemberForProject(creator, userId);
             ticket.Creator__c = creator.Id;
