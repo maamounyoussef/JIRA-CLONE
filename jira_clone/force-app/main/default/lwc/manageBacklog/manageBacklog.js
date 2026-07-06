@@ -917,8 +917,7 @@ export default class ManageBacklog extends LightningElement {
             completeSprint({ sprintId })
                 .then(res => {
                     if (!res.success) throw new Error(res.message || 'Error completing sprint');
-                    const updatedSprint = res.data ? formatSprint(res.data) : null;
-                    if (updatedSprint) this._updateCompletedSprint(updatedSprint);
+                    this._removeCompletedSprint(sprintId);
                     this._showSuccess('Sprint completed');
                 })
                 .catch(err => this._showError(err.body?.message || err.message || 'Error completing sprint'))
@@ -1433,18 +1432,8 @@ export default class ManageBacklog extends LightningElement {
         });
     }
 
-    _updateCompletedSprint(updatedSprint) {
-        this.sprints = this.sprints.map(s => {
-            if (s.Id !== updatedSprint.Id) return s;
-            return {
-                ...s,
-                RecordStatus__c        : updatedSprint.RecordStatus__c,
-                isComplete             : updatedSprint.isComplete,
-                TotalStoryPoint__c     : updatedSprint.TotalStoryPoint__c,
-                TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c,
-                storyPointsPercent     : updatedSprint.storyPointsPercent,
-            };
-        });
+    _removeCompletedSprint(sprintId) {
+        this.sprints = this.sprints.filter(s => s.Id !== sprintId);
     }
 
     _updateStartedSprint(updatedSprint) {
