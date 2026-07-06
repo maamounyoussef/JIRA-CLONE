@@ -48,11 +48,12 @@ public with sharing class SprintService {
         }
     }
 
-    public static void completeSprint(Sprint__c sprint) {
+    public static Sprint__c completeSprint(Sprint__c sprint) {
         try {
             DomainCompleteValidator.requireSprintIsCompletable(sprint);
             sprint.RecordStatus__c = 'completed';
             updateSprint(sprint);
+            return sprint;
         } catch (Exception ex) {
             throw new ServiceException('Error completing sprint: ' + ex.getMessage());
         }
@@ -90,7 +91,7 @@ public with sharing class SprintService {
         }
     }
 
-    public static void startSprint(Sprint__c sprint) {
+    public static Sprint__c startSprint(Sprint__c sprint) {
         try {
             DomainCompleteValidator.requireSprintIsStartable(sprint);
             List<Sprint__c> activeSprint = [
@@ -102,6 +103,7 @@ public with sharing class SprintService {
 
             sprint.RecordStatus__c = 'in_progress';
             updateSprint(sprint);
+            return sprint;
         } catch (Exception ex) {
             throw new ServiceException('Error starting sprint: ' + ex.getMessage());
         }

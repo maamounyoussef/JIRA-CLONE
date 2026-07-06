@@ -301,8 +301,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
             Sprint__c sprint = DomainCorrectness.requireSprintExists(sprintId);
-            SprintService.completeSprint(sprint);
-            return new APIResponse(true, 'Sprint completed');
+            Sprint__c updatedSprint = SprintService.completeSprint(sprint);
+            return new APIResponse(true, 'Sprint completed', updatedSprint);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error completing sprint: ' + ex.getMessage());
         }
@@ -325,8 +325,8 @@ public with sharing class ManageBacklogController {
         try {
             if (String.isBlank(sprintId)) return new APIResponse(false, 'sprintId is required');
             Sprint__c sprint = DomainCorrectness.requireSprintExists(sprintId);
-            SprintService.startSprint(sprint);
-            return new APIResponse(true, 'Sprint started');
+            Sprint__c updatedSprint = SprintService.startSprint(sprint);
+            return new APIResponse(true, 'Sprint started', updatedSprint);
         } catch (Exception ex) {
             return new APIResponse(false, 'Error starting sprint: ' + ex.getMessage());
         }
