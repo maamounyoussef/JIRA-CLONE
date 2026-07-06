@@ -440,8 +440,8 @@ export default class ManageWorkflow extends LightningElement {
         return getStatusesWithSVGData(this.sortedStatuses, this.statusPositions, this.config, this.clickedStatusIds);
     }
 
-    _matchesId(t, id) {
-        return !!(t && ((t.id && t.id === id) || (t.Id && t.Id === id)));
+    _matchesId(record, id) {
+        return !!(record && ((record.id && record.id === id) || (record.Id && record.Id === id)));
     }
 
 
@@ -745,12 +745,23 @@ export default class ManageWorkflow extends LightningElement {
 
     get fromTransitionStatusName() {
         const t = this.activeTransition;
-        return t ? (t.fromStatusName || t.fromStatus || '') : '';
+        if (!t) return '';
+        return t.fromStatusName || this._statusNameById(t.fromStatus);
     }
 
     get toTransitionStatusName() {
         const t = this.activeTransition;
-        return t ? (t.toStatusName || t.toStatus || '') : '';
+        if (!t) return '';
+        return t.toStatusName || this._statusNameById(t.toStatus);
+    }
+
+    // Resolve a status id to its display name from the loaded project statuses.
+    // The transition only carries the from/to status ids; the name lives on the
+    // status entry in principal state. Falls back to the raw id if not found.
+    _statusNameById(statusId) {
+        if (!statusId) return '';
+        const status = this._statuses.find(s => this._matchesId(s, statusId));
+        return status ? status.name : statusId;
     }
 
     get transitionRecordStatus() {
