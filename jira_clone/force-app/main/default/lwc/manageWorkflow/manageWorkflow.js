@@ -58,7 +58,11 @@ export default class ManageWorkflow extends LightningElement {
     isLoading            = false;
     errorMessage         = '';
 
-    // Workflow list step (project chosen, no workflow chosen yet)
+    // Single principal state: every workflow loaded for the project. Each entry
+    // is a list item { id, name, recordStatus, ... }; when its editor is opened
+    // the detail (projectStatus + transitions) is folded ONTO the same entry.
+    // The open workflow (`workflowData`) is derived from here by id — the editor
+    // never keeps a separate copy.
     @track _workflows               = [];
     @track _workflowsLoading        = false;
     @track _workflowsErrorMessage   = '';
@@ -69,20 +73,9 @@ export default class ManageWorkflow extends LightningElement {
     @track isCreatingWorkflow            = false;
     @track createWorkflowErrorMessage    = '';
 
-    /*
-     * Principal de-normalized state — single source of truth for the active
-     * workflow editor. Inherent fields plus the related objects (statuses and
-     * transitions) all live here. Anything reachable from this shape is exposed
-     * as a derived getter; nothing about the editor is stored twice.
-     *
-     * Shape (from getWorkflow / WorkflowConfigDTO):
-     * {
-     *   id,
-     *   projectStatus: [ { id, name } ],
-     *   workflow: { id, name, transitions: [ { id, name, fromStatus, toStatus, recordStatus } ] }
-     * }
-     */
-    @track workflowData = null;
+    // The open workflow's editor view is the derived `workflowData` getter (see
+    // PRINCIPAL-STATE CRUD): it is FOUND in `_workflows` by `_workflowId`, so it
+    // is never stored as its own field. `_workflowId` is the only selection state.
 
     // Responsive SVG config — reassigned (immutable) by the ResizeObserver below.
     @track config       = VISUALIZATION_CONFIG;
@@ -107,7 +100,7 @@ export default class ManageWorkflow extends LightningElement {
     get hasProject()  { return !!this._projectId; }
     get hasWorkflow() { return !!this._workflowId; }
     get showWorkflowList() { return this.hasProject && !this.hasWorkflow; }
-    get hasWorkflows() { return Array.isArray(this._workflows) && this._workflows.length > 0; }
+    get hasWorkflows() { return this._workflows.length > 0; }
     get workflowListHasError() { return !!this._workflowsErrorMessage; }
     get workflowListShouldShowContent() { return !this._workflowsLoading && !this.workflowListHasError; }
 
@@ -128,13 +121,7 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res || !res.success) {
                     throw new Error(res?.message || 'Failed to load workflows');
                 }
-                this._workflows = (res.data || []).map(w => ({
-                    id: w.Id,
-                    name: w.Name,
-                    recordStatus: w.RecordStatus__c,
-                    createdDate: w.CreatedDate,
-                    lastModifiedDate: w.LastModifiedDate
-                }));
+                this._workflows = (res.data || []).map(w => this._mapWorkflow(w));
             })
             .catch(err => {
                 const errorMsg = err?.body?.message || err?.message || 'Failed to load workflows';
@@ -143,6 +130,24 @@ export default class ManageWorkflow extends LightningElement {
                 this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: errorMsg, variant: 'error' }));
             })
             .finally(() => { this._workflowsLoading = false; });
+    }
+
+    // Map a raw Workflow__c record (server list load OR create response) into a
+    // list-item entry of the single `_workflows` state. Detail is folded on later.
+    _mapWorkflow(w) {
+        return {
+            id: w.Id,
+            name: w.Name,
+            recordStatus: w.RecordStatus__c,
+            createdDate: w.CreatedDate,
+            lastModifiedDate: w.LastModifiedDate
+        };
+    }
+
+    // Append a newly-created workflow to the single state so the editor it opens
+    // can derive its `workflowData` from that same entry.
+    _addWorkflow(record) {
+        this._workflows = [...this._workflows, this._mapWorkflow(record)];
     }
 
 
@@ -159,9 +164,11 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     handleBackToWorkflowList() {
+        // `_workflowId = null` collapses the derived `workflowData` to null — the
+        // open workflow is no longer selected. The single `_workflows` state and
+        // its folded detail stay put; the reload below refreshes it.
         this._workflowId = null;
         localStorage.removeItem('workflowId');
-        this.workflowData = null;
         this.errorMessage = '';
         this.handleCloseTransitionDetail();
         // The visualizer container is about to unmount. Drop the ResizeObserver
@@ -258,8 +265,11 @@ export default class ManageWorkflow extends LightningElement {
                 const newId = res.data.Id;
                 this.showCreateWorkflowModal = false;
                 this.newWorkflowName = '';
+                // Add to the single state, then open its editor. `_loadWorkflow`
+                // folds the detail onto this same entry; `workflowData` derives
+                // the editor view from it — one record, stored once.
+                this._addWorkflow(res.data);
                 this._enterWorkflowEditor(newId);
-                //Todo update the workflow to _workflows array 
             })
             .catch(err => {
                 const errorMsg = err?.body?.message || err?.message || 'Failed to create workflow';
@@ -302,7 +312,7 @@ export default class ManageWorkflow extends LightningElement {
                 if (!res || !res.success || !res.data) {
                     throw new Error(res?.message || 'Failed to load workflow');
                 }
-                this.workflowData = res.data;
+                this._foldOpenWorkflowDetail(res.data);
             })
             .catch(err => {
                 const errorMsg = err?.body?.message || err?.message || 'Failed to load workflow';
@@ -313,15 +323,44 @@ export default class ManageWorkflow extends LightningElement {
     }
 
     // ─── PRINCIPAL-STATE CRUD ──────────────────────────────────────────────
-    // The workflow lives in `workflowData`. Everything else in the editor
-    // reads it through these accessors / writes it through these mutators —
-    // no inline `workflowData.workflow.transitions` access anywhere else.
-    get _statuses()    { return this.workflowData?.projectStatus || []; }
-    get _transitions() { return this.workflowData?.workflow?.transitions || []; }
+    // The full list is the single state `_workflows`. The open workflow's editor
+    // view is DERIVED here — found in `_workflows` by `_workflowId`, with the
+    // detail folded onto that same entry. Everything else in the editor reads it
+    // through these accessors / writes it through these mutators, which patch the
+    // entry in place — no inline `_workflows` access and nothing stored twice.
+
+    // The open workflow's raw entry in the single state (carries folded detail).
+    get _openWorkflow() {
+        return this._workflows.find(w => this._matchesId(w, this._workflowId)) || null;
+    }
+
+    // Editor view of the open workflow, projected into the WorkflowConfigDTO
+    // shape the geometry getters expect. Null when no workflow is selected.
+    get workflowData() {
+        const wf = this._openWorkflow;
+        return wf
+            ? {
+                id: wf.id,
+                projectStatus: wf.projectStatus || [],
+                workflow: { id: wf.id, name: wf.name, transitions: wf.transitions || [] }
+            }
+            : null;
+    }
+
+    get _statuses()    { return this._openWorkflow?.projectStatus || []; }
+    get _transitions() { return this._openWorkflow?.transitions || []; }
+
+    // Fold the getWorkflow detail onto the open workflow's entry.
+    _foldOpenWorkflowDetail(detail) {
+        this._patchOpenWorkflow({
+            name: detail.workflow?.name,
+            projectStatus: detail.projectStatus || [],
+            transitions: detail.workflow?.transitions || []
+        });
+    }
 
     _addStatus(status) {
-        if (!this.workflowData) return;
-        this.workflowData = { ...this.workflowData, projectStatus: [...this._statuses, status] };
+        this._patchOpenWorkflow({ projectStatus: [...this._statuses, status] });
     }
     _addPendingTransition({ id, name, fromStatus, toStatus }) {
         this._writeTransitions([
@@ -357,11 +396,16 @@ export default class ManageWorkflow extends LightningElement {
         ));
     }
     _writeTransitions(transitions) {
-        if (!this.workflowData) return;
-        this.workflowData = {
-            ...this.workflowData,
-            workflow: { ...this.workflowData.workflow, transitions }
-        };
+        this._patchOpenWorkflow({ transitions });
+    }
+
+    // Immutably patch the open workflow's entry inside the single `_workflows`
+    // state. All editor mutations funnel through here.
+    _patchOpenWorkflow(patch) {
+        if (!this._workflowId) return;
+        this._workflows = this._workflows.map(w =>
+            this._matchesId(w, this._workflowId) ? { ...w, ...patch } : w
+        );
     }
 
     // ─── DERIVED GEOMETRY ──────────────────────────────────────────────────

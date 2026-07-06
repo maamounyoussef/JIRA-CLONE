@@ -38,7 +38,7 @@ public with sharing class ManageWorkflowPageController {
         }
     }
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled(cacheable=false)
     public static APIResponse loadWorkflowsByProject(String projectId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
