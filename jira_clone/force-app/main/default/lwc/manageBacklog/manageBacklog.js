@@ -761,7 +761,7 @@ export default class ManageBacklog extends LightningElement {
         createTicketFromBacklog(data)
             .then(res => {
                 if (!res.success) throw new Error(res.message || 'Error creating ticket from backlog');
-                const ticket = formatTicket(res.data, this.ticketTypeOptions, data.ticketTypeId);
+                const ticket = formatTicket(res.data.createdTicket, this.ticketTypeOptions, data.ticketTypeId);
                 this._addBacklogTicket(ticket);
                 this.showBacklogTicketModal = false;
                 this._showSuccess('Ticket created');

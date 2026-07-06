@@ -259,6 +259,7 @@ export default class ManageWorkflow extends LightningElement {
                 this.showCreateWorkflowModal = false;
                 this.newWorkflowName = '';
                 this._enterWorkflowEditor(newId);
+                //Todo update the workflow to _workflows array 
             })
             .catch(err => {
                 const errorMsg = err?.body?.message || err?.message || 'Failed to create workflow';
