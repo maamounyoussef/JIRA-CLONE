@@ -103,7 +103,7 @@
                             <c-ao-btn label="Start"    variant="primary"   data-sprint-id={sprint.Id} onclick={handleSprintStart}></c-ao-btn>
                         </template>
                         <c-ao-btn label="Complete" variant="secondary" data-sprint-id={sprint.Id} onclick={handleSprintComplete}></c-ao-btn>
-                        <c-ao-btn label="Edit"     variant="secondary" data-sprint-id={sprint.Id} onclick={handleSprintEdit}></c-ao-btn>
+                        <c-ao-btn label="Edit"     variant="secondary" disabled data-sprint-id={sprint.Id} onclick={handleSprintEdit}></c-ao-btn>
                         <c-ao-btn label="Delete"   variant="danger"    data-sprint-id={sprint.Id} onclick={handleSprintDelete}></c-ao-btn>
                         <c-ao-btn label="+ Ticket" variant="ghost"     data-sprint-id={sprint.Id} onclick={handleSprintAddTicket}></c-ao-btn>
                     </div>
