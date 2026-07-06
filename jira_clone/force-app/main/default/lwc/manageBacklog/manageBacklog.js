@@ -180,7 +180,7 @@ export default class ManageBacklog extends LightningElement {
         }
     }
 
-    @wire(loadTicketBySearchTerm, { projectId: '$_projectId', searchTerm: '$_ticketViewSearchTerm' })
+    @wire(loadTicketBySearchTerm, { projectId: '$_projectId', searchTerm: '$_ticketViewSearchTerm', excludeTicketId: '$_activeTicketViewId' })
     wiredTicketViewSearch({ data }) {
         if (data && data.success) {
             this._ticketViewSearchOptions = (data.data || []).map(t => ({

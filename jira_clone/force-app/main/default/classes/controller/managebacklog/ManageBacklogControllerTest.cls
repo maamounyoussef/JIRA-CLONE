@@ -157,7 +157,7 @@ public class ManageBacklogControllerTest {
         Test.setFixedSearchResults(new List<Id>{ ctx.ticket.Id });
 
         Test.startTest();
-        APIResponse res = ManageBacklogController.loadTicketBySearchTerm(ctx.project.Id, 'TCK-SEARCH-001');
+        APIResponse res = ManageBacklogController.loadTicketBySearchTerm(ctx.project.Id, 'TCK-SEARCH-001', null);
         Test.stopTest();
 
         Assert.isTrue(res.success, 'loadTicketBySearchTerm should succeed; got: ' + res.message);
@@ -165,6 +165,23 @@ public class ManageBacklogControllerTest {
         Assert.isNotNull(tickets, 'Tickets list should not be null');
         Assert.areEqual(1, tickets.size(), 'Should return exactly one matching ticket');
         Assert.areEqual(ctx.ticket.Id, tickets[0].Id, 'Returned ticket should match the seeded ticket');
+    }
+
+    @isTest
+    static void testLoadTicketBySearchTermExcludesSelf() {
+        TicketContext ctx = buildTicketContext('TestProject-SearchExcl', 'TCK-SEARCH-EXCL-001');
+
+        // The only match is the ticket itself; excluding it must yield no results.
+        Test.setFixedSearchResults(new List<Id>{ ctx.ticket.Id });
+
+        Test.startTest();
+        APIResponse res = ManageBacklogController.loadTicketBySearchTerm(ctx.project.Id, 'TCK-SEARCH-EXCL-001', ctx.ticket.Id);
+        Test.stopTest();
+
+        Assert.isTrue(res.success, 'loadTicketBySearchTerm should succeed; got: ' + res.message);
+        List<Ticket__c> tickets = (List<Ticket__c>) res.data;
+        Assert.isNotNull(tickets, 'Tickets list should not be null');
+        Assert.areEqual(0, tickets.size(), 'The searched ticket must be excluded from its own results');
     }
 
     @isTest

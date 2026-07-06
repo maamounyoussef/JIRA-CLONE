@@ -57,7 +57,7 @@ public with sharing class ManageBacklogController {
 
     
     @AuraEnabled(cacheable=true)
-    public static APIResponse loadTicketBySearchTerm(String projectId, String searchTerm) {
+    public static APIResponse loadTicketBySearchTerm(String projectId, String searchTerm, String excludeTicketId) {
         try {
             if (String.isBlank(projectId)) return new APIResponse(false, 'projectId is required');
             if (String.isBlank(searchTerm)) return new APIResponse(false, 'searchTerm is required');
@@ -94,6 +94,13 @@ public with sharing class ManageBacklogController {
             // SOSL search across Name and Summary fields
             String typeIdSet = '(\'' + String.join(typeIds, '\',\'') + '\')';
 
+            // Exclude the ticket the search originates from — a ticket must never
+            // appear as a candidate to link to itself.
+            String excludeClause = '';
+            if (String.isNotBlank(excludeTicketId)) {
+                excludeClause = 'AND Id != \'' + String.escapeSingleQuotes(excludeTicketId) + '\' ';
+            }
+
             String soslQuery = 'FIND {*' + sanitized + '*} IN ALL FIELDS ' +
                             'RETURNING Ticket__c(' +
                             'Id, Name, Summary__c, Description__c, CurrentState__c, Priority__c, StoryPoint__c, ' +
@@ -102,6 +109,7 @@ public with sharing class ManageBacklogController {
                             'WHERE (Name LIKE \'%' + sanitized + '%\' OR Summary__c LIKE \'%' + sanitized + '%\') ' +
                             'AND Ticket_Type__c IN ' + typeIdSet + ' ' +
                             'AND RecordStatus__c = \'active\' ' +
+                            excludeClause +
                             'ORDER BY Name ASC LIMIT 2000)';
 
             List<List<SObject>> searchResults = Search.query(soslQuery);
