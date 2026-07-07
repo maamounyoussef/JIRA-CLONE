@@ -25,6 +25,12 @@ export default class AoCreateTicketModal extends LightningElement {
         this.ticket = { ...this.ticket, [field]: val };
     }
 
+    // lightning-input-rich-text exposes its HTML via event.target.value (no
+    // event.detail.value), so it gets its own handler rather than handleChange.
+    handleDescriptionChange(event) {
+        this.ticket = { ...this.ticket, description: event.target.value };
+    }
+
     handleCancel() {
         this.dispatchEvent(new CustomEvent('cancel'));
     }

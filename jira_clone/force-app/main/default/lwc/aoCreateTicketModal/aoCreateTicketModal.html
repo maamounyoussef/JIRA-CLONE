@@ -6,7 +6,13 @@
         </header>
         <div class="modal__content">
             <c-ao-input label="Summary"                value={ticket.summary}        data-field="summary"       onchange={handleChange}></c-ao-input>
-            <c-ao-input label="Description"            value={ticket.description}    data-field="description"   onchange={handleChange}></c-ao-input>
+            <lightning-input-rich-text
+                label="Description"
+                label-visible
+                value={ticket.description}
+                placeholder="Describe the ticket..."
+                onchange={handleDescriptionChange}>
+            </lightning-input-rich-text>
             <c-ao-input label="Story Points" type="number" value={ticket.storyPoint} data-field="storyPoint"    onchange={handleChange}></c-ao-input>
             <c-ao-combobox label="Ticket Type" required value={ticket.ticketTypeId}   options={ticketTypeOptions} data-field="ticketTypeId"   onchange={handleChange}></c-ao-combobox>
             <c-ao-combobox label="State"      required value={ticket.currentStateId} options={statusOptions}     data-field="currentStateId" onchange={handleChange}></c-ao-combobox>

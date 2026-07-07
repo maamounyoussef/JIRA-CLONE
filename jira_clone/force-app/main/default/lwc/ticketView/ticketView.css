@@ -123,6 +123,38 @@
 }
 
 /* ── Description ─────────────────────────────────────────────────────────── */
+.tv-description__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tv-description__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    color: #172B4D;
+    font-family: inherit;
+}
+
+.tv-description__toggle:hover {
+    background-color: #EBECF0;
+}
+
+.tv-description__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.tv-description__body {
+    margin-top: 10px;
+}
+
 .tv-description__view {
     padding: 8px 10px;
     border-radius: 3px;

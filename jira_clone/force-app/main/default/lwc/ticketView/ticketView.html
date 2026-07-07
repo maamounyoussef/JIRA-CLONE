@@ -78,42 +78,54 @@
         <!-- ║                       DESCRIPTION                            ║ -->
         <!-- ╚══════════════════════════════════════════════════════════════╝ -->
         <section class="tv-section tv-description">
-            <h2 class="tv-section__label tv-section__label--bold">Description</h2>
 
-            <template if:false={isDescriptionEditing}>
-                <template if:true={hasDescription}>
-                    <div class="tv-description__view"
-                         onclick={handleTicketDescriptionEdit}>
-                        <lightning-formatted-rich-text value={ticket.Description__c}></lightning-formatted-rich-text>
-                    </div>
-                </template>
-                <template if:false={hasDescription}>
-                    <p class="tv-description__placeholder"
-                       onclick={handleTicketDescriptionEdit}>
-                        Add a description...
-                    </p>
-                </template>
-            </template>
+            <header class="tv-description__header">
+                <button class="tv-description__toggle"
+                        type="button"
+                        onclick={handleTicketDescriptionToggle}>
+                    <lightning-icon icon-name={descriptionChevronIcon} size="xx-small"></lightning-icon>
+                    <span class="tv-description__title">Description</span>
+                </button>
+            </header>
 
-            <template if:true={isDescriptionEditing}>
-                <lightning-input-rich-text
-                    value={draftDescription}
-                    placeholder="Type [] to jot down things that don't need to be tracked elsewhere."
-                    onchange={handleTicketDescriptionChange}>
-                </lightning-input-rich-text>
-                <div class="tv-description__actions">
-                    <c-ao-btn
-                        label="Save"
-                        variant="primary"
-                        size="sm"
-                        onclick={handleTicketDescriptionSave}>
-                    </c-ao-btn>
-                    <c-ao-btn
-                        label="Cancel"
-                        variant="ghost"
-                        size="sm"
-                        onclick={handleTicketDescriptionCancel}>
-                    </c-ao-btn>
+            <template if:true={isDescriptionExpanded}>
+                <div class="tv-description__body">
+                    <template if:false={isDescriptionEditing}>
+                        <template if:true={hasDescription}>
+                            <div class="tv-description__view"
+                                 onclick={handleTicketDescriptionEdit}>
+                                <lightning-formatted-rich-text value={ticket.Description__c}></lightning-formatted-rich-text>
+                            </div>
+                        </template>
+                        <template if:false={hasDescription}>
+                            <p class="tv-description__placeholder"
+                               onclick={handleTicketDescriptionEdit}>
+                                Add a description...
+                            </p>
+                        </template>
+                    </template>
+
+                    <template if:true={isDescriptionEditing}>
+                        <lightning-input-rich-text
+                            value={draftDescription}
+                            placeholder="Type [] to jot down things that don't need to be tracked elsewhere."
+                            onchange={handleTicketDescriptionChange}>
+                        </lightning-input-rich-text>
+                        <div class="tv-description__actions">
+                            <c-ao-btn
+                                label="Save"
+                                variant="primary"
+                                size="sm"
+                                onclick={handleTicketDescriptionSave}>
+                            </c-ao-btn>
+                            <c-ao-btn
+                                label="Cancel"
+                                variant="ghost"
+                                size="sm"
+                                onclick={handleTicketDescriptionCancel}>
+                            </c-ao-btn>
+                        </div>
+                    </template>
                 </div>
             </template>
         </section>

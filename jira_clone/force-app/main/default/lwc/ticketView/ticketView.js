@@ -76,6 +76,7 @@ export default class TicketView extends LightningElement {
     @track _draftSummary         = '';
     @track _summaryError         = null;
 
+    @track _isDescriptionExpanded = false;
     @track _isDescriptionEditing = false;
     @track _draftDescription     = '';
 
@@ -106,6 +107,9 @@ export default class TicketView extends LightningElement {
 
     get currentStatusId()      { return this._ticket.CurrentState__c || ''; }
     get statusError()          { return this._statusError; }
+
+    get isDescriptionExpanded()   { return this._isDescriptionExpanded; }
+    get descriptionChevronIcon()  { return this._isDescriptionExpanded ? 'utility:chevrondown' : 'utility:chevronright'; }
 
     get isDescriptionEditing() { return this._isDescriptionEditing; }
     get draftDescription()     { return this._draftDescription; }
@@ -235,6 +239,15 @@ export default class TicketView extends LightningElement {
     // ╔══════════════════════════════════════════════════════════════════════╗
     // ║                     DESCRIPTION  SECTION                             ║
     // ╚══════════════════════════════════════════════════════════════════════╝
+
+    // UI-only: collapse/expand the description. No Apex request — the ticket
+    // already carries Description__c, so toggling just shows/hides it.
+    handleTicketDescriptionToggle() {
+        this._isDescriptionExpanded = !this._isDescriptionExpanded;
+        if (!this._isDescriptionExpanded) {
+            this._isDescriptionEditing = false;
+        }
+    }
 
     handleTicketDescriptionEdit() {
         this._draftDescription     = this._ticket.Description__c || '';
