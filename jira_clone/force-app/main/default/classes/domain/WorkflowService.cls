@@ -269,7 +269,15 @@ public with sharing class WorkflowService {
                 LIMIT 1
             ];
             DomainCompleteValidator.requireWorkflowNameUniquePerProject(duplicates);
-            return createWorkflow(name, projectId);
+
+            Workflow__c workflow = createWorkflow(name, projectId);
+
+            // Seed the new workflow's project with its Start (isStart) and Done
+            // (isEnd) statuses. Status__c is owned by StatusService — delegate the
+            // DML there rather than writing Status__c from this service.
+            StatusService.createStartAndDoneStatuses(projectId);
+
+            return workflow;
         } catch (Exception ex) {
             throw new ServiceException('Error creating workflow: ' + ex.getMessage());
         }

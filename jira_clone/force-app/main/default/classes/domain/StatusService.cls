@@ -29,6 +29,35 @@ public with sharing class StatusService {
         }
     }
 
+    /**
+     * @description Create the default Start and Done statuses that seed a project's
+     * new workflow. Start is flagged isStart__c = true, Done is flagged isEnd__c = true.
+     * Both rows are inserted in a single DML (bulk-safe).
+     * @param projectId - The Project__c the statuses belong to
+     * @return The two created Status__c records (Start first, Done second)
+     */
+    public static List<Status__c> createStartAndDoneStatuses(String projectId) {
+        try {
+            Status__c startStatus = new Status__c(
+                Name = 'Start',
+                Project__c = projectId,
+                isStart__c = true,
+                RecordStatus__c = 'active'
+            );
+            Status__c doneStatus = new Status__c(
+                Name = 'Done',
+                Project__c = projectId,
+                isEnd__c = true,
+                RecordStatus__c = 'active'
+            );
+            List<Status__c> statuses = new List<Status__c>{ startStatus, doneStatus };
+            insert statuses;
+            return statuses;
+        } catch (DmlException ex) {
+            throw new ServiceException('Error creating start/done statuses: ' + ex.getMessage());
+        }
+    }
+
     public static List<Status__c> loadStatuses(Project__c project) {
         try {
             return [
