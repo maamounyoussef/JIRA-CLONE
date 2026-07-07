@@ -2,9 +2,10 @@
 name: agile-development-orchastrator
 description: >
   Contains the top-level branching for any development request on this
-  project. Asks bug vs. task, then for TASK walks the three task options
+  project. Asks bug vs. task, then for TASK walks the four task options
   (A: create new component, B: create new functionality, C: add an existing
-  component to another) and the parent-vs-child sub-question, and finally
+  component to another, D: update an existing functionality) and the
+  parent-vs-child sub-question, and finally
   delegates to the matching task-skill in `task-skill/`. Also contains the
   loop-back rule so each iteration runs a single task-skill end-to-end before
   returning to the option menu.
@@ -69,13 +70,18 @@ Ask the user via `AskUserQuestion`:
 > *"Which option?
 > (A) Create a new component
 > (B) Create a new functionality
-> (C) Add an existing component to another one"*
+> (C) Add an existing component to another one
+> (D) Update an existing functionality"*
 
 ---
 
 ### Step 4 — Pick parent or child (options A and B only)
 
 For option C, skip this step — C is always a parent-side concern.
+
+For option D, skip this step too — the `update-existing-functionality`
+task-skill asks its own "child vs. pather-direct" routing question in its Step 1,
+so asking parent/child here would double-ask it.
 
 For options A and B, ask via `AskUserQuestion`:
 
@@ -96,6 +102,7 @@ emission — this orchestrator does not interleave them.
 | B — create new functionality | parent | [task-skill/add-interactive-with-data-persistance-functionality-in-pather.md](./task-skill/add-interactive-with-data-persistance-functionality-in-pather.md) | 
 | B — create new functionality | child | [task-skill/add-functionality-in-child-lwc-component.md](./task-skill/add-functionality-in-child-lwc-component.md) | 
 | C — add existing component to another | (parent only) | [task-skill/lwc-parent-event-handler-generator.md](./task-skill/lwc-parent-event-handler-generator.md) | 
+| D — update an existing functionality | (self-routing) | [task-skill/update-existing-functionality.md](./task-skill/update-existing-functionality.md) | 
 
 ---
 
@@ -115,7 +122,7 @@ Print this line at the top of every orchestrator-level message so the loop
 state is always visible:
 
 ```
-[Orchestrator | Iteration: <N> | Option: <pending|A|B|C> | Target: <pending|parent|child>]
+[Orchestrator | Iteration: <N> | Option: <pending|A|B|C|D> | Target: <pending|parent|child>]
 ```
 
 Once a sub-skill is running, switch to that sub-skill's tracker line for

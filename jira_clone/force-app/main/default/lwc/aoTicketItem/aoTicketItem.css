@@ -320,6 +320,33 @@
     font-weight: 500;
 }
 
+.sp-badge--clickable {
+    border: 1px solid #DFE1E6;
+    background-color: #FFFFFF;
+    border-radius: 3px;
+    padding: 0.15em 0.5em;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.sp-badge--clickable:hover {
+    background-color: #F4F5F7;
+    border-color: #B3BAC5;
+}
+
+.sp-edit-container {
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+}
+
+.sp-edit-container c-ao-input {
+    flex: 0 0 4.5em;
+    width: 4.5em;
+    min-width: 0;
+}
+
 /* ── Error message ───────────────────────────────────────────────────────── */
 .ticket-error {
     display: flex;

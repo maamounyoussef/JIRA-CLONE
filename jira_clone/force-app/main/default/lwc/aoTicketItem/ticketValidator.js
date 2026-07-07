@@ -4,6 +4,19 @@ const SUMMARY_MAX     = 255;
 const EPIC_NAME_MAX   = 80;
 const STORY_POINT_MAX = 99;
 
+// Valid Story Point values: Fibonacci numbers within Number(2,0) range, 0 excluded.
+const FIBONACCI_STORY_POINTS = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+
+export function validateStoryPoint(storyPoint) {
+    const raw = (storyPoint == null ? '' : String(storyPoint)).trim();
+    if (!raw) return 'Story Point is required.';
+    const sp = Number(raw);
+    if (!Number.isInteger(sp) || !FIBONACCI_STORY_POINTS.includes(sp)) {
+        return 'Story Point must be a Fibonacci number: 1, 2, 3, 5, 8, 13, 21, 34, 55, 89.';
+    }
+    return null;
+}
+
 export function validateSummary(summary) {
     if (!summary || !summary.trim()) return 'Summary cannot be empty.';
     if (summary.trim().length > SUMMARY_MAX) return `Summary must be ${SUMMARY_MAX} characters or fewer.`;

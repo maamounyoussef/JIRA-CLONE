@@ -19,6 +19,7 @@ import deleteTicket          from '@salesforce/apex/ManageBacklogController.dele
 import updateTicketSummary   from '@salesforce/apex/ManageBacklogController.updateTicketSummary';
 import updateTicketDescription from '@salesforce/apex/ManageBacklogController.updateTicketDescription';
 import updateTicketPriority  from '@salesforce/apex/ManageBacklogController.updateTicketPriority';
+import updateTicketStoryPoint from '@salesforce/apex/ManageBacklogController.updateTicketStoryPoint';
 import changeTicketState     from '@salesforce/apex/ManageBacklogController.changeTicketState';
 import assignTicket          from '@salesforce/apex/ManageBacklogController.assignTicket';
 import updateTicketEpic      from '@salesforce/apex/ManageBacklogController.updateTicketEpic';
@@ -560,6 +561,22 @@ export default class ManageBacklog extends LightningElement {
                 this._showSuccess('Priority updated');
             })
             .catch(err => this._showError(err.body?.message || err.message || 'Error updating ticket priority'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    // from c-ao-ticket-item
+    handleTicketStoryPointUpdate(event) {
+        const { ticketId, storyPoint } = event.detail;
+        this.isLoading = true;
+        updateTicketStoryPoint({ ticketId, storyPoint })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'Error updating story points');
+                this._updateTicketStoryPointEverywhere(ticketId, storyPoint);
+                const updatedSprint = res.data?.updatedSprint ? formatSprint(res.data.updatedSprint) : null;
+                if (updatedSprint) this._updateSprintStoryPoints(updatedSprint);
+                this._showSuccess('Story points updated');
+            })
+            .catch(err => this._showError(err.body?.message || err.message || 'Error updating story points'))
             .finally(() => { this.isLoading = false; });
     }
 
@@ -1320,6 +1337,10 @@ export default class ManageBacklog extends LightningElement {
         this._patchTicketEverywhere(ticketId, { Priority__c: priority });
     }
 
+    _updateTicketStoryPointEverywhere(ticketId, storyPoint) {
+        this._patchTicketEverywhere(ticketId, { StoryPoint__c: storyPoint });
+    }
+
     _updateTicketStateEverywhere(ticketId, stateId) {
         this.backlogTickets = this.backlogTickets.map(t =>
             t.Id === ticketId ? { ...t, CurrentState__c: stateId } : t
@@ -1427,7 +1448,8 @@ export default class ManageBacklog extends LightningElement {
             return {
                 ...s,
                 TotalStoryPoint__c: updatedSprint.TotalStoryPoint__c,
-                TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c
+                TotalEndedStoryPoint__c: updatedSprint.TotalEndedStoryPoint__c,
+                storyPointsPercent: updatedSprint.storyPointsPercent
             };
         });
     }

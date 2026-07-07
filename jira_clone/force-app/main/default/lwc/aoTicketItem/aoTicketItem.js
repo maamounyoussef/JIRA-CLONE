@@ -1,5 +1,5 @@
 import { LightningElement, api, track } from 'lwc';
-import { validateSummary, validateSubtask, validateEpicSelection, validateNewEpic } from './ticketValidator';
+import { validateSummary, validateSubtask, validateEpicSelection, validateNewEpic, validateStoryPoint } from './ticketValidator';
 import { emptyEpic, formatEpicsAsOptions, toISODateOrNull }                         from './ticketUtils';
 import { emptySubtask, enrichSubtask }                                              from './subtaskUtils';
 
@@ -48,6 +48,9 @@ export default class AoTicketItem extends LightningElement {
     @track isEditingPriority = false;
     @track priorityDraft     = '';
 
+    @track isEditingStoryPoint = false;
+    @track storyPointDraft     = '';
+
     @track errorMessage = null;
     @track modalError   = null;
 
@@ -74,6 +77,14 @@ export default class AoTicketItem extends LightningElement {
     handleSavePriority() {
         this.isEditingPriority = false;
         this._dispatch('ticketpriorityupdate', { ticketId: this.ticket.Id, priority: this.priorityDraft });
+    }
+
+    handleSaveStoryPoint() {
+        const raw   = (this.storyPointDraft ?? '').toString().trim();
+        const error = validateStoryPoint(raw);
+        if (error) { this.errorMessage = error; return; }
+        this.isEditingStoryPoint = false;
+        this._dispatch('ticketstorypointupdate', { ticketId: this.ticket.Id, storyPoint: parseInt(raw, 10) });
     }
 
     handleStateChange(event) {
@@ -160,6 +171,26 @@ export default class AoTicketItem extends LightningElement {
         if (!event.currentTarget.contains(event.relatedTarget)) {
             this.isEditingPriority = false;
             this.errorMessage      = null;
+        }
+    }
+
+    // -- Story Points --
+    handleStartEditStoryPoint() {
+        this.storyPointDraft     = this.ticket.StoryPoint__c != null ? String(this.ticket.StoryPoint__c) : '';
+        this.isEditingStoryPoint = true;
+    }
+
+    handleStoryPointDraftChange(event) { this.storyPointDraft = event.detail.value; }
+
+    handleCancelEditStoryPoint() {
+        this.isEditingStoryPoint = false;
+        this.errorMessage        = null;
+    }
+
+    handleBlurStoryPoint(event) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            this.isEditingStoryPoint = false;
+            this.errorMessage        = null;
         }
     }
 

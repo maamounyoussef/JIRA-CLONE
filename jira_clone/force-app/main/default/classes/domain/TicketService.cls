@@ -256,6 +256,34 @@ public with sharing class TicketService {
         }
     }
 
+    // Story points roll up into the sprint totals, so a change on a ticket that
+    // sits in a sprint must shift that sprint by the delta (and the ended total
+    // too when the ticket is in an end status). Backlog tickets (no sprint) have
+    // nothing to adjust. Returns the updated sprint, or null when none changed.
+    public static Sprint__c updateTicketStoryPoint(Ticket__c existing, Integer storyPoint) {
+        try {
+            Decimal oldSP = existing.StoryPoint__c != null ? existing.StoryPoint__c : 0;
+            Decimal newSP = storyPoint != null ? storyPoint : 0;
+            Decimal delta = newSP - oldSP;
+
+            existing.StoryPoint__c = storyPoint;
+            updateTicket(existing);
+
+            if (String.isBlank(existing.Sprint__c) || delta == 0) return null;
+
+            Status__c status  = StatusService.findStatus(existing.CurrentState__c);
+            Boolean   isEnd   = DomainCompleteValidator.isEndStatus(status);
+            Decimal   totalMag = Math.abs(delta);
+            Decimal   endedMag = isEnd ? totalMag : 0;
+
+            return delta > 0
+                ? SprintService.increaseTotalAndEndedStoryPoint(existing.Sprint__c, totalMag, endedMag)
+                : SprintService.decreaseTotalAndEndedStoryPoints(existing.Sprint__c, totalMag, endedMag);
+        } catch (Exception ex) {
+            throw new ServiceException('Error updating ticket story point: ' + ex.getMessage());
+        }
+    }
+
     public static Ticket__c updateTicketSummary(Ticket__c existing, String summary) {
         try {
             existing.Summary__c = summary;

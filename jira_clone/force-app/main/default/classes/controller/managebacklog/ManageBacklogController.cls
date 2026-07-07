@@ -551,6 +551,20 @@ public with sharing class ManageBacklogController {
     }
 
     @AuraEnabled
+    public static APIResponse updateTicketStoryPoint(String ticketId, Integer storyPoint) {
+        try {
+            if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');
+            if (storyPoint == null)       return new APIResponse(false, 'storyPoint is required');
+            Ticket__c existing = DomainCorrectness.requireTicketExists(ticketId);
+            Sprint__c updatedSprint = TicketService.updateTicketStoryPoint(existing, storyPoint);
+            Map<String, Object> data = new Map<String, Object>{ 'updatedSprint' => updatedSprint };
+            return new APIResponse(true, 'Ticket story point updated', data);
+        } catch (Exception ex) {
+            return new APIResponse(false, 'Error updating ticket story point: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static APIResponse assignTicket(String ticketId, String memberId) {
         try {
             if (String.isBlank(ticketId)) return new APIResponse(false, 'ticketId is required');

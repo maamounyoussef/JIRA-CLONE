@@ -323,7 +323,33 @@
                     No Type
                 </span>
             </template>
-            <span class="sp-badge">{spLabel} SP</span>
+            <template if:false={isEditingStoryPoint}>
+                <button class="sp-badge sp-badge--clickable" onclick={handleStartEditStoryPoint} title="Edit story points">{spLabel} SP</button>
+            </template>
+            <template if:true={isEditingStoryPoint}>
+                <div class="sp-edit-container" onblur={handleBlurStoryPoint} tabindex="-1">
+                    <c-ao-input
+                        type="number"
+                        value={storyPointDraft}
+                        class="sp-input"
+                        onchange={handleStoryPointDraftChange}>
+                    </c-ao-input>
+                    <c-ao-btn
+                        icon-name="utility:check"
+                        variant="bare"
+                        size="sm"
+                        title="Save story points"
+                        onclick={handleSaveStoryPoint}>
+                    </c-ao-btn>
+                    <c-ao-btn
+                        icon-name="utility:close"
+                        variant="bare"
+                        size="sm"
+                        title="Cancel"
+                        onclick={handleCancelEditStoryPoint}>
+                    </c-ao-btn>
+                </div>
+            </template>
         </div>
 
     </template>
@@ -398,7 +424,33 @@
                         No Type
                     </span>
                 </template>
-                <span class="sp-badge">{spLabel} SP</span>
+                <template if:false={isEditingStoryPoint}>
+                    <button class="sp-badge sp-badge--clickable" onclick={handleStartEditStoryPoint} title="Edit story points">{spLabel} SP</button>
+                </template>
+                <template if:true={isEditingStoryPoint}>
+                    <div class="sp-edit-container" onblur={handleBlurStoryPoint} tabindex="-1">
+                        <c-ao-input
+                            type="number"
+                            value={storyPointDraft}
+                            class="sp-input"
+                            onchange={handleStoryPointDraftChange}>
+                        </c-ao-input>
+                        <c-ao-btn
+                            icon-name="utility:check"
+                            variant="bare"
+                            size="sm"
+                            title="Save story points"
+                            onclick={handleSaveStoryPoint}>
+                        </c-ao-btn>
+                        <c-ao-btn
+                            icon-name="utility:close"
+                            variant="bare"
+                            size="sm"
+                            title="Cancel"
+                            onclick={handleCancelEditStoryPoint}>
+                        </c-ao-btn>
+                    </div>
+                </template>
                 <div class="card-epic-cell ticket-epic" onclick={handleOpenEpicModal} title="Click to assign epic">
                     <template if:true={ticket.Epic__c}>
                         <span class="epic-badge">{ticket.epicName}</span>
